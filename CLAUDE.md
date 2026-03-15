@@ -22,14 +22,11 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 
 ## Memory System
 
-Structured memory is managed by `memctl` (Go binary at `tools/memctl/memctl`).
-Config: `memctl.yaml` at repo root. Index: `memory/INDEX.md` (auto-maintained).
+Structured memory is managed by `memctl` (Python CLI at `tools/memctl/memctl`).
+Full operations guide: [docs/d1/memctl-operations.md](docs/d1/memctl-operations.md).
 
-- **Read** the index at `memory/INDEX.md` to find relevant notes
-- **Write** notes via `memctl new` — never edit files directly
-- **Verify** index integrity: `memctl index verify`
-
-See `memory/INDEX.md` for the full lookup protocol and MEMORY_INDEX.
+On session start, read `memory/INDEX.md` for the lookup protocol and MEMORY_INDEX.
+Write notes via `tools/memctl/memctl new`. Never edit note files or INDEX.md directly.
 
 ## Key Files
 
