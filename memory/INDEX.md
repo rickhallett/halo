@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-15T21:01:09Z'
-note_count: 45
+generated: '2026-03-15T21:09:03Z'
+note_count: 46
 entities:
 - kai
 - oceanheart-ai
@@ -869,5 +869,22 @@ notes:
   hash: 58a9414eb7b1c77bf162d3f5a9ba3f7e11f88e4f62b8862b432778d113967bd7
   backlink_count: 0
   modified: '2026-03-15T21:00:58Z'
+  expires: null
+- id: 20260315-210853
+  file: memory/notes/20260315-210853-sd-319-amendment-one-emoji-exception.md
+  title: 'SD-319 amendment: one emoji exception'
+  type: decision
+  tags:
+  - standing-order
+  - writing
+  - communication
+  - decision
+  entities:
+  - kai
+  summary: 'SD-319 (no emoji, ever) has one exception: the red circle emoji is HAL''s
+    signoff. No other emoji permitted in any contex...'
+  hash: 88694fe410ee680a5f15d7f7763dee75e30a03410d559e72ed29c95962f153b0
+  backlink_count: 0
+  modified: '2026-03-15T21:08:53Z'
   expires: null
 ```
