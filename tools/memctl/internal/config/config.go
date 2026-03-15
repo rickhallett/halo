@@ -48,6 +48,9 @@ func Load(path string) (*Config, error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("config not found: %s\n\nRun from a directory containing memctl.yaml, or pass --config <path>", path)
+		}
 		return nil, fmt.Errorf("read config %s: %w", path, err)
 	}
 

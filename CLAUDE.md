@@ -1,10 +1,21 @@
 # NanoClaw
 
-Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions.
+Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/d2/REQUIREMENTS.md](docs/d2/REQUIREMENTS.md) for architecture decisions.
 
 ## Quick Context
 
 Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
+
+## Memory System
+
+Structured memory is managed by `memctl` (Go binary at `tools/memctl/memctl`).
+Config: `memctl.yaml` at repo root. Index: `memory/INDEX.md` (auto-maintained).
+
+- **Read** the index at `memory/INDEX.md` to find relevant notes
+- **Write** notes via `memctl new` — never edit files directly
+- **Verify** index integrity: `memctl index verify`
+
+See `memory/INDEX.md` for the full lookup protocol and MEMORY_INDEX.
 
 ## Key Files
 
@@ -19,6 +30,8 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 | `src/task-scheduler.ts` | Runs scheduled tasks |
 | `src/db.ts` | SQLite operations |
 | `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
+| `memory/INDEX.md` | Memory index (auto-maintained by memctl) |
+| `memctl.yaml` | Memory governance config |
 | `container/skills/agent-browser.md` | Browser automation tool (available to all agents via Bash) |
 
 ## Skills
