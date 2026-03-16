@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-16T07:37:24Z'
-note_count: 57
+generated: '2026-03-16T07:54:21Z'
+note_count: 58
 entities:
 - kai
 - oceanheart-ai
@@ -1062,5 +1062,21 @@ notes:
   hash: d1ee2ac59570a4aa77dca20d3c68c8bc47fd8d528a8177c16da6553e65853a1a
   backlink_count: 2
   modified: '2026-03-16T07:37:23Z'
+  expires: null
+- id: 20260316-075402-764
+  file: memory/notes/20260316-075402-764-post-write-enrichment-enforced-at-system-level.md
+  title: Post-write enrichment enforced at system level
+  type: decision
+  tags:
+  - standing-order
+  - governance
+  - decision
+  entities:
+  - kai
+  summary: After every memctl new, the agent must run memctl enrich and present proposals.
+    Enforced via CLAUDE.md system prompt and...
+  hash: 1553ed89d4f7622340a72f1a17fcb2fa17a4d6cfdbf2520d6183db20e5f8170c
+  backlink_count: 0
+  modified: '2026-03-16T07:54:02Z'
   expires: null
 ```

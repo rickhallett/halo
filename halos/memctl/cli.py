@@ -169,6 +169,46 @@ def cmd_new(cfg, args):
         for w in warnings:
             print(f"WARNING: {w}")
 
+    # Post-write: show neighbours and enrichment prompt
+    _post_write_summary(cfg, entry, idx)
+
+
+def _post_write_summary(cfg, new_entry: idxmod.Entry, idx: idxmod.Index):
+    """Print neighbour stats and enrichment nudge after note creation."""
+    # Find notes sharing tags or entities (excluding noise)
+    NOISE_TAGS = {"decision", "person", "nanoclaw", "the-pit", "identity", "standing-order"}
+    NOISE_ENTS = {"kai", "the-pit"}
+    new_tags = set(new_entry.tags) - NOISE_TAGS
+    new_ents = set(new_entry.entities) - NOISE_ENTS
+
+    neighbours = []
+    for n in idx.notes:
+        if n.id == new_entry.id:
+            continue
+        shared_t = (set(n.tags) - NOISE_TAGS) & new_tags
+        shared_e = (set(n.entities) - NOISE_ENTS) & new_ents
+        if shared_t or shared_e:
+            neighbours.append((n, shared_t, shared_e))
+
+    print()
+    if neighbours:
+        print(f"  Neighbours: {len(neighbours)} notes share tags/entities")
+        for n, st, se in neighbours[:5]:
+            overlap = ", ".join(sorted(st | se))
+            print(f"    {n.type[:4]:4s}  {n.title[:45]}  ({overlap})")
+        if len(neighbours) > 5:
+            print(f"    ... and {len(neighbours) - 5} more")
+
+    by_type = {}
+    for n in idx.notes:
+        by_type[n.type] = by_type.get(n.type, 0) + 1
+    same_type = by_type.get(new_entry.type, 1)
+    total = idx.note_count
+
+    print(f"  Corpus: {total} notes, {same_type} {new_entry.type}s")
+    print()
+    print("  >>> Run: memctl enrich    (connect the dots?)")
+
 
 # ── get ──────────────────────────────────────────────────────
 
