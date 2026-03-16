@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-16T08:15:11Z'
-note_count: 59
+generated: '2026-03-16T10:31:57Z'
+note_count: 60
 entities:
 - kai
 - oceanheart-ai
@@ -1095,5 +1095,21 @@ notes:
   hash: 5cb00b35812f3f411c8b4d31385641b270019a764f68259e12eb91d84959cb43
   backlink_count: 0
   modified: '2026-03-16T08:15:11Z'
+  expires: null
+- id: 20260316-103140-391
+  file: memory/notes/20260316-103140-391-halos-v0-1-milestone-7-modules-577-tests-5-gaps-closed.md
+  title: halos v0.1 milestone - 7 modules, 577 tests, 5 gaps closed
+  type: event
+  tags:
+  - halos
+  - architecture
+  - engineering
+  entities:
+  - kai
+  summary: 'Single session: setup through adversarial review through gap closure.
+    memctl, nightctl, cronctl, todoctl, logctl, report...'
+  hash: 5b4840b7bdedc0917b19df047fe37b4b2ff6558daa20301f9d16902a268c9ebf
+  backlink_count: 0
+  modified: '2026-03-16T10:31:40Z'
   expires: null
 ```
