@@ -9,9 +9,11 @@ tags:
 - communication
 entities:
 - kai
+backlinks:
+- 20260316-071747-485
 confidence: high
 created: '2026-03-15T21:00:52Z'
-modified: '2026-03-15T21:00:52Z'
+modified: '2026-03-16T07:37:22Z'
 expires: null
 ---
 

@@ -53,7 +53,7 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-16T07:18:04Z'
+generated: '2026-03-16T07:37:24Z'
 note_count: 57
 entities:
 - kai
@@ -328,9 +328,9 @@ notes:
   - kai
   summary: The distinction is not 'uses AI vs doesn't' — it is whether AI-assisted
     output produces working systems or papers about ...
-  hash: 52bf12294ea4e402f4a6ce45b12eb317f4bcfe62b232e94a9cd79ee44bc4b486
-  backlink_count: 0
-  modified: '2026-03-15 20:44:17.479416+00:00'
+  hash: ca5dd55fbd67c40529bb81b609ec878311148d12f6cf456a32a2092230ea96a0
+  backlink_count: 1
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260315-204443
   file: memory/notes/20260315-204443-job-search-two-track-plan.md
@@ -378,9 +378,9 @@ notes:
   - kai
   summary: 'CV revised to lead with senior engineering identity rather than agentic
     infrastructure framing. Market assessment: 2026 ...'
-  hash: 447cebfcf046870045fb30bd771933afb917eba821dac06da9b9c6c24ce9de0a
-  backlink_count: 0
-  modified: '2026-03-15 20:44:46.179434+00:00'
+  hash: a39e4ef13860aa4e4f68a81360586f7bffbea0d206a3da39c3fecd8f72e7912b
+  backlink_count: 1
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260315-204447
   file: memory/notes/20260315-204447-productivity-under-pressure-two-month-sprint.md
@@ -481,9 +481,9 @@ notes:
   - the-pit
   summary: 'Defect survival probability = product of survival probability at each
     independent gate. Four layers: (1) local quality g...'
-  hash: 27b29b986f21a3f2fa8d4569a9050d07af119efb04b45661bf824d40b9e28425
-  backlink_count: 0
-  modified: '2026-03-15T20:59:17Z'
+  hash: bc7ee1a1955a771fae61ecffae8f71f13538c1cc787ad0d258834e47cd84498c
+  backlink_count: 2
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260315-205918
   file: memory/notes/20260315-205918-slopodar-taxonomy-49-named-anti-patterns.md
@@ -499,9 +499,9 @@ notes:
   - weaver
   summary: '49 anti-patterns caught in the wild across 30+ days. Domains: prose (tally
     voice, redundant antithesis, epistemic theatr...'
-  hash: 15d4a0f02cf8dae33b763b54adf2d21780a679e999b7fda5454eead89fd33013
-  backlink_count: 0
-  modified: '2026-03-15T20:59:18Z'
+  hash: e07b105e4b9377cb506ca21d2c0724560add2a865c0ca7c81dfcab1d7d90e1f2
+  backlink_count: 3
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260315-205919
   file: memory/notes/20260315-205919-12-layer-model-of-human-ai-engineering.md
@@ -533,9 +533,9 @@ notes:
   - the-pit
   summary: 'Novel concepts with no clean literature equivalent. Working set (Denning
     1968 isomorphism): minimum context for correct ...'
-  hash: 4525fdd9e342af45cb4a8a5c3f553bf75f3af6fc614f8d4b0223ad73287f11b8
-  backlink_count: 0
-  modified: '2026-03-15T20:59:20Z'
+  hash: 1fb90c49b634a357cdcc30d06fa8a3e6deed9a082df45d13ef8c2e0b29db8caa
+  backlink_count: 1
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260315-205943
   file: memory/notes/20260315-205943-six-hci-foot-guns-in-human-ai-interaction.md
@@ -567,9 +567,9 @@ notes:
   - kai
   summary: Permanent standing order. Truth over hiring signal, always, even when the
     honest answer hurts the portfolio. When lullab...
-  hash: f4f3d0f8f45d2fd3008232a3c045c4595925cf823d5b98677f3a9efacc53b037
-  backlink_count: 0
-  modified: '2026-03-15T20:59:44Z'
+  hash: bab5700f7f2b98ec2eec151d090c4b67cf6d51fbec7f4b986761bf59b853b3bd
+  backlink_count: 1
+  modified: '2026-03-16T07:37:24Z'
   expires: null
 - id: 20260315-205945
   file: memory/notes/20260315-205945-sd-266-the-chain-historical-data-is-immutable.md
@@ -704,9 +704,9 @@ notes:
   - the-pit
   summary: The failure mode taxonomy, verification pipeline, and operational controls
     may be worth more than the code. Learning in ...
-  hash: 48ae972be7667802106528732f0efc0152d8d72b9ec94ce608ef6ec9465445fc
-  backlink_count: 0
-  modified: '2026-03-15T21:00:21Z'
+  hash: 0a8195241b201b54b4e51fb12eee36e99fc579f0c214342ac4e2ae16ba8da9da
+  backlink_count: 1
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260315-210022
   file: memory/notes/20260315-210022-vulnerability-cognitive-deskilling-from-ai-delegation.md
@@ -721,9 +721,9 @@ notes:
   - kai
   summary: 'SD-327: Kai paused The Pit for 6 weeks because manual coding and system
     design fluency atrophied after 2 months of AI-as...'
-  hash: 4c4c941450d5ab0d7230a854747964d705aa36f11a1bb60f04aabfc581b77c24
-  backlink_count: 0
-  modified: '2026-03-15T21:00:22Z'
+  hash: c0429fa9d50db24c75607a99d1470f87459af9ae767f4aeac489d81d0415f016
+  backlink_count: 2
+  modified: '2026-03-16T07:37:22Z'
   expires: null
 - id: 20260315-210023
   file: memory/notes/20260315-210023-vulnerability-governance-recursion.md
@@ -786,9 +786,9 @@ notes:
   - kai
   summary: 'Both careers solve the same problem: noticing when a system (human or
     machine) produces confident, coherent output that ...'
-  hash: 3bc796659f4cad903c3575041872f5b37688e58da6712d254460a2c7ea66eadf
-  backlink_count: 0
-  modified: '2026-03-15T21:00:52Z'
+  hash: 9f45e808deec53f3bc35611426df0d58cc88da80c39ba42eee9b46f037569357
+  backlink_count: 1
+  modified: '2026-03-16T07:37:22Z'
   expires: null
 - id: 20260315-210053
   file: memory/notes/20260315-210053-technical-preferences-tools-and-conventions.md
@@ -948,9 +948,9 @@ notes:
   - kai
   summary: Seniors solve hard problems. Leads decide which problems to solve and in
     what order. Algorithmic line-fu drops off at th...
-  hash: eecef9eaf17aae96101458e4f31f30ce0270be9a7b748480486b0addd72d1516
-  backlink_count: 0
-  modified: '2026-03-16T07:17:46Z'
+  hash: c37ebd0f865282881dcf7353636e6e199e7c667a805d32aca4ff534f5e6736ae
+  backlink_count: 1
+  modified: '2026-03-16T07:37:22Z'
   expires: null
 - id: 20260316-071746-871
   file: memory/notes/20260316-071746-871-deskilling-spiral-was-a-misdiagnosis.md
@@ -964,9 +964,9 @@ notes:
   - kai
   summary: The gap was not lacking fundamentals but lacking confidence that fundamentals
     were sufficient. Different problem, differ...
-  hash: e52fae54012db08ddfaa2d837daed6c3d17b2997b3cc1ea1413af59ec2e215b1
-  backlink_count: 0
-  modified: '2026-03-16T07:17:46Z'
+  hash: 1630b3054439c10a39204a069f9f55f334d66c76901cc588628f98545dbe2dc9
+  backlink_count: 2
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 - id: 20260316-071747-177
   file: memory/notes/20260316-071747-177-five-layer-codebase-review-strategy.md
@@ -1059,8 +1059,8 @@ notes:
   - kai
   summary: Reading and writing are distinct abilities. Taste development depends more
     on reading. LLM-paired review provides enormo...
-  hash: 152b6fdcee941b6fd28b8b903c78891162c1e0b5caf110618be8cbcbaa94c089
-  backlink_count: 0
-  modified: '2026-03-16T07:17:48Z'
+  hash: d1ee2ac59570a4aa77dca20d3c68c8bc47fd8d528a8177c16da6553e65853a1a
+  backlink_count: 2
+  modified: '2026-03-16T07:37:23Z'
   expires: null
 ```

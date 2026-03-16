@@ -8,9 +8,11 @@ tags:
 - strategy
 entities:
 - kai
+backlinks:
+- 20260316-071746-259
 confidence: high
 created: '2026-03-16T07:17:46Z'
-modified: '2026-03-16T07:17:46Z'
+modified: '2026-03-16T07:37:22Z'
 expires: null
 ---
 

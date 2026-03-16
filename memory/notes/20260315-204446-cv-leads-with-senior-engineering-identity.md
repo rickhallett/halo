@@ -3,15 +3,17 @@ id: 20260315-204446
 title: CV leads with senior engineering identity
 type: decision
 tags:
-  - job-search
-  - strategy
-  - career
-  - decision
+- job-search
+- strategy
+- career
+- decision
 entities:
-  - kai
+- kai
+backlinks:
+- 20260315-205944
 confidence: high
-created: 2026-03-15T20:44:46.179434743Z
-modified: 2026-03-15T20:44:46.179434743Z
+created: '2026-03-15 20:44:46.179434+00:00'
+modified: '2026-03-16T07:37:23Z'
 expires: null
 ---
 
