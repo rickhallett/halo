@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-16T07:54:21Z'
-note_count: 58
+generated: '2026-03-16T08:15:11Z'
+note_count: 59
 entities:
 - kai
 - oceanheart-ai
@@ -1078,5 +1078,22 @@ notes:
   hash: 1553ed89d4f7622340a72f1a17fcb2fa17a4d6cfdbf2520d6183db20e5f8170c
   backlink_count: 0
   modified: '2026-03-16T07:54:02Z'
+  expires: null
+- id: 20260316-081511-469
+  file: memory/notes/20260316-081511-469-lexicon-durian-low-hanging-fruit-that-detonates-loudly.md
+  title: 'Lexicon: durian - low-hanging fruit that detonates loudly'
+  type: fact
+  tags:
+  - communication
+  - weaver
+  - the-pit
+  entities:
+  - kai
+  - weaver
+  summary: 'Weaver coinage. A durian: something that looks easy to pick (low-hanging
+    fruit) but explodes on contact. Used for tasks ...'
+  hash: 5cb00b35812f3f411c8b4d31385641b270019a764f68259e12eb91d84959cb43
+  backlink_count: 0
+  modified: '2026-03-16T08:15:11Z'
   expires: null
 ```
