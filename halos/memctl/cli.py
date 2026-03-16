@@ -10,6 +10,7 @@ from . import config as cfgmod
 from . import index as idxmod
 from . import note as notemod
 from . import prune as prunemod
+from halos.common.log import hlog
 
 
 def main():
@@ -172,6 +173,8 @@ def cmd_new(cfg, args):
     idx.tag_vocabulary = cfg.note.tags
     idxmod.write(cfg.index_file, idx)
 
+    hlog("memctl", "info", "note_created", {"id": id, "title": args.title})
+
     if args.json_out:
         json.dump({"id": id, "file": rel, "warnings": warnings}, sys.stdout, indent=2)
         print()
@@ -188,17 +191,17 @@ def cmd_new(cfg, args):
 def _post_write_summary(cfg, new_entry: idxmod.Entry, idx: idxmod.Index):
     """Print neighbour stats and enrichment nudge after note creation."""
     # Find notes sharing tags or entities (excluding noise)
-    NOISE_TAGS = {"decision", "person", "nanoclaw", "the-pit", "identity", "standing-order"}
-    NOISE_ENTS = {"kai", "the-pit"}
-    new_tags = set(new_entry.tags) - NOISE_TAGS
-    new_ents = set(new_entry.entities) - NOISE_ENTS
+    noise_tags = set(cfg.enrich.noise_tags)
+    noise_ents = set(cfg.enrich.noise_entities)
+    new_tags = set(new_entry.tags) - noise_tags
+    new_ents = set(new_entry.entities) - noise_ents
 
     neighbours = []
     for n in idx.notes:
         if n.id == new_entry.id:
             continue
-        shared_t = (set(n.tags) - NOISE_TAGS) & new_tags
-        shared_e = (set(n.entities) - NOISE_ENTS) & new_ents
+        shared_t = (set(n.tags) - noise_tags) & new_tags
+        shared_e = (set(n.entities) - noise_ents) & new_ents
         if shared_t or shared_e:
             neighbours.append((n, shared_t, shared_e))
 
@@ -295,6 +298,7 @@ def _index_rebuild(cfg, args):
         return
 
     idxmod.write(cfg.index_file, idx)
+    hlog("memctl", "info", "index_rebuilt", {"note_count": len(entries)})
     print(f"Rebuilt index: {len(entries)} notes, {parse_errors} parse errors")
 
 
@@ -358,6 +362,7 @@ def _add_backlink(cfg, target_id: str, source_id: str):
                     entry.modified = n.modified
                     break
             idxmod.write(cfg.index_file, idx)
+            hlog("memctl", "info", "backlink_added", {"from": source_id, "to": target_id})
             return
     raise SystemExit(f"note {target_id!r} not found")
 
@@ -491,7 +496,9 @@ def cmd_graph(cfg, args):
         graphmod.render_text(idx)
         return
 
-    G = graphmod.build_graph(idx, include_entities=not args.no_entities)
+    noise_ents = set(cfg.enrich.noise_entities)
+    G = graphmod.build_graph(idx, include_entities=not args.no_entities,
+                             noise_entities=noise_ents)
 
     if args.format == "html":
         output = args.output or "memory-graph.html"

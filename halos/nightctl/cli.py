@@ -11,6 +11,7 @@ from .manifest import Manifest
 from .notify import Notifier
 from .executor import Executor, _in_window, _parse_window
 from .archive import run_archive, run_hatch
+from halos.common.log import hlog
 
 
 def _now_local(tz_name: str) -> datetime:
@@ -63,6 +64,8 @@ def cmd_enqueue(args, cfg):
 
     manifest = Manifest(cfg.manifest_file)
     manifest.append(job)
+
+    hlog("nightctl", "info", "job_enqueued", {"id": job.id, "title": args.title})
 
     if args.json:
         out = {"id": job.id, "file": str(job.file_path), "warnings": warnings}
@@ -183,6 +186,7 @@ def cmd_cancel(args, cfg):
         job.save()
 
     manifest.update_status(args.id, "cancelled")
+    hlog("nightctl", "info", "job_cancelled", {"id": args.id})
 
     # move to archive
     archive_dir = cfg.archive_dir

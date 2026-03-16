@@ -9,6 +9,7 @@ import yaml
 
 from .config import load_config
 from .cron import CronJob, ValidationError
+from halos.common.log import hlog
 
 
 def cmd_add(args, cfg):
@@ -28,6 +29,8 @@ def cmd_add(args, cfg):
     except ValidationError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
+
+    hlog("cronctl", "info", "job_created", {"id": job.id, "title": args.title})
 
     if args.json:
         print(json.dumps({"id": job.id, "file": str(job.file_path)}, indent=2))
@@ -62,6 +65,7 @@ def cmd_enable(args, cfg):
         sys.exit(1)
     job.data["enabled"] = True
     job.save()
+    hlog("cronctl", "info", "job_toggled", {"id": job.id, "enabled": True})
     print(f"enabled  {job.id}")
     return 0
 
@@ -73,6 +77,7 @@ def cmd_disable(args, cfg):
         sys.exit(1)
     job.data["enabled"] = False
     job.save()
+    hlog("cronctl", "info", "job_toggled", {"id": job.id, "enabled": False})
     print(f"disabled  {job.id}")
     return 0
 

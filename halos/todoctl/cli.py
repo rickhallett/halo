@@ -1,16 +1,19 @@
 import argparse
 import json
 import sys
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import yaml
 
 from .config import load_config
 from .todo import TodoItem, ValidationError, VALID_STATUSES
+from halos.common.log import hlog
 
 
 def cmd_add(args, cfg):
     tags = [t.strip() for t in args.tags.split(",")] if args.tags else []
+    entities = [e.strip() for e in args.entities.split(",")] if args.entities else []
     warnings = []
     if cfg.valid_tags:
         for t in tags:
@@ -30,10 +33,13 @@ def cmd_add(args, cfg):
             tags=tags,
             context=args.context or "",
             due=args.due,
+            entities=entities,
         )
     except ValidationError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
+
+    hlog("todoctl", "info", "item_created", {"id": item.id, "title": args.title})
 
     if args.json:
         print(json.dumps({"id": item.id, "file": str(item.file_path), "warnings": warnings}, indent=2))
@@ -75,6 +81,7 @@ def cmd_done(args, cfg):
         sys.exit(1)
     item.data["status"] = "done"
     item.save()
+    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "done"})
     print(f"done  {item.id}  {item.title}")
     return 0
 
@@ -86,6 +93,7 @@ def cmd_defer(args, cfg):
         sys.exit(1)
     item.data["status"] = "deferred"
     item.save()
+    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "deferred"})
     print(f"deferred  {item.id}  {item.title}")
     return 0
 
@@ -98,6 +106,7 @@ def cmd_block(args, cfg):
     item.data["status"] = "blocked"
     item.data["blocked_by"] = args.by
     item.save()
+    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "blocked"})
     print(f"blocked  {item.id}  {item.title}  by: {args.by}")
     return 0
 
@@ -109,12 +118,94 @@ def cmd_start(args, cfg):
         sys.exit(1)
     item.data["status"] = "in-progress"
     item.save()
+    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "in-progress"})
     print(f"started  {item.id}  {item.title}")
+    return 0
+
+
+def cmd_cancel(args, cfg):
+    item = _find_item(cfg.items_dir, args.id)
+    if not item:
+        print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
+        sys.exit(1)
+    item.data["status"] = "cancelled"
+    item.save()
+    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "cancelled"})
+    print(f"cancelled  {item.id}  {item.title}")
+    return 0
+
+
+def cmd_edit(args, cfg):
+    item = _find_item(cfg.items_dir, args.id)
+    if not item:
+        print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    if args.title is not None:
+        item.data["title"] = args.title
+    if args.priority is not None:
+        item.data["priority"] = args.priority
+    if args.tags is not None:
+        item.data["tags"] = [t.strip() for t in args.tags.split(",")]
+    if args.context is not None:
+        item.data["context"] = args.context
+    if args.due is not None:
+        item.data["due"] = args.due
+    if args.entities is not None:
+        item.data["entities"] = [e.strip() for e in args.entities.split(",")]
+
+    item.save()
+    hlog("todoctl", "info", "item_edited", {"id": item.id})
+    print(f"edited  {item.id}  {item.title}")
+    return 0
+
+
+def cmd_archive(args, cfg):
+    items = _load_all_items(cfg.items_dir)
+    archive_dir = cfg.backlog_dir / "archive"
+    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+
+    candidates = []
+    for i in items:
+        if i.status not in ("done", "cancelled"):
+            continue
+        created_str = i.created
+        if not created_str:
+            continue
+        try:
+            created_dt = datetime.strptime(created_str, "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=timezone.utc
+            )
+        except ValueError:
+            continue
+        if created_dt < cutoff:
+            candidates.append(i)
+
+    if not candidates:
+        print("nothing to archive")
+        return 0
+
+    if not getattr(args, "execute", False):
+        # dry-run (default)
+        print(f"would archive {len(candidates)} item(s):")
+        for i in candidates:
+            print(f"  {i.id}  {i.status:<12} {i.title}")
+        print("\npass --execute to actually move files")
+        return 0
+
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    for i in candidates:
+        i.archive(archive_dir)
+        print(f"archived  {i.id}  {i.title}")
+    print(f"\n{len(candidates)} item(s) archived to {archive_dir}")
     return 0
 
 
 def cmd_stats(args, cfg):
     items = _load_all_items(cfg.items_dir)
+
+    archive_dir = cfg.backlog_dir / "archive"
+    archived_count = len(list(archive_dir.glob("*.yaml"))) if archive_dir.exists() else 0
 
     by_status: dict[str, int] = {}
     by_priority: dict[int, int] = {}
@@ -129,6 +220,7 @@ def cmd_stats(args, cfg):
     if args.json:
         print(json.dumps({
             "total": len(items),
+            "archived": archived_count,
             "by_status": by_status,
             "by_priority": by_priority,
             "by_tag": by_tag,
@@ -139,6 +231,8 @@ def cmd_stats(args, cfg):
             n = by_status.get(s, 0)
             if n or s in ("open", "done"):
                 print(f"  {s:<14} {n}")
+        if archived_count:
+            print(f"  {'archived':<14} {archived_count}")
         print()
         if by_priority:
             print("By priority:")
@@ -233,6 +327,7 @@ def build_parser():
     add.add_argument("--tags", default=None)
     add.add_argument("--context", default=None)
     add.add_argument("--due", default=None)
+    add.add_argument("--entities", default=None, help="Comma-separated entities")
 
     # list
     lst = sub.add_parser("list", help="List backlog items")
@@ -254,6 +349,24 @@ def build_parser():
     # start
     st = sub.add_parser("start", help="Mark item as in-progress")
     st.add_argument("id")
+
+    # cancel
+    cn = sub.add_parser("cancel", help="Mark item as cancelled")
+    cn.add_argument("id")
+
+    # edit
+    ed = sub.add_parser("edit", help="Edit an existing item")
+    ed.add_argument("id")
+    ed.add_argument("--title", default=None)
+    ed.add_argument("--priority", type=int, default=None)
+    ed.add_argument("--tags", default=None)
+    ed.add_argument("--context", default=None)
+    ed.add_argument("--due", default=None)
+    ed.add_argument("--entities", default=None, help="Comma-separated entities")
+
+    # archive
+    ar = sub.add_parser("archive", help="Archive done/cancelled items older than 30 days")
+    ar.add_argument("--execute", action="store_true", help="Actually move files (default is dry-run)")
 
     # stats
     sub.add_parser("stats", help="Backlog health report")
@@ -285,6 +398,9 @@ def main():
         "defer": cmd_defer,
         "block": cmd_block,
         "start": cmd_start,
+        "cancel": cmd_cancel,
+        "edit": cmd_edit,
+        "archive": cmd_archive,
         "stats": cmd_stats,
         "graph": cmd_graph,
     }
