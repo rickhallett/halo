@@ -3,7 +3,7 @@
 How to use the memory governance system. This is the operational reference
 for any agent or session that needs to read or write structured memory.
 
-Binary: `tools/memctl/memctl`
+Command: `memctl` (installed via `uv sync`, source: `halos/memctl/`)
 Config: `memctl.yaml` (repo root)
 Index:  `memory/INDEX.md` (auto-maintained, never hand-edit)
 Notes:  `memory/notes/*.md` (one claim per file, YAML frontmatter + body)
@@ -19,14 +19,14 @@ On session start:
 3. Load only matching note files. Do not load the full corpus. Token budget
    matters.
 4. If a hash in the index doesn't match the file on disk, run
-   `tools/memctl/memctl index verify` and report drift before continuing.
+   `memctl index verify` and report drift before continuing.
 
 ## Writing Notes
 
 Always use the CLI. Never write or edit note files directly.
 
 ```bash
-tools/memctl/memctl new \
+memctl new \
   --title "Short factual title" \
   --type decision \
   --tags postgres,auth \
@@ -75,34 +75,34 @@ When answering questions:
 
 ```bash
 # Write a note
-tools/memctl/memctl new --title "..." --type fact --tags x,y --body "..."
+memctl new --title "..." --type fact --tags x,y --body "..."
 
 # Find notes by entity, tag, type, or text
-tools/memctl/memctl search --entities kai --type decision
-tools/memctl/memctl search --tags governance,verification
-tools/memctl/memctl search --text "slopodar"
+memctl search --entities kai --type decision
+memctl search --tags governance,verification
+memctl search --text "slopodar"
 
 # Print a specific note
-tools/memctl/memctl get 20260315-204342
+memctl get 20260315-204342
 
 # Verify index integrity (exit code 3 = drift detected)
-tools/memctl/memctl index verify
+memctl index verify
 
 # Rebuild index from notes corpus (idempotent, safe any time)
-tools/memctl/memctl index rebuild
+memctl index rebuild
 
 # Add a backlink between notes
-tools/memctl/memctl link --from <new-id> --to <existing-id>
+memctl link --from <new-id> --to <existing-id>
 
 # Corpus health report
-tools/memctl/memctl stats
+memctl stats
 
 # Visual graph of the memory network
-tools/memctl/memctl graph
+memctl graph
 
 # Identify prune candidates (dry-run by default)
-tools/memctl/memctl prune
-tools/memctl/memctl prune --execute   # actually archive (requires dry_run: false in config)
+memctl prune
+memctl prune --execute   # actually archive (requires dry_run: false in config)
 ```
 
 ## JSON Output
@@ -110,8 +110,8 @@ tools/memctl/memctl prune --execute   # actually archive (requires dry_run: fals
 All commands support `--json` as a global flag (must appear before the subcommand):
 
 ```bash
-tools/memctl/memctl --json search --entities kai
-tools/memctl/memctl --json stats
+memctl --json search --entities kai
+memctl --json stats
 ```
 
 ## Index Maintenance
@@ -145,8 +145,8 @@ Config defaults to `dry_run: true`. Must be explicitly set to `false` in
 
 ## Architecture Notes
 
-- memctl is a Python CLI at `tools/memctl/memctl`. No compilation, no binary.
-  Single external dependency: pyyaml.
+- memctl is a Python CLI in the `halos` package (`halos/memctl/`). Install via
+  `uv sync`. Single external dependency: pyyaml.
 - The agent never edits the index or runs pruning. Those are scripted operations.
 - The agent's role: write notes via `memctl new`, read the index, follow the
   lookup protocol.

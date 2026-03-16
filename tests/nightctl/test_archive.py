@@ -6,10 +6,9 @@ import unittest
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from nightctl_lib.job import Job
-from nightctl_lib.manifest import Manifest
-from nightctl_lib.archive import run_archive, run_hatch
+from halos.nightctl.job import Job
+from halos.nightctl.manifest import Manifest
+from halos.nightctl.archive import run_archive, run_hatch
 
 CFG_JOB = {
     "default_retries": 2,

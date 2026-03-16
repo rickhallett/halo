@@ -2,7 +2,7 @@ import subprocess
 try:
     import yaml
 except ImportError:
-    from nightctl_lib import yaml_shim as yaml
+    from . import yaml_shim as yaml
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo

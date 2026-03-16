@@ -118,7 +118,7 @@ def cmd_status(args, cfg):
         try:
             import yaml
         except ImportError:
-            from nightctl_lib import yaml_shim as yaml
+            from . import yaml_shim as yaml
         with open(run_file) as f:
             runs.append(yaml.safe_load(f))
 
@@ -420,3 +420,7 @@ def main():
     else:
         parser.print_help()
         sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

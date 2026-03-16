@@ -4,8 +4,7 @@ import os
 import io
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from nightctl_lib.yaml_shim import safe_load, dump
+from halos.nightctl.yaml_shim import safe_load, dump
 
 
 class TestScalars(unittest.TestCase):

@@ -4,6 +4,11 @@ node_modules/
 # Build output
 dist/
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+
 # Local data & auth
 store/
 data/

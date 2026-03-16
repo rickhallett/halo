@@ -8,11 +8,10 @@ from unittest.mock import patch
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from nightctl_lib.job import Job
-from nightctl_lib.manifest import Manifest
-from nightctl_lib.executor import Executor, _in_window, _parse_window
-from nightctl_lib.notify import Notifier
+from halos.nightctl.job import Job
+from halos.nightctl.manifest import Manifest
+from halos.nightctl.executor import Executor, _in_window, _parse_window
+from halos.nightctl.notify import Notifier
 
 CFG_JOB = {
     "default_retries": 2,
@@ -51,7 +50,7 @@ class TestWindowCheck(unittest.TestCase):
 
     def _check(self, window, hour, minute):
         fake = self._fake_now(hour, minute)
-        with patch("nightctl_lib.executor.datetime") as mock_dt:
+        with patch("halos.nightctl.executor.datetime") as mock_dt:
             mock_dt.now.return_value = fake
             return _in_window(window, "UTC")
 
@@ -145,7 +144,7 @@ class TestExecutorRun(unittest.TestCase):
         try:
             import yaml
         except ImportError:
-            from nightctl_lib import yaml_shim as yaml
+            from halos.nightctl import yaml_shim as yaml
         job = make_job(self.tmp, command="echo hello-world")
         self.manifest.append(job)
         self._run_force()
@@ -190,7 +189,7 @@ class TestExecutorRun(unittest.TestCase):
         try:
             import yaml
         except ImportError:
-            from nightctl_lib import yaml_shim as yaml
+            from halos.nightctl import yaml_shim as yaml
         def run_start(job_id):
             files = list(self.cfg.runs_dir.glob(f"{job_id}-run-*.yaml"))
             if not files:
@@ -224,7 +223,7 @@ class TestExecutorRun(unittest.TestCase):
         try:
             import yaml
         except ImportError:
-            from nightctl_lib import yaml_shim as yaml
+            from halos.nightctl import yaml_shim as yaml
         job = make_job(self.tmp, command="exit 42", retries=0)
         self.manifest.append(job)
         self._run_force()
@@ -238,7 +237,7 @@ class TestExecutorRun(unittest.TestCase):
         try:
             import yaml
         except ImportError:
-            from nightctl_lib import yaml_shim as yaml
+            from halos.nightctl import yaml_shim as yaml
         job = make_job(self.tmp, command="sleep 10", timeout_secs=1, retries=0)
         self.manifest.append(job)
         self._run_force()

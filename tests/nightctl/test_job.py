@@ -6,8 +6,7 @@ import time
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from nightctl_lib.job import Job, ValidationError, VALID_STATUSES, VALID_SCHEDULES
+from halos.nightctl.job import Job, ValidationError, VALID_STATUSES, VALID_SCHEDULES
 
 CFG_JOB = {
     "default_retries": 2,

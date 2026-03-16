@@ -2,7 +2,7 @@ import os
 try:
     import yaml
 except ImportError:
-    from nightctl_lib import yaml_shim as yaml
+    from . import yaml_shim as yaml
 from pathlib import Path
 
 

@@ -5,9 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from nightctl_lib.job import Job
-from nightctl_lib.manifest import Manifest
+from halos.nightctl.job import Job
+from halos.nightctl.manifest import Manifest
 
 CFG_JOB = {
     "default_retries": 2,

@@ -7,13 +7,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-NIGHTCTL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "nightctl")
 PYTHON = sys.executable
 
 
 def run(*args, cwd=None):
     result = subprocess.run(
-        [PYTHON, NIGHTCTL] + list(args),
+        [PYTHON, "-m", "halos.nightctl.cli"] + list(args),
         capture_output=True, text=True, cwd=cwd
     )
     return result.returncode, result.stdout, result.stderr
@@ -111,13 +110,13 @@ class TestEnqueue(BaseCliTest):
 
     def test_enqueue_job_file_contains_correct_title(self):
         data = self.enqueue_json("Specific title", "echo hi")
-        from nightctl_lib.job import Job
+        from halos.nightctl.job import Job
         job = Job.from_file(Path(data["file"]))
         self.assertEqual(job.title, "Specific title")
 
     def test_enqueue_job_file_status_is_pending(self):
         data = self.enqueue_json()
-        from nightctl_lib.job import Job
+        from halos.nightctl.job import Job
         job = Job.from_file(Path(data["file"]))
         self.assertEqual(job.status, "pending")
 
@@ -149,7 +148,7 @@ class TestEnqueue(BaseCliTest):
 
     def test_enqueue_priority_stored_in_file(self):
         data = self.enqueue_json(priority=3)
-        from nightctl_lib.job import Job
+        from halos.nightctl.job import Job
         job = Job.from_file(Path(data["file"]))
         self.assertEqual(job.priority, 3)
 
