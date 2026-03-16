@@ -1,0 +1,11 @@
+id: 20260316-030927
+title: Name the halOS meta-system
+status: open
+priority: 3
+tags:
+- halos
+context: 'Current working name ''halOS'' needs evaluation. Should reflect: personal
+  OS layer, agent tooling, the HAL identity.'
+created: '2026-03-16T03:09:27Z'
+due: null
+blocked_by: null
