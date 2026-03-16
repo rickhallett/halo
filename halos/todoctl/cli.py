@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 from .config import load_config
-from .todo import TodoItem, ValidationError, VALID_STATUSES
+from .todo import TodoItem, ValidationError, TransitionError, VALID_STATUSES
 from halos.common.log import hlog
 
 
@@ -54,7 +54,7 @@ def cmd_list(args, cfg):
     items = _load_all_items(cfg.items_dir)
 
     if not getattr(args, "all", False):
-        items = [i for i in items if i.status in ("open", "in-progress", "blocked")]
+        items = [i for i in items if i.status in ("open", "in-progress", "review", "testing", "blocked")]
 
     items.sort(key=lambda i: (i.priority, i.created))
 
@@ -74,36 +74,46 @@ def cmd_list(args, cfg):
     return 0
 
 
-def cmd_done(args, cfg):
-    item = _find_item(cfg.items_dir, args.id)
+def _transition_item(cfg, item_id: str, new_status: str, label: str, extra_cb=None):
+    """Find an item, transition it, save, log, and print."""
+    item = _find_item(cfg.items_dir, item_id)
     if not item:
-        print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
+        print(f"ERROR: item '{item_id}' not found", file=sys.stderr)
         sys.exit(1)
-    item.data["status"] = "done"
+    try:
+        item.transition(new_status)
+    except TransitionError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+    if extra_cb:
+        extra_cb(item)
     item.save()
-    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "done"})
-    print(f"done  {item.id}  {item.title}")
+    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": new_status})
+    print(f"{label}  {item.id}  {item.title}")
     return 0
+
+
+def cmd_done(args, cfg):
+    return _transition_item(cfg, args.id, "done", "done")
 
 
 def cmd_defer(args, cfg):
-    item = _find_item(cfg.items_dir, args.id)
-    if not item:
-        print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
-        sys.exit(1)
-    item.data["status"] = "deferred"
-    item.save()
-    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "deferred"})
-    print(f"deferred  {item.id}  {item.title}")
-    return 0
+    return _transition_item(cfg, args.id, "deferred", "deferred")
 
 
 def cmd_block(args, cfg):
+    def _set_blocked_by(item):
+        item.data["blocked_by"] = args.by
+
     item = _find_item(cfg.items_dir, args.id)
     if not item:
         print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
         sys.exit(1)
-    item.data["status"] = "blocked"
+    try:
+        item.transition("blocked")
+    except TransitionError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
     item.data["blocked_by"] = args.by
     item.save()
     hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "blocked"})
@@ -112,27 +122,19 @@ def cmd_block(args, cfg):
 
 
 def cmd_start(args, cfg):
-    item = _find_item(cfg.items_dir, args.id)
-    if not item:
-        print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
-        sys.exit(1)
-    item.data["status"] = "in-progress"
-    item.save()
-    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "in-progress"})
-    print(f"started  {item.id}  {item.title}")
-    return 0
+    return _transition_item(cfg, args.id, "in-progress", "started")
 
 
 def cmd_cancel(args, cfg):
-    item = _find_item(cfg.items_dir, args.id)
-    if not item:
-        print(f"ERROR: item '{args.id}' not found", file=sys.stderr)
-        sys.exit(1)
-    item.data["status"] = "cancelled"
-    item.save()
-    hlog("todoctl", "info", "status_changed", {"id": item.id, "status": "cancelled"})
-    print(f"cancelled  {item.id}  {item.title}")
-    return 0
+    return _transition_item(cfg, args.id, "cancelled", "cancelled")
+
+
+def cmd_review(args, cfg):
+    return _transition_item(cfg, args.id, "review", "review")
+
+
+def cmd_testing(args, cfg):
+    return _transition_item(cfg, args.id, "testing", "testing")
 
 
 def cmd_edit(args, cfg):
@@ -251,7 +253,7 @@ def cmd_graph(args, cfg):
     items = _load_all_items(cfg.items_dir)
     items.sort(key=lambda i: (i.priority, i.created))
 
-    active = [i for i in items if i.status in ("open", "in-progress", "blocked")]
+    active = [i for i in items if i.status in ("open", "in-progress", "review", "testing", "blocked")]
     done = [i for i in items if i.status == "done"]
     deferred = [i for i in items if i.status == "deferred"]
 
@@ -270,7 +272,7 @@ def cmd_graph(args, cfg):
         for idx, i in enumerate(group):
             is_last = idx == len(group) - 1
             prefix = "  └─" if is_last else "  ├─"
-            status_marker = {"open": " ", "in-progress": "*", "blocked": "!"}
+            status_marker = {"open": " ", "in-progress": "*", "review": "R", "testing": "T", "blocked": "!"}
             marker = status_marker.get(i.status, "?")
             print(f"{prefix} [{marker}] {i.title}")
             if i.tags:
@@ -354,6 +356,14 @@ def build_parser():
     cn = sub.add_parser("cancel", help="Mark item as cancelled")
     cn.add_argument("id")
 
+    # review
+    rv = sub.add_parser("review", help="Mark item as in review")
+    rv.add_argument("id")
+
+    # testing
+    ts = sub.add_parser("testing", help="Mark item as in testing")
+    ts.add_argument("id")
+
     # edit
     ed = sub.add_parser("edit", help="Edit an existing item")
     ed.add_argument("id")
@@ -399,6 +409,8 @@ def main():
         "block": cmd_block,
         "start": cmd_start,
         "cancel": cmd_cancel,
+        "review": cmd_review,
+        "testing": cmd_testing,
         "edit": cmd_edit,
         "archive": cmd_archive,
         "stats": cmd_stats,

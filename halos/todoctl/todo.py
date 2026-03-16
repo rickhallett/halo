@@ -7,7 +7,18 @@ from pathlib import Path
 import yaml
 
 
-VALID_STATUSES = ["open", "in-progress", "done", "blocked", "deferred", "cancelled"]
+VALID_STATUSES = ["open", "in-progress", "review", "testing", "done", "blocked", "deferred", "cancelled"]
+
+VALID_TRANSITIONS: dict[str, list[str]] = {
+    "open": ["in-progress", "cancelled", "deferred"],
+    "in-progress": ["review", "blocked", "cancelled"],
+    "review": ["in-progress", "testing", "done"],
+    "testing": ["in-progress", "done"],
+    "blocked": ["in-progress", "cancelled"],
+    "deferred": ["open", "cancelled"],
+    "done": [],
+    "cancelled": [],
+}
 
 
 def _now_iso() -> str:
@@ -28,6 +39,10 @@ def _slugify(text: str) -> str:
 
 
 class ValidationError(Exception):
+    pass
+
+
+class TransitionError(Exception):
     pass
 
 
@@ -71,6 +86,22 @@ class TodoItem:
     @property
     def blocked_by(self) -> str | None:
         return self.data.get("blocked_by")
+
+    def transition(self, new_status: str) -> None:
+        """Validate and apply a status transition.
+
+        Raises ``TransitionError`` if the transition is not allowed.
+        """
+        current = self.status
+        allowed = VALID_TRANSITIONS.get(current, [])
+        if new_status not in allowed:
+            allowed_str = ", ".join(allowed) if allowed else "(none — terminal state)"
+            raise TransitionError(
+                f"Cannot transition from {current} to {new_status}. "
+                f"Valid transitions: {allowed_str}"
+            )
+        self.data["status"] = new_status
+        self.data["modified"] = _now_iso()
 
     def to_yaml(self) -> str:
         return yaml.dump(self.data, default_flow_style=False, sort_keys=False)
