@@ -1,6 +1,6 @@
-generated: '2026-03-16T08:35:18Z'
-job_count: 3
-pending: 2
+generated: '2026-03-16T08:59:50Z'
+job_count: 7
+pending: 6
 done: 0
 failed: 0
 jobs:
@@ -40,3 +40,51 @@ jobs:
   depends_on: []
   created: '2026-03-16T08:35:18Z'
   hash: f7413b768750507021b4e74ceb06379b8479f506cd2531f2f56fa9ae96d2bcc4
+- id: 20260316-085950-e7ed5b8c
+  file: /home/mrkai/code/nanoclaw/queue/jobs/20260316-085950-e7ed5b8c-testctl-pytest-makefile-gate-for-halos-modules.yaml
+  title: 'testctl: pytest + Makefile gate for halos modules'
+  schedule: overnight
+  priority: 1
+  status: pending
+  tags:
+  - halos
+  - architecture
+  depends_on: []
+  created: '2026-03-16T08:59:50Z'
+  hash: acfcc54976af7311d82ae15826dfb9c5165978cb1663071adde03e7c0f5928bf
+- id: 20260316-085950-55bd8689
+  file: /home/mrkai/code/nanoclaw/queue/jobs/20260316-085950-55bd8689-logctl-structured-logging-with-halos-abstraction-layer.yaml
+  title: 'logctl: structured logging with halos abstraction layer'
+  schedule: overnight
+  priority: 3
+  status: pending
+  tags:
+  - halos
+  - architecture
+  depends_on: []
+  created: '2026-03-16T08:59:50Z'
+  hash: 37945b41f2d2149052bec4883f501c900e07e6039122da1857292f2f3945e03d
+- id: 20260316-085950-33c4c7c7
+  file: /home/mrkai/code/nanoclaw/queue/jobs/20260316-085950-33c4c7c7-reportctl-periodic-digests-from-memory-and-backlog.yaml
+  title: 'reportctl: periodic digests from memory and backlog'
+  schedule: overnight
+  priority: 3
+  status: pending
+  tags:
+  - halos
+  - architecture
+  depends_on: []
+  created: '2026-03-16T08:59:50Z'
+  hash: e1902aee1d0b2404b60c002b33fad6911a14c6c3e8b13b9a55d0cb316a9d4ad7
+- id: 20260316-085950-2fdd904c
+  file: /home/mrkai/code/nanoclaw/queue/jobs/20260316-085950-2fdd904c-agentctl-llm-usage-tracking-and-productivity-guard.yaml
+  title: 'agentctl: LLM usage tracking and productivity guard'
+  schedule: overnight
+  priority: 3
+  status: pending
+  tags:
+  - halos
+  - architecture
+  depends_on: []
+  created: '2026-03-16T08:59:50Z'
+  hash: 9711360c923ddc69c289900ff4ae3aa101dd1d74674abc6dac97a31469f1f463

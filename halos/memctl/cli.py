@@ -66,7 +66,19 @@ def main():
     sub.add_parser("stats", help="corpus health report")
 
     # --- graph ---
-    sub.add_parser("graph", help="print the memory graph")
+    p_graph = sub.add_parser("graph", help="visualise the memory graph")
+    p_graph.add_argument(
+        "--format", choices=["text", "html", "dot"], default="html",
+        help="output format (default: html)",
+    )
+    p_graph.add_argument(
+        "--output", "-o", default="",
+        help="output file path (default: memory-graph.html or .svg)",
+    )
+    p_graph.add_argument(
+        "--no-entities", action="store_true",
+        help="omit shared-entity edges (show only backlinks)",
+    )
 
     # --- enrich ---
     sub.add_parser("enrich", help="propose semantic backlinks for human approval")
@@ -471,48 +483,26 @@ def cmd_stats(cfg, args):
 # ── graph ────────────────────────────────────────────────────
 
 def cmd_graph(cfg, args):
+    from . import graph as graphmod
+
     idx = idxmod.read(cfg.index_file)
 
-    by_type: dict[str, list[idxmod.Entry]] = {}
-    entities: dict[str, list[str]] = {}
-    for n in idx.notes:
-        by_type.setdefault(n.type, []).append(n)
-        for e in n.entities:
-            entities.setdefault(e, []).append(n.title)
+    if args.format == "text":
+        graphmod.render_text(idx)
+        return
 
-    bl_total = sum(n.backlink_count for n in idx.notes)
+    G = graphmod.build_graph(idx, include_entities=not args.no_entities)
 
-    print(f"{'═' * 64}")
-    print(f"  MEMORY GRAPH  ·  {idx.note_count} notes  ·  {len(entities)} entities  ·  {bl_total} backlinks")
-    print(f"{'═' * 64}")
-
-    for t in ["person", "project", "decision", "fact", "reference", "event"]:
-        items = by_type.get(t, [])
-        if not items:
-            continue
-        print(f"\n  ┌─ {t.upper()} ({len(items)})")
-        for i, n in enumerate(items):
-            is_last = i == len(items) - 1
-            prefix = "  └─" if is_last else "  ├─"
-            detail = "    " if is_last else "  │ "
-            ents = ", ".join(n.entities) if n.entities else ""
-            tags = ", ".join(n.tags)
-            print(f"{prefix} {n.title}")
-            if ents:
-                print(f"{detail}   ⤷ [{ents}]  #{tags}")
-            else:
-                print(f"{detail}   ⤷ #{tags}")
-
-    print()
-    print("  ┌─ ENTITY INDEX")
-    sorted_ents = sorted(entities.items())
-    for i, (e, titles) in enumerate(sorted_ents):
-        is_last = i == len(sorted_ents) - 1
-        prefix = "  └─" if is_last else "  ├─"
-        print(f"{prefix} {e:22s} ({len(titles)} notes)")
-
-    print()
-    print(f"{'═' * 64}")
+    if args.format == "html":
+        output = args.output or "memory-graph.html"
+        path = graphmod.render_html(G, output)
+        print(f"Graph written to {path}")
+        print(f"  {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+    elif args.format == "dot":
+        output = args.output or "memory-graph.svg"
+        path = graphmod.render_dot(G, output)
+        print(f"Graph written to {path}")
+        print(f"  {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
 
 
 # ── enrich ───────────────────────────────────────────────────
