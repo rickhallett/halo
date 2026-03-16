@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-15T21:21:13Z'
-note_count: 47
+generated: '2026-03-16T06:55:10Z'
+note_count: 48
 entities:
 - kai
 - oceanheart-ai
@@ -902,5 +902,22 @@ notes:
   hash: 942bf912668789e0fc7e844e0a115a8df3d2fa47720be9c4bc9d0c5c947e8588
   backlink_count: 0
   modified: '2026-03-15T21:21:04Z'
+  expires: null
+- id: 20260316-065510-445
+  file: memory/notes/20260316-065510-445-defensive-coding-mandate-for-agent-facing-clis.md
+  title: Defensive coding mandate for agent-facing CLIs
+  type: decision
+  tags:
+  - standing-order
+  - governance
+  - engineering
+  - decision
+  entities:
+  - kai
+  summary: All halOS modules must handle unhappy paths defensively. LLMs are probabilistic;
+    the unhappy path is a question of time....
+  hash: 9983b09648f0926fdc78fa5cccc068d5ae3280fb5db799094ba53a30c4c9ac8a
+  backlink_count: 0
+  modified: '2026-03-16T06:55:10Z'
   expires: null
 ```
