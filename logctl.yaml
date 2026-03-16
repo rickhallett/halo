@@ -1,0 +1,6 @@
+log_dir: ./logs
+sources:
+  nanoclaw: ./logs/nanoclaw.log
+  nanoclaw_error: ./logs/nanoclaw.error.log
+format: pino
+tail_lines: 50
