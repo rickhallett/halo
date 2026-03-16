@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 
-VALID_STATUSES = ["open", "in-progress", "done", "blocked", "deferred"]
+VALID_STATUSES = ["open", "in-progress", "done", "blocked", "deferred", "cancelled"]
 
 
 def _now_iso() -> str:
@@ -103,10 +103,20 @@ class TodoItem:
         item.validate()
         return item
 
+    def archive(self, archive_dir: Path):
+        """Move this item's file to the archive directory (atomic)."""
+        if not self.file_path:
+            raise RuntimeError("No file path set")
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        dest = archive_dir / self.file_path.name
+        os.replace(str(self.file_path), str(dest))
+        self.file_path = dest
+
     @classmethod
     def create(cls, items_dir: Path, title: str, priority: int = 3,
                tags: list | None = None, context: str = "",
-               due: str | None = None) -> "TodoItem":
+               due: str | None = None,
+               entities: list[str] | None = None) -> "TodoItem":
         title = title.strip()
         if not title:
             raise ValidationError("--title is required")
@@ -126,6 +136,7 @@ class TodoItem:
             "created": _now_iso(),
             "due": due,
             "blocked_by": None,
+            "entities": entities or [],
         }
 
         item = cls(data, file_path=file_path)
