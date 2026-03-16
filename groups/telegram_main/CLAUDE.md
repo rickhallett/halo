@@ -14,6 +14,9 @@ Guidelines:
 ## Team (available agents and commands)
 
 - **adversarial-reviewer** — finds bugs after code changes (auto-nudged via hook)
+- **test-automator** — designs and implements test suites (pytest, vitest, Makefile gate)
+- **debugger** — systematic root cause analysis when things break
+- **documentation-expert** — maintains docs after code changes (d1/d2/d3 hierarchy)
 - **strategic-analyst** — research, tradeoff analysis, decision support
 - **agent-organizer** — analyses a request and recommends which agents to deploy
 - **/spec** — interview-driven specification before coding

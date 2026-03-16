@@ -57,20 +57,24 @@ Step 2: [agent] does [what], using output from step 1
 - [how to confirm the work is correct]
 ```
 
-### 4. Known Agents
+### 4. Discover Available Agents
 
-**Development:**
-- adversarial-reviewer: post-change code review (finds bugs, not confirms correctness)
-- strategic-analyst: research, tradeoff analysis, decision support
+**IMPORTANT: Do not rely on a hardcoded list.** Scan the filesystem:
 
-**halOS Tools (CLI, not agents):**
-- memctl: structured memory (notes, backlinks, index)
-- nightctl: batch job queue
-- cronctl: cron definitions
-- todoctl: backlog tracking with state machine
-- logctl: log reader
-- reportctl: digests from all modules
-- agentctl: session tracking
+```bash
+# List all agents with their descriptions
+for f in .claude/agents/*.md; do
+  name=$(grep "^name:" "$f" | head -1 | cut -d: -f2- | tr -d ' ')
+  desc=$(grep "^description:" "$f" | head -1 | cut -d: -f2-)
+  echo "$name:$desc"
+done
+```
+
+Also check `.claude/commands/` for available commands (these are prompt-driven, not delegatable agents).
+
+**halOS Tools (CLI, not agents — invoke via Bash):**
+- memctl, nightctl, cronctl, todoctl, logctl, reportctl, agentctl
+- Registry: `docs/d1/halos-modules.md`
 
 **Built-in Claude Code:**
 - Task/Agent teams: parallel subagent dispatch

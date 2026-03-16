@@ -48,7 +48,10 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 |------|------|------|---------|
 | adversarial-reviewer | agent | `.claude/agents/adversarial-reviewer.md` | Finds bugs after code changes (PostToolUse hook nudges) |
 | strategic-analyst | agent | `.claude/agents/strategic-analyst.md` | Research, scenario modelling, decision support |
-| agent-organizer | agent | `.claude/agents/agent-organizer.md` | Analyses requests, recommends agent teams |
+| agent-organizer | agent | `.claude/agents/agent-organizer.md` | Analyses requests, recommends agent teams (scans .claude/agents/ dynamically) |
+| test-automator | agent | `.claude/agents/test-automator.md` | Designs and implements test suites (pytest, vitest, Makefile gate) |
+| debugger | agent | `.claude/agents/debugger.md` | Systematic root cause analysis (traces, doesn't guess) |
+| documentation-expert | agent | `.claude/agents/documentation-expert.md` | Maintains docs after changes (knows d1/d2/d3 hierarchy) |
 | /spec | command | `.claude/commands/spec.md` | Interview-driven specification before coding |
 | /decompose | command | `.claude/commands/decompose.md` | Break tasks into atomic testable steps |
 
