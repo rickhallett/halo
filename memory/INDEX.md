@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-16T12:54:23Z'
-note_count: 72
+generated: '2026-03-16T13:34:56Z'
+note_count: 77
 entities:
 - kai
 - oceanheart-ai
@@ -482,9 +482,9 @@ notes:
   - the-pit
   summary: 'Defect survival probability = product of survival probability at each
     independent gate. Four layers: (1) local quality g...'
-  hash: bc7ee1a1955a771fae61ecffae8f71f13538c1cc787ad0d258834e47cd84498c
-  backlink_count: 2
-  modified: '2026-03-16T07:37:23Z'
+  hash: 3d5fcd343368f48212d58e6088c596a2c4f32c549bb95d97994ece2135fe0369
+  backlink_count: 3
+  modified: '2026-03-16T13:34:56Z'
   expires: null
 - id: 20260315-205918
   file: memory/notes/20260315-205918-slopodar-taxonomy-49-named-anti-patterns.md
@@ -670,9 +670,9 @@ notes:
   - the-pit
   summary: 'Two-day eval of multi-agent orchestration (SD-326): manual single-agent
     with verification pipeline = 40 PRs/day. Autonom...'
-  hash: 9b41a1700461eb6f98d7e73efab36811b13346db374d95ba8eca064238418d6a
-  backlink_count: 2
-  modified: '2026-03-16T12:54:02Z'
+  hash: 3e25b6a12e1ab098a8b318669bfa0951842ca7cd89c143da63b91f70e5da6da2
+  backlink_count: 3
+  modified: '2026-03-16T13:34:56Z'
   expires: null
 - id: 20260315-210020
   file: memory/notes/20260315-210020-the-gate-is-survival-everything-else-is-optimisation.md
@@ -917,9 +917,9 @@ notes:
   - kai
   summary: All halOS modules must handle unhappy paths defensively. LLMs are probabilistic;
     the unhappy path is a question of time....
-  hash: 9983b09648f0926fdc78fa5cccc068d5ae3280fb5db799094ba53a30c4c9ac8a
-  backlink_count: 0
-  modified: '2026-03-16T06:55:10Z'
+  hash: 7a130cc3d281765a85c01fe9053531b4f4225c2589681f47a215ee7efabb3203
+  backlink_count: 1
+  modified: '2026-03-16T13:34:56Z'
   expires: null
 - id: 20260316-071746-259
   file: memory/notes/20260316-071746-259-directed-ownership-the-third-thing-in-software.md
@@ -1076,9 +1076,9 @@ notes:
   - kai
   summary: After every memctl new, the agent must run memctl enrich and present proposals.
     Enforced via CLAUDE.md system prompt and...
-  hash: 1553ed89d4f7622340a72f1a17fcb2fa17a4d6cfdbf2520d6183db20e5f8170c
-  backlink_count: 0
-  modified: '2026-03-16T07:54:02Z'
+  hash: cc1b89029f43058f42547637377da13db23d6a3d85061ab1bd0639cf8322fca5
+  backlink_count: 1
+  modified: '2026-03-16T13:34:56Z'
   expires: null
 - id: 20260316-081511-469
   file: memory/notes/20260316-081511-469-lexicon-durian-low-hanging-fruit-that-detonates-loudly.md
@@ -1291,8 +1291,88 @@ notes:
   - nanoclaw
   summary: 'Observation: the solo-founder-with-AI-agents narrative describes the halos
     architecture with better marketing. Scheduled...'
-  hash: 5538abbb9108789c4a7039f8bdd0a9ced0439fd7321b77118b0e06bb56bcb5ae
+  hash: e55b16167642759019b6ff9a73bb546d972c92c759bce0ba5cbd8d348fafea7a
+  backlink_count: 1
+  modified: '2026-03-16T13:34:55Z'
+  expires: null
+- id: 20260316-133401-015
+  file: memory/notes/20260316-133401-015-agent-harness-is-the-leverage-point-not-the-model.md
+  title: Agent harness is the leverage point, not the model
+  type: fact
+  tags:
+  - architecture
+  - hci
+  - engineering
+  entities:
+  - kai
+  - nanoclaw
+  summary: Customising the orchestration layer (hooks, tool registration, subagent
+    dispatch, system prompt, IPC) yields more differ...
+  hash: c37fa014c1e6409693292e1c6de8041a14ffe9dbd11a5da7749e3cbebac2fc85
   backlink_count: 0
-  modified: '2026-03-16T12:53:45Z'
+  modified: '2026-03-16T13:34:01Z'
+  expires: null
+- id: 20260316-133401-345
+  file: memory/notes/20260316-133401-345-agent-chains-serial-pipeline-pattern-distinct-from-parallel.md
+  title: 'Agent chains: serial pipeline pattern distinct from parallel teams'
+  type: fact
+  tags:
+  - architecture
+  - governance
+  entities:
+  - kai
+  summary: Sequential agent execution where each agent's output feeds the next. Distinct
+    from agent teams (parallel subagents worki...
+  hash: 809c2e65964d4d516a3c750f0ccec7b72ff0889be580bad00f85af62e0268172
+  backlink_count: 0
+  modified: '2026-03-16T13:34:01Z'
+  expires: null
+- id: 20260316-133401-679
+  file: memory/notes/20260316-133401-679-till-done-pattern-hooks-enforcing-task-completion-before-pro.md
+  title: 'Till-done pattern: hooks enforcing task completion before proceeding'
+  type: fact
+  tags:
+  - governance
+  - architecture
+  - hci
+  entities:
+  - kai
+  summary: Deterministic scaffolding around a probabilistic agent. Block the agent
+    from running tools until it creates a task list....
+  hash: 0ac5a876eefee089ad40b29c5c9689d08c32f5435da798fdb3d6c6167d82c47e
+  backlink_count: 0
+  modified: '2026-03-16T13:34:01Z'
+  expires: null
+- id: 20260316-133402-013
+  file: memory/notes/20260316-133402-013-observation-meta-agents-as-module-generators-with-architectu.md
+  title: 'Observation: meta-agents as module generators with architecture awareness'
+  type: fact
+  tags:
+  - architecture
+  - halos
+  - engineering
+  entities:
+  - kai
+  - nanoclaw
+  summary: Agents whose purpose is generating new agents or modules. Done ad-hoc 3
+    times in one session (logctl, reportctl, agentct...
+  hash: 4c63557e0cbf26ef246d180803d362462c89ed8f19ec6df100272c53eea8ff77
+  backlink_count: 0
+  modified: '2026-03-16T13:34:02Z'
+  expires: null
+- id: 20260316-133402-349
+  file: memory/notes/20260316-133402-349-reference-pi-agent-open-source-customisable-agent-harness.md
+  title: 'Reference: Pi agent - open-source customisable agent harness'
+  type: reference
+  tags:
+  - architecture
+  - engineering
+  entities:
+  - kai
+  summary: Pi agent (pi.dev) by Mario Zechner. Open-source, unopinionated, TypeScript-based
+    agent coding tool. Extension stacking m...
+  hash: 8118d34fd3891d9c7c138ce1483ad2079c9ae43df7546ff7617c23948bd1a4ee
+  backlink_count: 0
+  modified: '2026-03-16T13:34:02Z'
   expires: null
 ```
