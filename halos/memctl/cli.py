@@ -68,6 +68,9 @@ def main():
     # --- graph ---
     sub.add_parser("graph", help="print the memory graph")
 
+    # --- enrich ---
+    sub.add_parser("enrich", help="propose semantic backlinks for human approval")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -78,7 +81,7 @@ def main():
     commands = {
         "new": cmd_new, "get": cmd_get, "search": cmd_search,
         "index": cmd_index, "link": cmd_link, "prune": cmd_prune,
-        "stats": cmd_stats, "graph": cmd_graph,
+        "stats": cmd_stats, "graph": cmd_graph, "enrich": cmd_enrich,
     }
     commands[args.command](cfg, args)
 
@@ -470,3 +473,11 @@ def cmd_graph(cfg, args):
 
     print()
     print(f"{'═' * 64}")
+
+
+# ── enrich ───────────────────────────────────────────────────
+
+def cmd_enrich(cfg, args):
+    from . import enrich
+    proposals = enrich.propose_links(cfg, verbose=args.verbose)
+    enrich.print_muster(proposals, json_out=args.json_out)
