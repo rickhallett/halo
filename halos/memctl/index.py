@@ -221,14 +221,15 @@ def rebuild_from_notes(notes_dir: str, max_summary: int) -> tuple[list[Entry], i
         if f.suffix != ".md":
             continue
         try:
-            data = f.read_text()
+            raw_bytes = f.read_bytes()
+            data = raw_bytes.decode("utf-8")
             n = notemod.parse(data)
             summary = n.body[:max_summary] + "..." if len(n.body) > max_summary else n.body
             rel_path = str(f)
             entries.append(Entry(
                 id=n.id, file=rel_path, title=n.title, type=n.type,
                 tags=n.tags, entities=n.entities, summary=summary,
-                hash=hash_bytes(f.read_bytes()),
+                hash=hash_bytes(raw_bytes),
                 backlink_count=len(n.backlinks), modified=n.modified,
                 expires=n.expires,
             ))

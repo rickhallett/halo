@@ -1,6 +1,8 @@
 """Search and filter logic for log entries."""
 
+import collections
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
@@ -104,31 +106,39 @@ def filter_entries(
 
 
 def read_log_file(filepath: str, fmt: str = "pino") -> list[LogEntry]:
-    """Read and parse all lines from a log file."""
+    """Read and parse all lines from a log file (streaming, never loads entire file)."""
     p = Path(filepath)
     if not p.exists():
         return []
 
     entries = []
-    for line in p.read_text(errors="replace").splitlines():
-        entry = parse_line(line, fmt)
-        if entry:
-            entries.append(entry)
+    try:
+        with open(p, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                entry = parse_line(line.rstrip("\n"), fmt)
+                if entry:
+                    entries.append(entry)
+    except (PermissionError, OSError) as e:
+        print(f"WARN: cannot read {filepath}: {e}", file=sys.stderr)
     return entries
 
 
 def read_log_tail(filepath: str, n: int = 50, fmt: str = "pino") -> list[LogEntry]:
-    """Read and parse the last n lines from a log file."""
+    """Read and parse the last n lines from a log file (streaming with deque)."""
     p = Path(filepath)
     if not p.exists():
         return []
 
-    lines = p.read_text(errors="replace").splitlines()
-    tail = lines[-n:] if len(lines) > n else lines
+    try:
+        with open(p, encoding="utf-8", errors="replace") as fh:
+            tail = collections.deque(fh, maxlen=n)
+    except (PermissionError, OSError) as e:
+        print(f"WARN: cannot read {filepath}: {e}", file=sys.stderr)
+        return []
 
     entries = []
     for line in tail:
-        entry = parse_line(line, fmt)
+        entry = parse_line(line.rstrip("\n"), fmt)
         if entry:
             entries.append(entry)
     return entries

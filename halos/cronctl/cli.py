@@ -1,8 +1,11 @@
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import yaml
 
 from .config import load_config
 from .cron import CronJob, ValidationError
@@ -95,7 +98,9 @@ def cmd_install(args, cfg):
         print(json.dumps({"jobs": len(enabled), "file": str(cfg.output_file)}, indent=2))
     else:
         cfg.output_file.parent.mkdir(parents=True, exist_ok=True)
-        cfg.output_file.write_text(content)
+        tmp = str(cfg.output_file) + ".tmp"
+        Path(tmp).write_text(content)
+        os.replace(tmp, str(cfg.output_file))
         print(f"wrote {len(enabled)} jobs to {cfg.output_file}")
 
         if getattr(args, "execute", False) and cfg.install_method == "user-crontab":
@@ -180,8 +185,8 @@ def _load_all_jobs(jobs_dir: Path) -> list[CronJob]:
     for f in sorted(jobs_dir.glob("*.yaml")):
         try:
             jobs.append(CronJob.from_file(f))
-        except Exception:
-            pass
+        except (ValueError, yaml.YAMLError, OSError) as e:
+            print(f"WARN: skipping {f.name}: {e}", file=sys.stderr)
     return jobs
 
 

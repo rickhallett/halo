@@ -145,7 +145,7 @@ def nightctl_setup(tmp_path):
 
     # Write a failed run record
     (runs_dir / "run-j3.yaml").write_text(
-        yaml.dump({"id": "j3", "status": "failed", "exit_code": 1})
+        yaml.dump({"id": "j3", "outcome": "failed", "exit_code": 1})
     )
 
     config = tmp_path / "nightctl.yaml"

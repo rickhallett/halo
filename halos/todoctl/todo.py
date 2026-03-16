@@ -1,4 +1,5 @@
 """Todo item model: parse, validate, marshal."""
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,7 +16,7 @@ def _now_iso() -> str:
 
 def _now_id() -> str:
     now = datetime.now(timezone.utc)
-    return now.strftime("%Y%m%d-%H%M%S")
+    return now.strftime("%Y%m%d-%H%M%S") + f"-{now.microsecond // 1000:03d}"
 
 
 def _slugify(text: str) -> str:
@@ -77,13 +78,30 @@ class TodoItem:
     def save(self):
         if not self.file_path:
             raise RuntimeError("No file path set")
-        self.file_path.write_text(self.to_yaml())
+        tmp = str(self.file_path) + ".tmp"
+        Path(tmp).write_text(self.to_yaml())
+        os.replace(tmp, str(self.file_path))
+
+    def validate(self):
+        """Validate data fields. Raises ValueError on invalid data."""
+        if not self.data.get("id"):
+            raise ValueError("id is required")
+        if not self.data.get("title"):
+            raise ValueError("title is required")
+        status = self.data.get("status", "open")
+        if status not in VALID_STATUSES:
+            raise ValueError(f"invalid status: {status}")
+        priority = self.data.get("priority", 3)
+        if not isinstance(priority, int) or isinstance(priority, bool):
+            raise ValueError(f"priority must be int, got {type(priority).__name__}")
 
     @classmethod
     def from_file(cls, path: Path) -> "TodoItem":
         with open(path) as f:
             data = yaml.safe_load(f)
-        return cls(data, file_path=path)
+        item = cls(data, file_path=path)
+        item.validate()
+        return item
 
     @classmethod
     def create(cls, items_dir: Path, title: str, priority: int = 3,

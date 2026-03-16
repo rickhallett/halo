@@ -45,7 +45,11 @@ def _derive_group_from_path(log_path: str) -> str:
 
 def _determine_status(exit_code: int, log_text: str) -> str:
     """Determine session status from exit code and log content."""
-    if "TIMEOUT" in log_text.split("\n")[0]:
+    if log_text.startswith("=== Container Run Log (TIMEOUT)"):
+        # Check if the container had streaming output — if so, it was productive
+        streaming = _parse_log_field(log_text, "Had Streaming Output")
+        if streaming and streaming.lower() == "true":
+            return "success"
         return "timeout"
     if exit_code != 0:
         return "error"
@@ -73,10 +77,16 @@ def parse_log(log_path: str) -> Optional[Session]:
         return None
 
     # Parse duration (in ms from container runner)
-    duration_ms = int(duration_str.replace("ms", "").strip())
+    try:
+        duration_ms = int(duration_str.replace("ms", "").strip())
+    except (ValueError, AttributeError):
+        duration_ms = 0
     duration_secs = duration_ms // 1000
 
-    exit_code = int(exit_code_str) if exit_code_str else 1
+    try:
+        exit_code = int(exit_code_str) if exit_code_str else 1
+    except (ValueError, AttributeError):
+        exit_code = 1
 
     # Parse timestamp
     try:
@@ -100,7 +110,10 @@ def parse_log(log_path: str) -> Optional[Session]:
     # Use container name as the session ID (includes timestamp, guaranteed unique)
     session_id = container_name
 
-    prompt_length = int(prompt_length_str.replace("chars", "").strip()) if prompt_length_str else 0
+    try:
+        prompt_length = int(prompt_length_str.replace("chars", "").strip()) if prompt_length_str else 0
+    except (ValueError, AttributeError):
+        prompt_length = 0
 
     # Estimate result length from log (not always available)
     result_length = 0

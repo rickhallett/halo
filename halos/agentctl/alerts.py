@@ -52,7 +52,7 @@ def detect_error_streaks(sessions: list[Session], streak_threshold: int) -> dict
         # Count consecutive errors from the end
         streak: list[Session] = []
         for s in reversed(group_sessions):
-            if s.status == "error":
+            if s.status in ("error", "timeout"):
                 streak.append(s)
             else:
                 break

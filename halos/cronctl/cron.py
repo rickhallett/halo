@@ -1,5 +1,7 @@
 """Cron job model: parse, validate, marshal."""
+import os
 import re
+import shlex
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -74,13 +76,28 @@ class CronJob:
     def save(self):
         if not self.file_path:
             raise RuntimeError("No file path set")
-        self.file_path.write_text(self.to_yaml())
+        tmp = str(self.file_path) + ".tmp"
+        Path(tmp).write_text(self.to_yaml())
+        os.replace(tmp, str(self.file_path))
+
+    def validate(self):
+        """Validate data fields. Raises ValueError on invalid data."""
+        if not self.data.get("id"):
+            raise ValueError("id is required")
+        if not self.data.get("title"):
+            raise ValueError("title is required")
+        if not self.data.get("command"):
+            raise ValueError("command is required")
+        if not self.data.get("schedule"):
+            raise ValueError("schedule is required")
 
     @classmethod
     def from_file(cls, path: Path) -> "CronJob":
         with open(path) as f:
             data = yaml.safe_load(f)
-        return cls(data, file_path=path)
+        job = cls(data, file_path=path)
+        job.validate()
+        return job
 
     @classmethod
     def create(cls, jobs_dir: Path, title: str, schedule: str, command: str,
@@ -105,6 +122,9 @@ class CronJob:
         filename = f"{job_id}.yaml"
         file_path = jobs_dir / filename
 
+        if file_path.exists():
+            raise ValidationError(f"job ID '{job_id}' already exists at {file_path}")
+
         data = {
             "id": job_id,
             "title": title,
@@ -123,7 +143,9 @@ class CronJob:
         """Generate a crontab line for this job."""
         cmd = self.command
         if not cmd.startswith("/"):
-            cmd = f"cd {project_root} && {cmd}"
+            cmd = f"cd {shlex.quote(project_root)} && {cmd}"
+        # Escape % as \% — cron interprets unescaped % as newline
+        cmd = cmd.replace("%", "\\%")
         return f"{self.schedule}  {cmd}"
 
 

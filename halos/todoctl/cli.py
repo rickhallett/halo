@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 from .config import load_config
 from .todo import TodoItem, ValidationError, VALID_STATUSES
 
@@ -200,8 +202,8 @@ def _load_all_items(items_dir: Path) -> list[TodoItem]:
     for f in sorted(items_dir.glob("*.yaml")):
         try:
             items.append(TodoItem.from_file(f))
-        except Exception:
-            pass
+        except (ValueError, yaml.YAMLError, OSError) as e:
+            print(f"WARN: skipping {f.name}: {e}", file=sys.stderr)
     return items
 
 

@@ -200,7 +200,7 @@ def collect_nightctl(nightctl_config_path: Path) -> dict:
             try:
                 with open(f) as fh:
                     run = yaml.safe_load(fh) or {}
-                if run.get("status") == "failed":
+                if run.get("outcome") == "failed":
                     recent_failures += 1
             except Exception:
                 pass
