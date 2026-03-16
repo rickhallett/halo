@@ -28,6 +28,17 @@ Full operations guide: [docs/d1/memctl-operations.md](docs/d1/memctl-operations.
 On session start, read `memory/INDEX.md` for the lookup protocol and MEMORY_INDEX.
 Write notes via `tools/memctl/memctl new`. Never edit note files or INDEX.md directly.
 
+## halOS Modules
+
+All agent tooling follows the halOS module pattern. Registry: [docs/d1/halos-modules.md](docs/d1/halos-modules.md).
+
+| Module | Binary | Purpose |
+|--------|--------|---------|
+| memctl | `tools/memctl/memctl` | Structured memory governance |
+| nightctl | `tools/nightctl/nightctl` | Overnight batch job queue |
+| cronctl | `tools/cronctl/cronctl` | Cron job definitions and crontab generation |
+| todoctl | `tools/todoctl/todoctl` | Backlog tracking and prioritisation |
+
 ## Key Files
 
 | File | Purpose |
