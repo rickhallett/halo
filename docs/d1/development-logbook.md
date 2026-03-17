@@ -131,3 +131,29 @@ All fields optional except `date`, `title`, and `summary`. Refs exist so you can
     reflection: memory/reflections/2026-03-17-deliberate-collaboration.md
   tags: [halos, architecture, nightctl, todoctl, process]
   moon: waning gibbous
+
+- date: '2026-03-17'
+  title: Cross-model adversarial review — 6 findings, 2 critical pre-existing
+  summary: |
+    External model review (not Claude) of the full codebase identified:
+    (1) yaml_shim.py is unnecessary slop — PyYAML is already a dependency,
+    the shim can't handle multiline strings (our own gauntlet confirmed this).
+    Delete it. (2) Cursor pre-advancement in index.ts marks messages as seen
+    before agent processes them — data loss on container crash. Move saveState
+    to success path. (3) IDLE_TIMEOUT == CONTAINER_TIMEOUT races graceful
+    shutdown against hard kill. (4) Main group mounts project root read-only
+    including SQLite — cross-group data visible. Already mitigated for
+    microHALs via disableProjectMemory. (5) memctl enrich scores based on
+    metadata overlap, not semantic content — "Analytical Lullaby" creates
+    false confidence. (6) reportctl dual ledger between manifest and run
+    files — same pattern we killed in todoctl/nightctl.
+
+    The review validated our architectural direction (nightctl merge,
+    microHAL isolation model) while surfacing pre-existing bugs in the
+    Node.js orchestrator layer that today's Python-focused work didn't touch.
+  refs:
+    todo: null
+    note: null
+    commit: null
+  tags: [halos, architecture, security, review]
+  moon: waning gibbous
