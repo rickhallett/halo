@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-17T12:08:10Z'
-note_count: 94
+generated: '2026-03-17T14:51:08Z'
+note_count: 95
 entities:
 - kai
 - oceanheart-ai
@@ -76,6 +76,7 @@ entities:
 - agentctl
 - rick
 - bathw
+- halos
 tag_vocabulary:
 - anti-pattern
 - architecture
@@ -1664,5 +1665,21 @@ notes:
   hash: 9f2fd511b42f4c110b702a209600f62e210f5b55d32c1e2135be40a2649f5dc0
   backlink_count: 0
   modified: '2026-03-17T12:08:10Z'
+  expires: null
+- id: 20260317-145108-172
+  file: memory/notes/20260317-145108-172-standing-decision-halos-is-artisanal-architecture-not-multi.md
+  title: 'Standing decision: halos is artisanal architecture, not multi-tenant'
+  type: decision
+  tags:
+  - halos
+  - architecture
+  entities:
+  - halos
+  - nanoclaw
+  summary: halos is built for a single-user power-operator. O(N) index loading and
+    filesystem polling create scaling walls bounded ...
+  hash: eba0c19877c56ec3e85e4a0c2a40c11692574662d8e83024f48ae345a44c66e5
+  backlink_count: 0
+  modified: '2026-03-17T14:51:08Z'
   expires: null
 ```

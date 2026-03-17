@@ -152,6 +152,38 @@ All fields optional except `date`, `title`, and `summary`. Refs exist so you can
     microHAL isolation model) while surfacing pre-existing bugs in the
     Node.js orchestrator layer that today's Python-focused work didn't touch.
 
+- date: '2026-03-17'
+  title: "Phase 6 verdict: artisanal architecture, the atomic lie, the enforcement loop"
+  summary: |
+    Human architectural review delivered three key findings:
+
+    1. "Artisanal Architecture" — halos is built for a single-user
+       power-operator and this is a feature, not a limitation. O(N) index
+       loading and filesystem polling create scaling walls that can't be
+       solved by adding RAM. Multi-tenant/enterprise is explicitly out of
+       scope. Standing decision: don't apologise for this.
+
+    2. "The Atomic Lie" — tmp-then-rename is atomic for the file but not
+       for the operation. Note-then-index two-step has a crash window.
+       Acceptable at n=1 with 93 notes. Not acceptable at n=1000 with a
+       fleet. Fix: advisory locking or WAL. Conscious tradeoff.
+
+    3. "The Enforcement Loop" — the system's architecture (CLAUDE.md
+       personality + memctl boot sequence + enrichment hooks) creates a
+       feedback loop that runs through the transformer's attention
+       mechanism. This is emergent agent training without fine-tuning.
+       The tool-output-as-nudge pattern is the actual innovation.
+
+    Also produced: full system trace diagrams (message flow, container
+    boundaries, halos module anatomy) with "felt sense" annotations
+    bridging engineering and experiential understanding.
+  refs:
+    todo: null
+    note: null
+    commit: null
+  tags: [halos, architecture, review, process]
+  moon: waning gibbous
+
     Round 2 (same reviewer, deeper): 7 more findings. Two genuinely
     critical: (a) non-main group agents have rw mount on shared memory,
     can rm -rf decision notes — the guard is CLAUDE.md instructions not

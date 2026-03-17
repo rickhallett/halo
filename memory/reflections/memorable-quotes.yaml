@@ -45,3 +45,18 @@
   date: 2026-03-17
   context: on startup aesthetics
   who: hal
+
+- quote: "The agent is like a child playing with a toy phone that is secretly plugged into the parent's real phone."
+  date: 2026-03-17
+  context: on the credential proxy architecture — the agent thinks it talks to the cloud but it talks to localhost
+  who: rick (phase 6 review)
+
+- quote: "The system's greatest innovation isn't the code — it's the Enforcement Loop."
+  date: 2026-03-17
+  context: using tool-output to nudge attention as an architectural control layer — emergent agent training without fine-tuning
+  who: rick (phase 6 review)
+
+- quote: "You can delete the entire Node.js orchestrator and replace it with a Go program, and the halos kit won't even notice. The Filesystem is the only thing that matters."
+  date: 2026-03-17
+  context: on the language bridge between Node.js and Python — co-existing strangers sharing a vocabulary of filenames
+  who: rick (phase 6 review)
