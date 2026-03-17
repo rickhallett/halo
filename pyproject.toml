@@ -22,6 +22,7 @@ logctl = "halos.logctl.cli:main"
 reportctl = "halos.reportctl.cli:main"
 agentctl = "halos.agentctl.cli:main"
 hal-briefing = "halos.briefings.cli:main"
+halctl = "halos.halctl.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

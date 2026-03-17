@@ -1,0 +1,1 @@
+"""halctl — microHAL fleet management."""

@@ -1,0 +1,245 @@
+"""halctl CLI — microHAL fleet management.
+
+Provision, monitor, and control independent HAL instances.
+"""
+
+import argparse
+import sys
+
+from halos.common.log import hlog
+
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+def cmd_create(args):
+    """Provision a new microHAL instance."""
+    from .provision import create_instance
+
+    try:
+        entry = create_instance(
+            name=args.name,
+            personality=args.personality,
+        )
+    except FileExistsError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"created  {entry['name']}  {entry['path']}")
+    print(f"personality: {entry['personality']}")
+    print(f"token env:   {entry['telegram_bot_token_env']}")
+    print()
+    print("Next steps:")
+    print("  1. Open Telegram, message @BotFather")
+    print("  2. Send /newbot and follow the prompts")
+    print(f"  3. Set the bot token as {entry['telegram_bot_token_env']} in your environment")
+    print(f"  4. Start the instance: pm2 start {entry['path']}/../ecosystem.config.js")
+    return 0
+
+
+def cmd_list(args):
+    """List fleet instances."""
+    from .config import load_fleet_manifest
+
+    manifest = load_fleet_manifest()
+    instances = manifest.get("instances", [])
+
+    if not instances:
+        print("no instances")
+        return 0
+
+    fmt = "{:<16} {:<10} {:<20} {}"
+    print(fmt.format("NAME", "STATUS", "PERSONALITY", "PATH"))
+    print("-" * 80)
+    for inst in instances:
+        print(fmt.format(
+            inst["name"],
+            inst.get("status", "unknown"),
+            inst.get("personality", ""),
+            inst.get("path", ""),
+        ))
+    return 0
+
+
+def cmd_status(args):
+    """Show details of a specific instance."""
+    from .config import load_fleet_manifest
+    from pathlib import Path
+
+    manifest = load_fleet_manifest()
+    instance = None
+    for inst in manifest.get("instances", []):
+        if inst["name"] == args.name:
+            instance = inst
+            break
+
+    if instance is None:
+        print(f"ERROR: instance '{args.name}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    deploy = Path(instance["path"])
+    print(f"Name:        {instance['name']}")
+    print(f"Status:      {instance.get('status', 'unknown')}")
+    print(f"Personality: {instance.get('personality', '')}")
+    print(f"Path:        {instance['path']}")
+    print(f"Token env:   {instance.get('telegram_bot_token_env', '')}")
+    print(f"Services:    {', '.join(instance.get('services', []))}")
+    print(f"Created:     {instance.get('created', '')}")
+
+    # Disk usage (if path exists)
+    if deploy.exists():
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["du", "-sh", str(deploy)],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                print(f"Disk:        {result.stdout.split()[0]}")
+        except Exception:
+            pass
+
+        # Memory notes count
+        mem_dir = deploy / "memory" / "notes"
+        if mem_dir.exists():
+            notes = list(mem_dir.glob("*.md"))
+            print(f"Notes:       {len(notes)}")
+    else:
+        print(f"Disk:        (path not found)")
+
+    return 0
+
+
+def cmd_freeze(args):
+    """Freeze an instance (stop process, preserve everything)."""
+    from .provision import freeze_instance
+    try:
+        freeze_instance(args.name)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+    return 0
+
+
+def cmd_fold(args):
+    """Fold an instance (stop + archive)."""
+    from .provision import fold_instance
+    try:
+        fold_instance(args.name)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+    return 0
+
+
+def cmd_fry(args):
+    """Fry an instance (stop + wipe). Nuclear."""
+    from .provision import fry_instance
+    try:
+        fry_instance(args.name, confirm=args.confirm)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+    return 0
+
+
+def cmd_push(args):
+    """Push code updates from prime to microHAL instance(s)."""
+    if args.all:
+        from .provision import push_all
+        pushed = push_all()
+        if not pushed:
+            print("no active instances to push")
+        else:
+            for name in pushed:
+                print(f"pushed  {name}")
+    else:
+        if not args.name:
+            print("ERROR: specify --name or --all", file=sys.stderr)
+            sys.exit(1)
+        from .provision import push_instance
+        try:
+            push_instance(args.name)
+            print(f"pushed  {args.name}")
+        except (ValueError, FileNotFoundError) as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            sys.exit(1)
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Parser
+# ---------------------------------------------------------------------------
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog="halctl",
+        description="halctl — microHAL fleet management.",
+    )
+
+    sub = parser.add_subparsers(dest="subcommand")
+
+    # create
+    cr = sub.add_parser("create", help="Provision a new microHAL instance")
+    cr.add_argument("--name", required=True, help="Instance name")
+    cr.add_argument("--personality", default=None, help="Personality template name")
+
+    # list
+    sub.add_parser("list", help="List fleet instances")
+
+    # status
+    st = sub.add_parser("status", help="Instance details")
+    st.add_argument("name", help="Instance name")
+
+    # freeze
+    fr = sub.add_parser("freeze", help="Stop process, preserve everything")
+    fr.add_argument("name", help="Instance name")
+
+    # fold
+    fo = sub.add_parser("fold", help="Stop + archive data")
+    fo.add_argument("name", help="Instance name")
+
+    # fry
+    fy = sub.add_parser("fry", help="Stop + wipe (nuclear)")
+    fy.add_argument("name", help="Instance name")
+    fy.add_argument("--confirm", action="store_true", help="Required for destructive operation")
+
+    # push
+    pu = sub.add_parser("push", help="Push code updates from prime")
+    pu.add_argument("name", nargs="?", default=None, help="Instance name")
+    pu.add_argument("--all", action="store_true", help="Push to all active instances")
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if not args.subcommand:
+        parser.print_help()
+        sys.exit(0)
+
+    dispatch = {
+        "create": cmd_create,
+        "list": cmd_list,
+        "status": cmd_status,
+        "freeze": cmd_freeze,
+        "fold": cmd_fold,
+        "fry": cmd_fry,
+        "push": cmd_push,
+    }
+
+    if args.subcommand in dispatch:
+        sys.exit(dispatch[args.subcommand](args) or 0)
+    else:
+        parser.print_help()
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
