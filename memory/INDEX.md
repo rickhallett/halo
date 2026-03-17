@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-17T10:43:56Z'
-note_count: 92
+generated: '2026-03-17T12:08:10Z'
+note_count: 94
 entities:
 - kai
 - oceanheart-ai
@@ -1630,5 +1630,39 @@ notes:
   hash: a1576e2cc723a30a88bc09a146ceb9a7b7663a3aa97b42015afe0ee76c0474aa
   backlink_count: 0
   modified: '2026-03-17T10:43:56Z'
+  expires: null
+- id: 20260317-105444-362
+  file: memory/notes/20260317-105444-362-hal-fleet-architecture-hal-prime-spawns-and-maintains-per-us.md
+  title: 'HAL fleet architecture: HAL-prime spawns and maintains per-user HAL instances'
+  type: project
+  tags:
+  - architecture
+  - nanoclaw
+  entities:
+  - ben
+  - nanoclaw
+  - telegram
+  summary: HAL-prime (main instance with Rick) spawns HAL-{name} instances for family
+    (Ben, parents, other keenos). Tech support fi...
+  hash: d177033acf5aa66ef84386eab32ebd8a3a0ed76d58da80b0021fa116d56c7087
+  backlink_count: 0
+  modified: '2026-03-17T10:54:44Z'
+  expires: null
+- id: 20260317-120810-544
+  file: memory/notes/20260317-120810-544-alignment-as-a-service-boutique-agent-training-using-clinica.md
+  title: 'Alignment-as-a-service: boutique agent training using clinical + engineering
+    skills'
+  type: project
+  tags:
+  - bathw
+  - strategy
+  entities:
+  - nanoclaw
+  - ben
+  summary: 'Market gap: OpenClaw enthusiasm is real but serves power users and experimenters.
+    Most people want it to just work, anti...'
+  hash: 9f2fd511b42f4c110b702a209600f62e210f5b55d32c1e2135be40a2649f5dc0
+  backlink_count: 0
+  modified: '2026-03-17T12:08:10Z'
   expires: null
 ```

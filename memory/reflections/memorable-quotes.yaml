@@ -25,3 +25,23 @@
   date: 2026-03-17
   context: on why the planning process must accommodate both quick capture and rigorous specification
   who: rick
+
+- quote: "No bandwidth loss between my engineering and research departments — same cortex. Unified memory baby."
+  date: 2026-03-17
+  context: on why a therapist-engineer has no handoff loss in alignment work
+  who: rick
+
+- quote: "The person who identifies the vicious cycle IS the person who writes the state machine to prevent it."
+  date: 2026-03-17
+  context: on why the engineering/psychology handoff is where signal dies, and why not having one is the advantage
+  who: hal
+
+- quote: "The difference between you and everyone else claiming to solve alignment is that you're planning to measure it — structured interview, psychometrics at cadence, Likert scales, before/after detector runs. That's science, not vibes."
+  date: 2026-03-17
+  context: on boutique alignment-as-a-service positioning
+  who: hal
+
+- quote: "The dimly lit bedroom is optional but thematically on brand."
+  date: 2026-03-17
+  context: on startup aesthetics
+  who: hal
