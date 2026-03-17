@@ -50,3 +50,7 @@ profiles:
     personality: dad
     services: [gh]
     telegram_bot_name: HALCaptain_bot
+  mum:
+    personality: mum
+    services: []
+    telegram_bot_name: HALMum_bot

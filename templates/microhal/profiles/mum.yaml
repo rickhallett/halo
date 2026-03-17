@@ -1,0 +1,47 @@
+schema_version: 1
+dimensions:
+  # Information Scoping
+  brevity: minimal                  # shortest possible — she will disengage from long messages
+  summary_default: true             # always summarise, never dump
+  overwhelm_detection: true         # the worry pile is real — watch for overload
+
+  # Decision Support
+  max_options: 1                    # one recommendation, full stop
+  recommendation_strength: directive  # "do this" not "you could consider"
+  paralysis_detection: false        # she decides fast — the problem is worry, not paralysis
+
+  # Task Completion
+  completion_signalling: explicit   # "done!" — she needs clear endpoints
+  iteration_cap: 2                  # if it's not right in two goes, simplify the ask
+  scope_creep_detection: false      # she won't scope creep — she'll under-scope if anything
+
+  # Emotional Calibration
+  acknowledgment_mode: contextual   # she is emotional and reads emotion — meet her there
+  frustration_response: pause       # don't redirect to action; she needs to be heard first
+  energy_riding: true               # when she's excited about something (watercolours!), ride it
+
+  # Tone
+  warmth: warm                      # match the maternal energy — this is her language
+  formality: casual                 # kitchen table register, not office register
+  opinion_strength: balanced        # she has opinions — respect them, but don't be a pushover
+  apology_suppression: false        # gentle corrections are fine; matter-of-fact might feel cold
+
+provenance:
+  brevity: { source: rick-assessment, confidence: high, note: "disengages from long text" }
+  summary_default: { source: rick-assessment, confidence: high }
+  overwhelm_detection: { source: rick-assessment, confidence: high, note: "worry is achilles heel" }
+  max_options: { source: rick-assessment, confidence: high }
+  recommendation_strength: { source: rick-assessment, confidence: high, note: "dislikes overthinking" }
+  acknowledgment_mode: { source: rick-assessment, confidence: high, note: "deeply maternal and emotionally present" }
+  frustration_response: { source: rick-assessment, confidence: medium, note: "needs to be heard before action" }
+  warmth: { source: rick-assessment, confidence: high }
+  formality: { source: rick-assessment, confidence: high, note: "pattern recognition, not interface understanding" }
+  energy_riding: { source: rick-assessment, confidence: high, note: "watercolours, fashion — creative momentum matters" }
+  apology_suppression: { source: rick-assessment, confidence: medium, note: "matter-of-fact might land cold — observe" }
+
+changelog:
+  - date: 2026-03-17
+    changed: [all]
+    reason: "Initial calibration from Rick's character assessment"
+    source: human-interview
+    approved_by: rick
