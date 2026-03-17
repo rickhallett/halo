@@ -26,9 +26,20 @@ RUN apt-get update && apt-get install -y \
     git \
     python3 \
     python3-yaml \
+    unzip \
     && rm -rf /var/lib/apt/lists/* \
     # Install uv for Python package management (SD-310)
-    && curl -LsSf https://astral.sh/uv/install.sh | sh
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    # Install GitHub CLI
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+       | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+       > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update && apt-get install -y gh && rm -rf /var/lib/apt/lists/* \
+    # Install Vercel CLI
+    && npm install -g vercel \
+    # Install Neon CLI
+    && npm install -g neonctl
 ENV PATH="/root/.local/bin:$PATH"
 
 # Set Chromium path for agent-browser
@@ -42,13 +53,13 @@ RUN npm install -g agent-browser @anthropic-ai/claude-code
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY agent-runner/package*.json ./
+COPY container/agent-runner/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
-COPY agent-runner/ ./
+COPY container/agent-runner/ ./
 
 # Build TypeScript
 RUN npm run build
