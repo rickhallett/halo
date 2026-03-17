@@ -215,6 +215,7 @@ function buildVolumeMounts(
   // Copy agent-runner source into a per-group writable location so agents
   // can customize it (add tools, change behavior) without affecting other
   // groups. Recompiled on container startup via entrypoint.sh.
+  // Re-copies when the canonical VERSION is newer than the group's copy.
   const agentRunnerSrc = path.join(
     projectRoot,
     'container',
@@ -227,8 +228,19 @@ function buildVolumeMounts(
     group.folder,
     'agent-runner-src',
   );
-  if (!fs.existsSync(groupAgentRunnerDir) && fs.existsSync(agentRunnerSrc)) {
-    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+  if (fs.existsSync(agentRunnerSrc)) {
+    const canonicalVersionFile = path.join(agentRunnerSrc, 'VERSION');
+    const groupVersionFile = path.join(groupAgentRunnerDir, 'VERSION');
+    const canonicalVersion = fs.existsSync(canonicalVersionFile)
+      ? fs.readFileSync(canonicalVersionFile, 'utf-8').trim()
+      : '';
+    const groupVersion = fs.existsSync(groupVersionFile)
+      ? fs.readFileSync(groupVersionFile, 'utf-8').trim()
+      : '';
+
+    if (!fs.existsSync(groupAgentRunnerDir) || canonicalVersion !== groupVersion) {
+      fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+    }
   }
   mounts.push({
     hostPath: groupAgentRunnerDir,

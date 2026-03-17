@@ -117,7 +117,8 @@ function createUsageTap(requestPath: string): Transform {
           model: model || 'unknown',
           input_tokens: finalUsage.input_tokens || 0,
           output_tokens: finalUsage.output_tokens || 0,
-          cache_creation_input_tokens: finalUsage.cache_creation_input_tokens || 0,
+          cache_creation_input_tokens:
+            finalUsage.cache_creation_input_tokens || 0,
           cache_read_input_tokens: finalUsage.cache_read_input_tokens || 0,
         });
       }

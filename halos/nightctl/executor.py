@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 try:
     import yaml
@@ -86,10 +87,11 @@ def execute_job(job: Job, runs_dir: Path, notifier: Notifier, dry_run: bool = Fa
     started = _now_iso()
     print(f"  running  {job.id}  {job.title}")
 
+    use_shell = getattr(job, "shell", False)
     try:
         result = subprocess.run(
-            job.command,
-            shell=True,
+            job.command if use_shell else shlex.split(job.command),
+            shell=use_shell,
             capture_output=True,
             text=True,
             timeout=job.timeout_secs,
@@ -138,14 +140,22 @@ def execute_item(item: Item, runs_dir: Path, notifier: Notifier, dry_run: bool =
 
         try:
             result_info = prepare_agent_job(item)
+
+            # IPC message is required for agent-jobs to actually execute.
+            # If ipc_dir was None or the write was skipped, the job is a no-op.
+            if not result_info.get("ipc_path"):
+                raise ContainerError(
+                    f"Agent-job {item.id} prepared but no IPC message was written "
+                    f"(ipc_dir not configured). Job would not execute."
+                )
+
             hlog("nightctl", "info", "agent_job_dispatched", {
                 "id": item.id,
                 "plan_path": str(result_info["plan_path"]),
+                "ipc_path": str(result_info["ipc_path"]),
             })
             finished = _now_iso()
-            stdout = f"agent-job dispatched: plan at {result_info['plan_path']}"
-            if result_info.get("ipc_path"):
-                stdout += f", IPC at {result_info['ipc_path']}"
+            stdout = f"agent-job dispatched: plan at {result_info['plan_path']}, IPC at {result_info['ipc_path']}"
             record = _run_record(item.id, attempt, started, finished, 0, stdout, "", "done")
             _write_run_record(runs_dir, item.id, record)
             return "done"
@@ -174,10 +184,11 @@ def execute_item(item: Item, runs_dir: Path, notifier: Notifier, dry_run: bool =
     started = _now_iso()
     print(f"  running  {item.id}  {item.title}  [{item.kind}]")
 
+    use_shell = item.data.get("shell", False)
     try:
         result = subprocess.run(
-            item.command,
-            shell=True,
+            item.command if use_shell else shlex.split(item.command),
+            shell=use_shell,
             capture_output=True,
             text=True,
             timeout=item.timeout_secs,

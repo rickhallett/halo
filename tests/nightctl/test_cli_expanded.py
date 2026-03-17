@@ -268,7 +268,7 @@ class TestRevise(BaseItemTest):
 
     def test_revise_job_fails(self):
         """Jobs cannot revise (failed -> plan-review not allowed for jobs)."""
-        data = self.add_json("Report", "job", command="exit 1")
+        data = self.add_json("Report", "job", command="false")
         # Get to failed
         from halos.nightctl.item import Item
         item = Item.from_file(Path(data["file"]))

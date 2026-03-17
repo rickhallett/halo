@@ -177,6 +177,30 @@ class TestCreateIpcMessage:
 
         assert (ipc_dir / "tasks").exists()
 
+    def test_target_jid_populated(self, tmp_path):
+        """targetJid should be set when provided."""
+        item = _make_item(tmp_path, plan=VALID_PLAN)
+        plans_dir = tmp_path / "plans"
+        plan_path = write_plan_file(VALID_PLAN, item, plans_dir=plans_dir)
+
+        ipc_dir = tmp_path / "ipc" / "main"
+        result = create_ipc_message(item, plan_path, ipc_dir, target_jid="group@jid")
+
+        data = json.loads(result.read_text())
+        assert data["targetJid"] == "group@jid"
+
+    def test_target_jid_empty_by_default(self, tmp_path):
+        """targetJid defaults to empty string when not provided."""
+        item = _make_item(tmp_path, plan=VALID_PLAN)
+        plans_dir = tmp_path / "plans"
+        plan_path = write_plan_file(VALID_PLAN, item, plans_dir=plans_dir)
+
+        ipc_dir = tmp_path / "ipc" / "main"
+        result = create_ipc_message(item, plan_path, ipc_dir)
+
+        data = json.loads(result.read_text())
+        assert data["targetJid"] == ""
+
 
 class TestPrepareAgentJob:
     def test_full_pipeline(self, tmp_path):
@@ -215,9 +239,21 @@ class TestPrepareAgentJob:
         with pytest.raises(PlanValidationError):
             prepare_agent_job(item)
 
-    def test_no_ipc_dir_skips_ipc(self, tmp_path):
+    def test_no_ipc_dir_returns_none_ipc(self, tmp_path):
+        """Without ipc_dir, ipc_path is None (prepare only, no dispatch)."""
         item = _make_item(tmp_path, plan=VALID_PLAN)
         plans_dir = tmp_path / "plans"
 
         result = prepare_agent_job(item, plans_dir=plans_dir)
         assert result["ipc_path"] is None
+
+    def test_target_jid_passed_through(self, tmp_path):
+        """target_jid should propagate to the IPC message."""
+        item = _make_item(tmp_path, plan=VALID_PLAN)
+        plans_dir = tmp_path / "plans"
+        ipc_dir = tmp_path / "ipc" / "main"
+
+        result = prepare_agent_job(item, ipc_dir=ipc_dir, plans_dir=plans_dir, target_jid="test@jid")
+
+        data = json.loads(result["ipc_path"].read_text())
+        assert data["targetJid"] == "test@jid"

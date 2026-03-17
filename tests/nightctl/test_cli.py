@@ -280,12 +280,12 @@ class TestRun(BaseCliTest):
         self.assertEqual(parsed["job"]["status"], "pending")
 
     def test_run_failing_job_exits_5(self):
-        self.enqueue_json("Bad", "exit 1", retries=0)
+        self.enqueue_json("Bad", "false", retries=0)
         rc, _, _ = self.nightctl("run", "--force")
         self.assertEqual(rc, 5)
 
     def test_run_failing_job_reports_failed_count(self):
-        self.enqueue_json("Bad", "exit 1", retries=0)
+        self.enqueue_json("Bad", "false", retries=0)
         rc, out, _ = self.nightctl("run", "--force")
         self.assertIn("failed: 1", out)
 

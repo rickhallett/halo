@@ -157,14 +157,14 @@ class TestExecutorRun(unittest.TestCase):
         self.assertEqual(record["outcome"], "done")
 
     def test_failed_job_with_zero_retries_marked_failed(self):
-        job = make_job(self.tmp, command="exit 1", retries=0)
+        job = make_job(self.tmp, command="false", retries=0)
         self.manifest.append(job)
         counts = self._run_force()
         self.assertEqual(counts["failed"], 1)
         self.assertEqual(self.manifest.get_entry(job.id)["status"], "failed")
 
     def test_failed_job_with_retries_returns_to_pending(self):
-        job = make_job(self.tmp, command="exit 1", retries=2)
+        job = make_job(self.tmp, command="false", retries=2)
         self.manifest.append(job)
         self._run_force()
         # with retries remaining it should go back to pending, not failed
@@ -172,7 +172,7 @@ class TestExecutorRun(unittest.TestCase):
         self.assertEqual(entry["status"], "pending")
 
     def test_retries_remaining_decrements_on_failure(self):
-        job = make_job(self.tmp, command="exit 1", retries=2)
+        job = make_job(self.tmp, command="false", retries=2)
         self.manifest.append(job)
         self._run_force()
         reloaded = Job.from_file(job.file_path)
@@ -224,7 +224,7 @@ class TestExecutorRun(unittest.TestCase):
             import yaml
         except ImportError:
             from halos.nightctl import yaml_shim as yaml
-        job = make_job(self.tmp, command="exit 42", retries=0)
+        job = make_job(self.tmp, command="python3 -c 'raise SystemExit(42)'", retries=0)
         self.manifest.append(job)
         self._run_force()
         run_files = list(self.cfg.runs_dir.glob(f"{job.id}-run-*.yaml"))
@@ -293,7 +293,7 @@ class TestDependencies(unittest.TestCase):
         self.assertEqual(self.manifest.get_entry(child.id)["status"], "done")
 
     def test_child_skipped_when_dep_fails(self):
-        dep = make_job(self.tmp, title="Dep", command="exit 1", retries=0)
+        dep = make_job(self.tmp, title="Dep", command="false", retries=0)
         child = make_job(self.tmp, title="Child", command="echo child",
                          depends_on=[dep.id])
         self.manifest.append(dep)

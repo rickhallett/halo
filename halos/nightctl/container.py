@@ -110,7 +110,7 @@ def write_plan_file(plan_xml: str, item: Item, plans_dir: Path | None = None) ->
     return plan_path
 
 
-def create_ipc_message(item: Item, plan_path: Path, ipc_dir: Path) -> Path:
+def create_ipc_message(item: Item, plan_path: Path, ipc_dir: Path, target_jid: str = "") -> Path:
     """Create an IPC task message for the TypeScript container-runner.
 
     Writes a JSON file to the IPC tasks directory that src/ipc.ts will
@@ -142,7 +142,7 @@ def create_ipc_message(item: Item, plan_path: Path, ipc_dir: Path) -> Path:
         "schedule_type": "once",
         "schedule_value": now.isoformat(),
         "context_mode": "group",
-        "targetJid": "",  # Must be set by caller or config
+        "targetJid": target_jid,
     }
 
     filename = f"nightctl-{item.id}-{timestamp}.json"
@@ -166,6 +166,7 @@ def prepare_agent_job(
     item: Item,
     ipc_dir: Path | None = None,
     plans_dir: Path | None = None,
+    target_jid: str = "",
 ) -> dict:
     """Full preparation pipeline for an agent-job Item.
 
@@ -195,7 +196,7 @@ def prepare_agent_job(
     # Step 3: Create IPC message (if ipc_dir provided)
     ipc_path = None
     if ipc_dir:
-        ipc_path = create_ipc_message(item, plan_path, ipc_dir)
+        ipc_path = create_ipc_message(item, plan_path, ipc_dir, target_jid=target_jid)
 
     hlog("nightctl", "info", "agent_job_prepared", {
         "id": item.id,

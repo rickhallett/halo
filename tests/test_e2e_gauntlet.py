@@ -815,7 +815,7 @@ class TestScenario10RetryExhaustion:
 
         item = Item.create(
             items_dir, title="Notify test", kind="job",
-            command="exit 1", retries=0,  # No retries
+            command="false", retries=0,  # No retries
         )
         item.transition("in-progress")
         item.save()
@@ -842,7 +842,7 @@ class TestScenario10RetryExhaustion:
 
         item = Item.create(
             items_dir, title="Retry exhaust", kind="job",
-            command="exit 1", retries=2,
+            command="false", retries=2,
         )
         item.transition("in-progress")
         item.save()

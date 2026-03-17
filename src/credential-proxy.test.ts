@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'http';
 import type { AddressInfo } from 'net';
 
-const mockEnv: Record<string, string> = {};
+const mockEnv = vi.hoisted(() => {
+  const env: Record<string, string> = {};
+  return env;
+});
 vi.mock('./env.js', () => ({
   readEnvFile: vi.fn(() => ({ ...mockEnv })),
 }));

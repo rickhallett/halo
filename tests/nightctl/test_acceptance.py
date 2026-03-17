@@ -531,7 +531,7 @@ class TestAC13RunRecords:
         items_dir = tmp_path / "queue" / "items"
         runs_dir = tmp_path / "queue" / "runs"
 
-        job = Item.create(items_dir, title="Fail test", kind="job", command="exit 1")
+        job = Item.create(items_dir, title="Fail test", kind="job", command="false")
         job.transition("in-progress")
         job.save()
 
