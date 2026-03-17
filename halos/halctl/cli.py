@@ -37,7 +37,7 @@ def cmd_create(args):
     print("  1. Open Telegram, message @BotFather")
     print("  2. Send /newbot and follow the prompts")
     print(f"  3. Set the bot token as {entry['telegram_bot_token_env']} in your environment")
-    print(f"  4. Start the instance: pm2 start {entry['path']}/../ecosystem.config.js")
+    print(f"  4. Start the instance: cd {entry['path']}/.. && npx pm2 start ecosystem.config.cjs")
     return 0
 
 
@@ -147,6 +147,83 @@ def cmd_fry(args):
     return 0
 
 
+def cmd_reset(args):
+    """Nuclear reset: kill container, clear all state, fresh start."""
+    from .config import load_fleet_manifest
+    from pathlib import Path
+    import subprocess
+    import shutil
+
+    manifest = load_fleet_manifest()
+    instance = None
+    for inst in manifest.get("instances", []):
+        if inst["name"] == args.name:
+            instance = inst
+            break
+
+    if instance is None:
+        print(f"ERROR: instance '{args.name}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    deploy = Path(instance["path"])
+    print(f"Resetting {args.name}...")
+
+    # 1. Kill any running containers for this instance
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "--filter", "name=nanoclaw-telegram-main", "-q"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for cid in result.stdout.strip().split("\n"):
+            if cid:
+                subprocess.run(["docker", "kill", cid], capture_output=True, timeout=5)
+                print(f"  killed container {cid[:12]}")
+    except Exception:
+        pass
+
+    # 2. Clear database
+    db_path = deploy / "store" / "messages.db"
+    if db_path.exists():
+        try:
+            subprocess.run(
+                ["sqlite3", str(db_path), "DELETE FROM messages; DELETE FROM chats; DELETE FROM sessions;"],
+                capture_output=True, timeout=5,
+            )
+            print("  cleared messages, chats, sessions")
+        except Exception as e:
+            print(f"  WARN: db clear failed: {e}", file=sys.stderr)
+
+    # 3. Wipe session files
+    sessions_dir = deploy / "data" / "sessions"
+    if sessions_dir.exists():
+        shutil.rmtree(sessions_dir)
+        print("  wiped session files")
+
+    # 4. Restart pm2
+    try:
+        subprocess.run(["npx", "pm2", "delete", f"microhal-{args.name}"],
+                        capture_output=True, timeout=10)
+    except Exception:
+        pass
+
+    eco_path = deploy.parent / "ecosystem.config.cjs"
+    if eco_path.exists():
+        result = subprocess.run(
+            ["npx", "pm2", "start", str(eco_path)],
+            capture_output=True, text=True, timeout=15, cwd=str(deploy.parent),
+        )
+        if result.returncode == 0:
+            print(f"  restarted pm2 process")
+        else:
+            print(f"  WARN: pm2 start failed: {result.stderr[:100]}", file=sys.stderr)
+    else:
+        print(f"  WARN: no ecosystem config at {eco_path}", file=sys.stderr)
+
+    hlog("halctl", "info", "instance_reset", {"name": args.name})
+    print(f"\nreset complete — {args.name} is fresh")
+    return 0
+
+
 def cmd_push(args):
     """Push code updates from prime to microHAL instance(s)."""
     if args.all:
@@ -208,6 +285,10 @@ def build_parser():
     fy.add_argument("name", help="Instance name")
     fy.add_argument("--confirm", action="store_true", help="Required for destructive operation")
 
+    # reset
+    rs = sub.add_parser("reset", help="Nuclear reset: kill container, clear state, restart")
+    rs.add_argument("name", help="Instance name")
+
     # push
     pu = sub.add_parser("push", help="Push code updates from prime")
     pu.add_argument("name", nargs="?", default=None, help="Instance name")
@@ -231,6 +312,7 @@ def main():
         "freeze": cmd_freeze,
         "fold": cmd_fold,
         "fry": cmd_fry,
+        "reset": cmd_reset,
         "push": cmd_push,
     }
 

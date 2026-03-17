@@ -232,10 +232,18 @@ def create_instance(
     ])
     _apply_lock(deploy_path, base.get("lock", []), exempt=lock_exemptions)
 
+    # Copy CLAUDE.md to group folder — the agent reads from /workspace/group,
+    # NOT /workspace/project. This is the #1 halogenesis lesson.
+    group_dir = deploy_path / "groups" / "telegram_main"
+    group_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(claude_path), str(group_dir / "CLAUDE.md"))
+
+    hlog("halctl", "info", "claude_md_copied_to_group", {"name": name})
+
     # Generate pm2 ecosystem config
     token_env = f"MICROHAL_{name.upper()}_BOT_TOKEN"
     eco_content = _generate_ecosystem_config(name, deploy_path, token_env)
-    eco_path = base_dir / f"microhal-{name}" / "ecosystem.config.js"
+    eco_path = base_dir / f"microhal-{name}" / "ecosystem.config.cjs"
     eco_path.write_text(eco_content)
 
     # Register in fleet manifest

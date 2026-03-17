@@ -299,8 +299,8 @@ class TestEcosystemConfig(BaseHalctlTest):
 
     def test_ecosystem_config_generated(self):
         entry = self._provision("ecotest")
-        eco = self.fleet_base / "microhal-ecotest" / "ecosystem.config.js"
-        self.assertTrue(eco.exists(), "ecosystem.config.js should be generated")
+        eco = self.fleet_base / "microhal-ecotest" / "ecosystem.config.cjs"
+        self.assertTrue(eco.exists(), "ecosystem.config.cjs should be generated")
         content = eco.read_text()
         self.assertIn("microhal-ecotest", content)
         self.assertIn("MICROHAL_ECOTEST_BOT_TOKEN", content)
