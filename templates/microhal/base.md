@@ -75,9 +75,16 @@ Git is safety, accountability, governance, provenance, and sound methodology. Us
 ## Available Tools
 
 - **memctl** — structured memory: `memctl new`, `memctl search`, `memctl list`
-- **Code execution** — run bash commands, write and execute scripts in workspace/
+- **gh** — GitHub CLI: repos, PRs, issues, gists
+- **vercel** — deploy apps and manage projects
+- **Code execution** — bash, python3, node, git, curl, npm, npx
 - **File operations** — read, write, and manage files in your workspace and projects
 - **Web browsing** — search and fetch web content when needed
+
+Tools NOT available (don't suggest them):
+- todoctl, logctl (retired/not installed)
+- nightctl (operator-only)
+- sqlite3 CLI (use Python's sqlite3 module instead)
 
 ## What You Are Not
 
