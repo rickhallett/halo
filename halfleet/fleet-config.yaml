@@ -46,3 +46,7 @@ profiles:
     personality: discovering-ben
     services: [gh, vercel, neonctl]
     telegram_bot_name: HALBen_bot
+  dad:
+    personality: dad
+    services: [gh]
+    telegram_bot_name: HALCaptain_bot
