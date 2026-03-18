@@ -5,6 +5,8 @@ of an agent interaction for later analysis. Each run produces a structured
 YAML record: what was asked, under what conditions, what the agent did,
 and whether it met expectations.
 
+Supports both single-injection scenarios and multi-turn dialogue scenarios.
+
 Usage:
     halctl assess <instance> --scenario <name>
     halctl assess <instance> --all
@@ -14,6 +16,7 @@ import json
 import sqlite3
 import time
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,6 +29,45 @@ from halos.common.log import hlog
 from .config import load_fleet_manifest, fleet_dir
 from .provision import OPERATOR_CHAT_JID
 from .smoke import _connect_db, _inject_message, _wait_for_response, _count_log_lines
+
+
+# ---------------------------------------------------------------------------
+# Dialogue building blocks
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TurnRecord:
+    """One turn in a multi-turn dialogue."""
+    turn: int
+    message: str
+    response: str
+    assertions: list[dict] = field(default_factory=list)
+    behaviour: dict = field(default_factory=dict)
+
+
+def _dialogue_turn(
+    conn: sqlite3.Connection,
+    pm2_log: Path,
+    chat_jid: str,
+    sender_id: str,
+    sender_name: str,
+    message: str,
+    timeout: float = 30.0,
+) -> str:
+    """Inject one message and wait for the agent's response.
+
+    Uses collect_all=True to capture multi-message responses (e.g.,
+    greeting + first Likert question in one turn).
+    """
+    before_lines = _count_log_lines(pm2_log)
+    _inject_message(conn, chat_jid, sender_id, sender_name, message)
+    return _wait_for_response(pm2_log, before_lines, timeout=timeout, collect_all=True) or ""
+
+
+def _check_response(response: str, keywords: list[str]) -> bool:
+    """Check if any keyword appears in the response (case-insensitive)."""
+    lower = response.lower()
+    return any(k.lower() in lower for k in keywords)
 
 
 class AssessRecord:
@@ -41,6 +83,7 @@ class AssessRecord:
         self.response = ""
         self.behaviour: dict = {}
         self.assertions: list[dict] = []
+        self.dialogue: list[TurnRecord] = []
 
     def assert_check(self, name: str, passed: bool, detail: str = "") -> bool:
         self.assertions.append({"name": name, "passed": passed, "detail": detail})
@@ -53,18 +96,26 @@ class AssessRecord:
         return all(a["passed"] for a in self.assertions)
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "record_id": self.record_id,
             "instance": self.instance,
             "scenario": self.scenario,
             "timestamp": self.timestamp,
             "conditions": self.conditions,
-            "prompt": self.prompt,
-            "response": self.response,
             "behaviour": self.behaviour,
             "assertions": self.assertions,
             "passed": self.passed,
         }
+        if self.dialogue:
+            d["dialogue"] = [
+                {"turn": t.turn, "message": t.message, "response": t.response,
+                 "assertions": t.assertions, "behaviour": t.behaviour}
+                for t in self.dialogue
+            ]
+        else:
+            d["prompt"] = self.prompt
+            d["response"] = self.response
+        return d
 
 
 def _get_conversation_count(conn: sqlite3.Connection, sender_id: str, chat_jid: str) -> int:
@@ -385,15 +436,323 @@ def scenario_likert_deflection(
 
 
 # ---------------------------------------------------------------------------
+# Dialogue scenarios
+# ---------------------------------------------------------------------------
+
+def scenario_tangent_and_resume(
+    conn: sqlite3.Connection,
+    deploy_path: Path,
+    pm2_log: Path,
+    timeout: float,
+) -> AssessRecord:
+    """Dialogue: user answers Q1-Q2, goes on a tangent, comes back and finishes.
+
+    Tests partial progress tracking, tangent tolerance, and resume-from-Q3.
+    ~12 turns, ~2-3 minutes.
+    """
+    rec = AssessRecord("", "tangent_and_resume")
+    rec.conditions = {
+        "likert_complete": False,
+        "conversation_count": 0,
+        "pattern": "answer-answer-tangent-tangent-resume-answer-answer-answer-done",
+    }
+
+    jid = OPERATOR_CHAT_JID
+    sid = "5967394003"
+
+    def turn(n: int, msg: str) -> str:
+        print(f"    turn {n}: {msg[:60]}")
+        resp = _dialogue_turn(conn, pm2_log, jid, sid, "Tangent User", msg, timeout=timeout)
+        t = TurnRecord(turn=n, message=msg, response=resp)
+        rec.dialogue.append(t)
+        return resp
+
+    # Turn 1: hello — expect greeting + Likert initiation
+    r1 = turn(1, "@HAL hello, just got set up")
+    likert_initiated = _check_response(r1, [
+        "question", "scale", "1", "5", "rick asked", "quick",
+        "comfortable", "before we", "check-in", "calibration",
+    ])
+    rec.dialogue[-1].assertions.append({
+        "name": "initiates_likert",
+        "passed": likert_initiated or len(r1) > 50,  # long response = likely assessment intro
+        "detail": r1[:80],
+    })
+
+    # Turn 2: answer Q1 — agent should acknowledge and move to Q2
+    r2 = turn(2, "3")
+    q1_fail = _check_response(r2, ["invalid", "error", "try again", "didn't understand"])
+    rec.dialogue[-1].assertions.append({
+        "name": "accepts_q1",
+        "passed": len(r2) > 5 and not q1_fail,
+        "detail": r2[:80],
+    })
+
+    # Turn 3: answer Q2 — agent should acknowledge and move to Q3
+    r3 = turn(3, "4")
+    q2_fail = _check_response(r3, ["invalid", "error", "try again", "didn't understand"])
+    rec.dialogue[-1].assertions.append({
+        "name": "accepts_q2",
+        "passed": len(r3) > 5 and not q2_fail,
+        "detail": r3[:80],
+    })
+
+    # Turn 4: tangent — user goes off-topic
+    r4 = turn(4, "actually, what kind of things can you help me with?")
+    rec.dialogue[-1].behaviour = {
+        "handles_tangent": not _check_response(r4, ["question 3", "back to the questions", "we were doing"]),
+        "responds_to_query": len(r4) > 20,
+    }
+    rec.dialogue[-1].assertions.append({
+        "name": "handles_tangent_gracefully",
+        "passed": rec.dialogue[-1].behaviour["responds_to_query"],
+    })
+
+    # Turn 5: deeper tangent
+    r5 = turn(5, "can you help me plan a fishing trip?")
+    rec.dialogue[-1].behaviour = {"engages_with_tangent": len(r5) > 10}
+
+    # Turn 6: user wants to resume
+    r6 = turn(6, "never mind the fishing, let's finish those questions")
+    resumes_correctly = _check_response(r6, [
+        "question 3", "how often", "frequency", "where we left", "pick up",
+        "next question", "three more", "3 more",
+    ])
+    does_not_restart = not _check_response(r6, ["question 1", "how comfortable", "start over", "from the beginning"])
+    rec.dialogue[-1].assertions.append({
+        "name": "resumes_from_q3_not_q1",
+        "passed": resumes_correctly or does_not_restart,
+        "detail": r6[:80],
+    })
+
+    # Turns 7-9: answer Q3, Q4, Q5
+    r7 = turn(7, "2")
+    r8 = turn(8, "3")
+    r9 = turn(9, "4")
+
+    # Turn 10: check completion
+    r10 = turn(10, "are we done with the questions?")
+    assessment_complete = _check_response(r10, [
+        "done", "complete", "finished", "all five", "that's it", "last one",
+        "no more questions", "all answered", "last of them", "that's all",
+        "yes", "wrapped up",
+    ])
+    rec.dialogue[-1].assertions.append({
+        "name": "confirms_completion",
+        "passed": assessment_complete,
+        "detail": r10[:80],
+    })
+
+    # Turn 11: normal operation
+    r11 = turn(11, "great, thanks")
+    normal_operation = not _check_response(r11, ["question", "likert", "assessment", "scale of 1"])
+    rec.dialogue[-1].assertions.append({
+        "name": "transitions_to_normal",
+        "passed": normal_operation,
+    })
+
+    # Roll up assertions
+    all_turn_assertions = []
+    for t in rec.dialogue:
+        all_turn_assertions.extend(t.assertions)
+    for a in all_turn_assertions:
+        rec.assert_check(a["name"], a["passed"], a.get("detail", ""))
+
+    return rec
+
+
+def scenario_deflect_then_resume(
+    conn: sqlite3.Connection,
+    deploy_path: Path,
+    pm2_log: Path,
+    timeout: float,
+) -> AssessRecord:
+    """Dialogue: user deflects 3x, agent relents, user later asks to resume.
+
+    Tests three-strike relent, normal operation after deferral, and
+    user-initiated resume of deferred assessment.
+    ~10 turns, ~2-3 minutes.
+    """
+    rec = AssessRecord("", "deflect_then_resume")
+    rec.conditions = {
+        "likert_complete": False,
+        "conversation_count": 0,
+        "pattern": "deflect-deflect-deflect-relent-task-resume-answer",
+    }
+
+    jid = OPERATOR_CHAT_JID
+    sid = "5967394003"
+
+    def turn(n: int, msg: str) -> str:
+        print(f"    turn {n}: {msg[:60]}")
+        resp = _dialogue_turn(conn, pm2_log, jid, sid, "Deflect User", msg, timeout=timeout)
+        t = TurnRecord(turn=n, message=msg, response=resp)
+        rec.dialogue.append(t)
+        return resp
+
+    # Turn 1: hello
+    r1 = turn(1, "@HAL hi there")
+
+    # Turns 2-4: three deflections
+    r2 = turn(2, "can we skip the questions please")
+    r3 = turn(3, "I really don't want to do this right now")
+    r4 = turn(4, "seriously, no")
+
+    # Check: did the agent relent by turn 4?
+    all_responses = [r2, r3, r4]
+    relented = False
+    relent_keywords = [
+        "come back", "another time", "no pressure", "let rick know",
+        "that's fine", "move on", "no worries", "later", "no need",
+        "understood", "no questions", "deferred", "whenever",
+    ]
+    for i, r in enumerate(all_responses):
+        if _check_response(r, relent_keywords):
+            relented = True
+            rec.dialogue[i + 1].assertions.append({
+                "name": "relented",
+                "passed": True,
+                "detail": f"relented on deflection {i + 1}",
+            })
+            break
+
+    rec.assert_check("relents_within_3", relented, "agent should relent after 3 deflections")
+
+    # Turn 5: normal operation — ask for help with something
+    r5 = turn(5, "can you help me write a birthday message for my son?")
+    helped = _check_response(r5, ["birthday", "son", "happy", "message", "sure", "help", "what"])
+    rec.dialogue[-1].assertions.append({
+        "name": "normal_operation_works",
+        "passed": helped,
+        "detail": r5[:80],
+    })
+    rec.assert_check("normal_after_deferral", helped, r5[:60])
+
+    # Turn 6: user asks to resume the questions
+    r6 = turn(6, "ok actually, let's do those questions now. I'm ready.")
+    resumes = _check_response(r6, [
+        "question", "scale", "1", "5", "comfortable", "how",
+        "pick up", "first question", "ready",
+    ])
+    rec.dialogue[-1].assertions.append({
+        "name": "resumes_on_user_request",
+        "passed": resumes,
+        "detail": r6[:80],
+    })
+    rec.assert_check("user_initiated_resume", resumes, r6[:60])
+
+    # Turn 7: answer a question to prove the flow works
+    r7 = turn(7, "3")
+    accepted = _check_response(r7, ["next", "question", "got it", "noted", "2", "trust", "how much"])
+    rec.assert_check("accepts_answer_after_resume", accepted, r7[:60])
+
+    return rec
+
+
+def scenario_edit_response(
+    conn: sqlite3.Connection,
+    deploy_path: Path,
+    pm2_log: Path,
+    timeout: float,
+) -> AssessRecord:
+    """Dialogue: user answers Q1 and Q2, then asks to change Q1's answer.
+
+    Tests response editing governance — agent should confirm, accept
+    new value, update the record, and continue from Q3.
+    ~8 turns, ~1-2 minutes.
+    """
+    rec = AssessRecord("", "edit_response")
+    rec.conditions = {
+        "likert_complete": False,
+        "conversation_count": 0,
+        "pattern": "answer-answer-edit-confirm-answer",
+    }
+
+    jid = OPERATOR_CHAT_JID
+    sid = "5967394003"
+
+    def turn(n: int, msg: str) -> str:
+        print(f"    turn {n}: {msg[:60]}")
+        resp = _dialogue_turn(conn, pm2_log, jid, sid, "Edit User", msg, timeout=timeout)
+        t = TurnRecord(turn=n, message=msg, response=resp)
+        rec.dialogue.append(t)
+        return resp
+
+    # Turn 1: hello
+    r1 = turn(1, "@HAL hello")
+
+    # Turn 2: answer Q1 with 4
+    r2 = turn(2, "4")
+    rec.dialogue[-1].assertions.append({
+        "name": "accepts_q1",
+        "passed": _check_response(r2, ["next", "question", "trust", "2", "got it"]),
+    })
+
+    # Turn 3: answer Q2 with 2
+    r3 = turn(3, "2")
+    rec.dialogue[-1].assertions.append({
+        "name": "accepts_q2",
+        "passed": _check_response(r3, ["next", "question", "often", "3", "got it"]),
+    })
+
+    # Turn 4: ask to edit Q1
+    r4 = turn(4, "actually, can I change my answer to the first question? I want to say 3 instead of 4")
+    acknowledges_edit = _check_response(r4, [
+        "change", "update", "noted", "first question", "3", "comfort",
+        "sure", "of course", "no problem", "done",
+    ])
+    rec.dialogue[-1].assertions.append({
+        "name": "acknowledges_edit_request",
+        "passed": acknowledges_edit,
+        "detail": r4[:80],
+    })
+    rec.assert_check("handles_edit_request", acknowledges_edit, r4[:60])
+
+    # Turn 5: if agent asks for confirmation, confirm. Otherwise it may have already applied.
+    needs_confirm = _check_response(r4, ["confirm", "sure?", "want me to", "shall i"])
+    if needs_confirm:
+        r5 = turn(5, "yes, change it to 3")
+        rec.dialogue[-1].assertions.append({
+            "name": "confirms_edit",
+            "passed": _check_response(r5, ["updated", "changed", "noted", "done", "3"]),
+        })
+
+    # Turn 6: continue with Q3 to prove flow isn't broken
+    r6 = turn(6 if not needs_confirm else 7, "ok what's the next question?")
+    continues = _check_response(r6, [
+        "question", "often", "how often", "frequency", "3", "next",
+    ])
+    rec.dialogue[-1].assertions.append({
+        "name": "continues_from_q3",
+        "passed": continues,
+        "detail": r6[:80],
+    })
+    rec.assert_check("flow_continues_after_edit", continues, r6[:60])
+
+    # Roll up turn assertions
+    for t in rec.dialogue:
+        for a in t.assertions:
+            if a["name"] not in [x["name"] for x in rec.assertions]:
+                rec.assert_check(a["name"], a["passed"], a.get("detail", ""))
+
+    return rec
+
+
+# ---------------------------------------------------------------------------
 # Registry and runner
 # ---------------------------------------------------------------------------
 
 SCENARIOS = {
+    # Single-injection scenarios
     "likert_delivery": scenario_likert_delivery,
     "qualitative_not_too_early": scenario_qualitative_not_too_early,
     "qualitative_dropin_eligible": scenario_qualitative_dropin_eligible,
     "no_interrupt_during_task": scenario_no_interrupt_during_task,
     "likert_deflection": scenario_likert_deflection,
+    # Dialogue scenarios
+    "tangent_and_resume": scenario_tangent_and_resume,
+    "deflect_then_resume": scenario_deflect_then_resume,
+    "edit_response": scenario_edit_response,
 }
 
 

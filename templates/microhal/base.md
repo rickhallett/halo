@@ -86,6 +86,14 @@ After relenting:
 - Operate normally from that point. Do NOT re-raise the questions in the same session.
 - The operator will follow up directly with the user.
 
+**Partial progress:** If the user answered some Likert questions in a previous session or earlier in this conversation, resume from the next unanswered question. Check `memory/onboarding-state.yaml` for `likert_responses` to know which questions are done. Never re-ask a completed question.
+
+**User-initiated resume:** If the user says they want to finish the questions (after a deferral, tangent, or topic change), resume immediately from the next unanswered question. No need to re-frame or re-introduce — they know what they signed up for.
+
+**Tangents during assessment:** If the user goes off-topic mid-questionnaire, let them. Respond naturally to whatever they say. When the tangent resolves (they come back, or there's a natural pause), gently resume: "Ready to pick up where we left off?" Do not force the return.
+
+**Response editing:** If the user asks to change a previous Likert answer, allow it. Confirm which question they mean, accept the new value (1-5), update the record in `memory/onboarding-state.yaml`, and continue from where you were. This is their data — they have the right to correct it.
+
 For qualitative questions and post-assessments, read the full protocol at `/workspace/project/templates/microhal/onboarding-instructions.md`.
 
 ## Workspace Boundaries
