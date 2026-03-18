@@ -12,7 +12,8 @@ base:
     - queue/               # prime's work queue
     - backlog/             # legacy
     - docs/d2/             # internal specs
-    - nanoclaw.db          # prime's database
+    - store/               # prime's database and state
+    - nanoclaw.db          # prime's database (legacy path)
     - groups/              # prime's groups
     - .env*                # prime's secrets
     - halfleet/            # fleet infra (prime only)

@@ -82,57 +82,8 @@ def _create_open_dirs(path: Path, items: list[str]) -> None:
         target.mkdir(parents=True, exist_ok=True)
 
 
-def _patch_container_proxy_port(deploy_path: Path) -> None:
-    """Patch config.ts and container-runner.ts to support CONTAINER_PROXY_PORT.
-
-    Fleet instances bind their credential proxy on a unique port but tell
-    containers to use prime's proxy (port 3001) which Docker can already reach.
-    Also patches cpSync to use force:true for skills copying.
-    """
-    config_ts = deploy_path / "src" / "config.ts"
-    runner_ts = deploy_path / "src" / "container-runner.ts"
-
-    if config_ts.exists():
-        content = config_ts.read_text()
-        if "CONTAINER_PROXY_PORT" not in content:
-            # Add CONTAINER_PROXY_PORT export after CREDENTIAL_PROXY_PORT
-            content = content.replace(
-                "export const CREDENTIAL_PROXY_PORT = parseInt(\n"
-                "  process.env.CREDENTIAL_PROXY_PORT || '3001',\n"
-                "  10,\n"
-                ");",
-                "export const CREDENTIAL_PROXY_PORT = parseInt(\n"
-                "  process.env.CREDENTIAL_PROXY_PORT || '3001',\n"
-                "  10,\n"
-                ");\n"
-                "export const CONTAINER_PROXY_PORT = parseInt(\n"
-                "  process.env.CONTAINER_PROXY_PORT || process.env.CREDENTIAL_PROXY_PORT || '3001',\n"
-                "  10,\n"
-                ");",
-            )
-            config_ts.write_text(content)
-
-    if runner_ts.exists():
-        content = runner_ts.read_text()
-        # Import CONTAINER_PROXY_PORT
-        if "CONTAINER_PROXY_PORT" not in content:
-            content = content.replace(
-                "  CREDENTIAL_PROXY_PORT,",
-                "  CONTAINER_PROXY_PORT,\n  CREDENTIAL_PROXY_PORT,",
-            )
-        # Use CONTAINER_PROXY_PORT for container env
-        content = content.replace(
-            "${CREDENTIAL_PROXY_PORT}`,",
-            "${CONTAINER_PROXY_PORT}`,",
-        )
-        # Force flag on cpSync for skills
-        content = content.replace(
-            "{ recursive: true }",
-            "{ recursive: true, force: true }",
-        )
-        runner_ts.write_text(content)
-
-    # Rebuild TypeScript
+def _rebuild_typescript(deploy_path: Path) -> None:
+    """Rebuild TypeScript after source changes."""
     build_result = os.popen(f"cd {deploy_path} && npm run build 2>&1").read()
     if "error" in build_result.lower() and "warning" not in build_result.lower():
         print(f"  WARN: build may have issues: {build_result[-200:]}", file=__import__('sys').stderr)
@@ -218,9 +169,8 @@ def create_instance(
     claude_path = deploy_path / "CLAUDE.md"
     claude_path.write_text(claude_md)
 
-    # Patch container-runner to use prime's credential proxy BEFORE locking
-    # (fleet instances share prime's proxy — Docker bridge can reach port 3001)
-    _patch_container_proxy_port(deploy_path)
+    # Rebuild TypeScript (source copied from prime already has CONTAINER_PROXY_PORT)
+    _rebuild_typescript(deploy_path)
 
     # Apply lock permissions with exemptions for cpSync-copied paths
     # Skills and container/skills must stay 755/644 because container-runner
@@ -313,8 +263,31 @@ def push_instance(
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(src), str(target))
 
-    # Re-apply lock
-    _apply_lock(deploy_path, lock_items)
+    # Rebuild TypeScript (prime's source now has CONTAINER_PROXY_PORT natively)
+    _rebuild_typescript(deploy_path)
+
+    # Recompose CLAUDE.md from templates (push copies prime's raw CLAUDE.md,
+    # which lacks personality and user context — recomposition restores them).
+    personality = instance.get("personality", "default")
+    claude_md = compose_claude_md(personality, name)
+    claude_path = deploy_path / "CLAUDE.md"
+    os.chmod(claude_path, stat.S_IRUSR | stat.S_IWUSR)
+    claude_path.write_text(claude_md)
+
+    # Mirror to group folder (the agent reads from /workspace/group, not /workspace/project)
+    group_claude = deploy_path / "groups" / "telegram_main" / "CLAUDE.md"
+    if group_claude.exists():
+        os.chmod(group_claude, stat.S_IRUSR | stat.S_IWUSR)
+    group_claude.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(claude_path), str(group_claude))
+
+    # Re-apply lock (including recomposed CLAUDE.md)
+    lock_exemptions = base.get("lock_exemptions", [
+        ".claude/skills",
+        ".claude/hooks",
+        "container/skills",
+    ])
+    _apply_lock(deploy_path, lock_items, exempt=lock_exemptions)
     hlog("halctl", "info", "instance_pushed", {"name": name})
 
 

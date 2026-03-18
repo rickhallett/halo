@@ -10,7 +10,7 @@ import {
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
-  CREDENTIAL_PROXY_PORT,
+  CONTAINER_PROXY_PORT,
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
@@ -67,13 +67,13 @@ function buildVolumeMounts(
   if (isMain) {
     // Main gets the project root read-only. Writable paths the agent needs
     // (group folder, IPC, .claude/) are mounted separately below.
-    // Read-only prevents the agent from modifying host application code
-    // (src/, dist/, package.json, etc.) which would bypass the sandbox
-    // entirely on next restart.
+    // Main group gets write access to project root (AFK sysadmin mode).
+    // Non-main groups stay read-only to prevent sandbox escape.
+    // Credentials are still protected by the .env shadow below.
     mounts.push({
       hostPath: projectRoot,
       containerPath: '/workspace/project',
-      readonly: true,
+      readonly: !isMain,
     });
 
     // Shadow .env so the agent cannot read secrets from the mounted project root.
@@ -121,6 +121,18 @@ function buildVolumeMounts(
         containerPath: '/workspace/global',
         readonly: true,
       });
+    }
+
+    // Fleet visibility: main group can inspect all microHAL deployments (read-only).
+    if (isMain) {
+      const fleetDir = path.join(path.dirname(projectRoot), 'halfleet');
+      if (fs.existsSync(fleetDir)) {
+        mounts.push({
+          hostPath: fleetDir,
+          containerPath: '/workspace/fleet',
+          readonly: true,
+        });
+      }
     }
 
     // Memory directory — writable so non-main agents can also write notes.
@@ -238,7 +250,10 @@ function buildVolumeMounts(
       ? fs.readFileSync(groupVersionFile, 'utf-8').trim()
       : '';
 
-    if (!fs.existsSync(groupAgentRunnerDir) || canonicalVersion !== groupVersion) {
+    if (
+      !fs.existsSync(groupAgentRunnerDir) ||
+      canonicalVersion !== groupVersion
+    ) {
       fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
     }
   }
@@ -273,7 +288,7 @@ function buildContainerArgs(
   // Route API traffic through the credential proxy (containers never see real secrets)
   args.push(
     '-e',
-    `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CREDENTIAL_PROXY_PORT}`,
+    `ANTHROPIC_BASE_URL=http://${CONTAINER_HOST_GATEWAY}:${CONTAINER_PROXY_PORT}`,
   );
 
   // Mirror the host's auth method with a placeholder value.
