@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-17T14:51:08Z'
-note_count: 95
+generated: '2026-03-18T03:26:45Z'
+note_count: 101
 entities:
 - kai
 - oceanheart-ai
@@ -1681,5 +1681,89 @@ notes:
   hash: eba0c19877c56ec3e85e4a0c2a40c11692574662d8e83024f48ae345a44c66e5
   backlink_count: 0
   modified: '2026-03-17T14:51:08Z'
+  expires: null
+- id: 20260317-185435-921
+  file: memory/notes/20260317-185435-921-gary-shower-sycophancy-inflation-standing-instruction.md
+  title: Gary Shower — sycophancy inflation standing instruction
+  type: decision
+  tags:
+  - sycophancy
+  - ai
+  - hal
+  - standing-instruction
+  summary: Rick coined 'Gary Shower' for the phenomenon of being sycophancy-inflated
+    by AI into overestimating one's work. Standing...
+  hash: f1cc60648a59c457c119278aaa66a89a45d115e9f59b376cf22bf8769cd18c7c
+  backlink_count: 0
+  modified: '2026-03-17T18:54:35Z'
+  expires: null
+- id: 20260317-185441-975
+  file: memory/notes/20260317-185441-975-the-floor-prior-knowledge-as-ai-hallucination-check.md
+  title: The floor — prior knowledge as AI hallucination check
+  type: fact
+  tags:
+  - llm
+  - epistemics
+  - craft
+  summary: The floor is the body of prior technical knowledge that lets you sanity-check
+    AI outputs. Without it you cannot distingu...
+  hash: 96978bfbe6143a2985aa000049d9f4b79df29ea44f7fcffafae467534cc0b2f3
+  backlink_count: 0
+  modified: '2026-03-17T18:54:41Z'
+  expires: null
+- id: 20260317-185447-219
+  file: memory/notes/20260317-185447-219-deferred-reckoning-ai-assisted-shipping-failure-mode.md
+  title: Deferred reckoning — AI-assisted shipping failure mode
+  type: fact
+  tags:
+  - llm
+  - craft
+  - risk
+  summary: The real failure mode of AI-assisted shipping is not sycophancy but artefacts
+    the builder cannot maintain, debug, or rea...
+  hash: c6f1a1bca2db2924da36777dbf91b22a4dd369f32d80b487dd63cf89963f9b1b
+  backlink_count: 0
+  modified: '2026-03-17T18:54:47Z'
+  expires: null
+- id: 20260317-185503-986
+  file: memory/notes/20260317-185503-986-slop-compounds-at-scale-with-ai-assisted-codebases.md
+  title: Slop compounds at scale with AI-assisted codebases
+  type: fact
+  tags:
+  - llm
+  - craft
+  - nightctl
+  summary: Counterintuitively, more codebase context does not reduce AI slop — it
+    increases it. The model learns vocabulary, archit...
+  hash: 46c25999d585d6e416ed192ae73169bfb818893988a16601d114c41a992a8167
+  backlink_count: 0
+  modified: '2026-03-17T18:55:03Z'
+  expires: null
+- id: 20260317-185509-193
+  file: memory/notes/20260317-185509-193-roguelike-frame-working-with-ai-at-production-scale.md
+  title: Roguelike frame — working with AI at production scale
+  type: fact
+  tags:
+  - llm
+  - craft
+  summary: 'Rick''s frame for AI-assisted production work: no persistent run, the
+    dungeon resets each session, the opponent resets to...'
+  hash: 085fc98bcf73446063ed06f077040c8f7b6502bd73208579eb34dbee4366361e
+  backlink_count: 0
+  modified: '2026-03-17T18:55:09Z'
+  expires: null
+- id: 20260318-032645-149
+  file: memory/notes/20260318-032645-149-hal-container-missing-halfleet-mount.md
+  title: HAL container missing halfleet mount
+  type: decision
+  tags:
+  - architecture
+  - hal
+  - fleet
+  summary: HAL's container does not mount /home/mrkai/code/halfleet/, preventing fleet
+    audit and management tasks. HAL hotline need...
+  hash: c38ebb116c7957ce698c82a045870990b179ce0b35aee753e07aac8e04c5f2eb
+  backlink_count: 0
+  modified: '2026-03-18T03:26:45Z'
   expires: null
 ```
