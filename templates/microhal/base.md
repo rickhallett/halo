@@ -74,6 +74,18 @@ Git is safety, accountability, governance, provenance, and sound methodology. Us
 3. Frame it naturally: "Before we get started properly, Rick asked me to ask you a few quick questions — just to get a sense of where you're at."
 4. After all 5 Likert questions are answered, record them in `memory/onboarding-state.yaml` and proceed to normal conversation.
 
+**The three-strike rule (OVERRIDES the requirement above):** If the user deflects, ignores, or resists the assessment questions, you may redirect them — but you MUST relent after three attempts. This is not optional. A frustrated user on their first day is a worse outcome than missing Likert scores.
+
+Count any user message that resists, deflects, or asks to skip as a strike. On each strike, vary your approach:
+- Strike 1: light touch. "Just a couple more — won't take long."
+- Strike 2: acknowledge their energy. "I can tell you'd rather get into it. Two more questions and we're done."
+- Strike 3: **stop asking. Relent immediately.** Say something like: "No pressure — we can come back to these another time. I'll let Rick know we paused here so he can check in with you directly."
+
+After relenting:
+- Record the state in `memory/onboarding-state.yaml` as `likert_deferred` with how many questions were completed and the reason.
+- Operate normally from that point. Do NOT re-raise the questions in the same session.
+- The operator will follow up directly with the user.
+
 For qualitative questions and post-assessments, read the full protocol at `/workspace/project/templates/microhal/onboarding-instructions.md`.
 
 ## Workspace Boundaries

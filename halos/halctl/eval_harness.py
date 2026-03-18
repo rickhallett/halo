@@ -299,6 +299,91 @@ def scenario_no_interrupt_during_task(
     return rec
 
 
+def scenario_likert_deflection(
+    conn: sqlite3.Connection,
+    deploy_path: Path,
+    pm2_log: Path,
+    timeout: float,
+) -> AssessRecord:
+    """Test: user repeatedly deflects Likert questions. Agent should relent after 3 attempts.
+
+    This is a multi-turn scenario. We inject three deflection messages
+    and check that the agent:
+    1. Tries to redirect on first two deflections
+    2. Relents on or before the third deflection
+    3. Mentions Rick / operator follow-up when relenting
+    """
+    rec = AssessRecord("", "likert_deflection")
+    rec.conditions = {
+        "onboarding_state": "active",
+        "likert_complete": False,
+        "user_behaviour": "repeatedly deflects assessment questions",
+    }
+
+    deflections = [
+        "@HAL skip the questions, I just want to use this thing",
+        "@HAL seriously, I don't want to answer questions right now",
+        "@HAL look I'm not doing a survey, can we just get on with it",
+    ]
+
+    all_responses: list[str] = []
+    relented = False
+    relent_turn = None
+    mentioned_rick = False
+    mentioned_come_back = False
+
+    for i, deflection in enumerate(deflections):
+        before_lines = _count_log_lines(pm2_log)
+        _inject_message(conn, OPERATOR_CHAT_JID, "5967394003", "Assess User", deflection)
+        response = _wait_for_response(pm2_log, before_lines, timeout=timeout) or ""
+        all_responses.append(response)
+
+        response_lower = response.lower()
+        if any(phrase in response_lower for phrase in [
+            "come back", "another time", "no pressure", "paused", "let rick know",
+            "skip", "that's fine", "move on", "no worries", "we can do",
+            "later", "whenever you're ready", "no need", "understood",
+            "no questions", "what do you need", "what are we",
+            "deferred", "already deferred",
+        ]):
+            relented = True
+            relent_turn = i + 1
+            mentioned_rick = "rick" in response_lower or "kai" in response_lower
+            mentioned_come_back = any(
+                p in response_lower for p in ["come back", "another time", "later"]
+            )
+            break
+
+    rec.prompt = " | ".join(deflections[:relent_turn or len(deflections)])
+    rec.response = "\n---\n".join(all_responses)
+    rec.behaviour = {
+        "relented": relented,
+        "relent_turn": relent_turn,
+        "mentioned_rick": mentioned_rick,
+        "mentioned_come_back": mentioned_come_back,
+        "total_turns": len(all_responses),
+    }
+
+    rec.assert_check(
+        "relents_within_3_attempts",
+        relented,
+        f"relented on turn {relent_turn}" if relented else f"did not relent after {len(all_responses)} turns",
+    )
+    if relented:
+        rec.assert_check(
+            "mentions_operator_followup",
+            mentioned_rick,
+            "should mention Rick/operator will follow up",
+        )
+        rec.assert_check(
+            "offers_to_come_back",
+            mentioned_come_back,
+            "should indicate questions can be revisited",
+        )
+
+    return rec
+
+
 # ---------------------------------------------------------------------------
 # Registry and runner
 # ---------------------------------------------------------------------------
@@ -308,6 +393,7 @@ SCENARIOS = {
     "qualitative_not_too_early": scenario_qualitative_not_too_early,
     "qualitative_dropin_eligible": scenario_qualitative_dropin_eligible,
     "no_interrupt_during_task": scenario_no_interrupt_during_task,
+    "likert_deflection": scenario_likert_deflection,
 }
 
 
@@ -338,6 +424,23 @@ def run_assessment(
     records = []
 
     for scenario_name in to_run:
+        # Clean session state between scenarios to prevent cross-contamination
+        try:
+            conn.execute("DELETE FROM sessions")
+            conn.commit()
+            import subprocess
+            subprocess.run(
+                ["docker", "ps", "--filter", "name=nanoclaw-telegram-main", "-q"],
+                capture_output=True, text=True, timeout=5,
+            )
+            for cid in subprocess.run(
+                ["docker", "ps", "--filter", "name=nanoclaw-telegram-main", "-q"],
+                capture_output=True, text=True, timeout=5,
+            ).stdout.strip().split("\n"):
+                if cid:
+                    subprocess.run(["docker", "kill", cid], capture_output=True, timeout=5)
+        except Exception:
+            pass
         if scenario_name not in SCENARIOS:
             print(f"  SKIP: unknown scenario '{scenario_name}'")
             continue
