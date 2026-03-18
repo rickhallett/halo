@@ -104,6 +104,89 @@ def discover_sources(
     return sources
 
 
+def read_fleet_conversations(
+    instance_filter: Optional[str] = None,
+    limit: int = 50,
+) -> list[dict]:
+    """Read user→agent message pairs from fleet SQLite databases.
+
+    Returns list of dicts sorted by timestamp:
+    {instance, timestamp, user_name, user_message, agent_response}
+    """
+    import sqlite3
+
+    pairs: list[dict] = []
+    import re
+    ansi_re = re.compile(r"\x1b\[[0-9;]*m")
+    agent_output_re = re.compile(r"Agent output: (.+)")
+
+    for inst in _fleet_manifest():
+        name = inst["name"]
+        if instance_filter and name != instance_filter:
+            continue
+
+        deploy = Path(inst["path"])
+        db = _db_path(deploy)
+        if not db.exists():
+            continue
+
+        # User messages from SQLite
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(db))
+            user_msgs = conn.execute(
+                """SELECT sender_name, content, timestamp FROM messages
+                   WHERE is_from_me = 0 ORDER BY timestamp ASC"""
+            ).fetchall()
+            conn.close()
+        except Exception:
+            continue
+
+        # Agent responses from pm2 logs (timestamp + "Agent output:" lines)
+        agent_responses: list[tuple[str, str]] = []  # (timestamp, text)
+        pm2 = _pm2_log_path(name)
+        if pm2.exists():
+            try:
+                timestamp_re = re.compile(r"^\[(\d{2}:\d{2}:\d{2}\.\d{3})\]")
+                lines = pm2.read_text(errors="replace").splitlines()
+                for line in lines:
+                    clean = ansi_re.sub("", line)
+                    m = agent_output_re.search(clean)
+                    if m:
+                        text = m.group(1).strip()
+                        ts_match = timestamp_re.match(clean)
+                        ts = ts_match.group(1) if ts_match else ""
+                        agent_responses.append((ts, text))
+            except Exception:
+                pass
+
+        # Pair: for each user message, find the next agent response by index
+        agent_idx = 0
+        for sender, content, ts in user_msgs:
+            pair = {
+                "instance": name,
+                "timestamp": ts,
+                "user_name": sender,
+                "user_message": content,
+                "agent_response": "",
+            }
+            # Find next agent response after this user message timestamp
+            # pm2 timestamps are HH:MM:SS.mmm, sqlite are ISO — extract time portion
+            user_time = ts.split("T")[1][:12] if "T" in ts else ts[:12]
+            while agent_idx < len(agent_responses):
+                agent_ts, agent_text = agent_responses[agent_idx]
+                if agent_ts >= user_time:
+                    pair["agent_response"] = agent_text
+                    agent_idx += 1
+                    break
+                agent_idx += 1
+            pairs.append(pair)
+
+    # Sort all pairs by timestamp across instances, take most recent
+    pairs.sort(key=lambda p: p["timestamp"])
+    return pairs[-limit:]
+
+
 def read_fleet_entries(
     instance_filter: Optional[str] = None,
     n: int = 50,

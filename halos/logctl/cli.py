@@ -41,6 +41,7 @@ def main():
     p_fleet = sub.add_parser("fleet", help="tail logs across all fleet instances")
     p_fleet.add_argument("--instance", default="", help="filter to a specific instance")
     p_fleet.add_argument("--level", default="", help="filter by level")
+    p_fleet.add_argument("--conversations", action="store_true", help="show only message pairs (user → agent)")
     p_fleet.add_argument("-n", "--lines", type=int, default=50, help="lines per source")
 
     # --- trace ---
@@ -178,11 +179,30 @@ def cmd_errors(cfg, args):
 
 
 def cmd_fleet(cfg, args):
-    from .fleet import read_fleet_entries
+    from .fleet import read_fleet_entries, read_fleet_conversations
     from .search import filter_entries
 
     instance = args.instance or None
     n = args.lines
+
+    if args.conversations:
+        pairs = read_fleet_conversations(instance_filter=instance, limit=n)
+        if args.json_out:
+            json.dump(pairs, sys.stdout, indent=2)
+            print()
+        else:
+            for p in pairs:
+                inst = p["instance"]
+                ts = p["timestamp"]
+                user = p["user_message"]
+                agent = p["agent_response"]
+                print(f"[{ts}] {inst}")
+                print(f"  USER:  {user[:120]}")
+                print(f"  AGENT: {agent[:120]}")
+                print()
+            if not pairs:
+                print("No conversations found.")
+        return
 
     entries = read_fleet_entries(instance_filter=instance, n=n)
 
