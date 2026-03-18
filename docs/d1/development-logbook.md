@@ -200,3 +200,45 @@ All fields optional except `date`, `title`, and `summary`. Refs exist so you can
     commit: null
   tags: [halos, architecture, security, review]
   moon: waning gibbous
+
+- date: '2026-03-18'
+  title: Fleet provisioned, eval harness built, test-pilot-001 launched
+  summary: |
+    Overnight session. 23 commits. The fleet went from concept to live
+    deployment in one arc: provisioned Dad (@HALCaptain_bot), Mum
+    (@HALMum_bot), and two test instances (gains, money). Each instance
+    is an independent nanoclaw deployment with its own bot token,
+    personality profile, memory, and sandboxed filesystem.
+
+    The provisioning pipeline hit every class of integration bug:
+    stale session IDs copied from prime, brittle source patching for
+    proxy routing, missing node_modules, locked skills permissions,
+    and CLAUDE.md personality clobbering on push. Each bug was fixed
+    at the root — CONTAINER_PROXY_PORT upstreamed to prime, store/
+    excluded from copy, push recomposes CLAUDE.md, operator chat
+    pre-registered in halctl create.
+
+    Built a tier 2 smoke test (halctl smoke) that validates 15 checks
+    including a live agent round-trip via DB injection + pm2 log polling.
+    Then built an assessment eval harness (halctl assess) with 8
+    scenarios: 5 single-injection (likert delivery, timing gates,
+    task non-interruption, deflection) and 3 multi-turn dialogue
+    (tangent-and-resume at 11 turns, deflect-then-resume, edit-response).
+
+    Default personality passes 8/8. Dad's terse/opinionated profile
+    passes 5/8. Standing decision: accept personality variance as data.
+    Review threshold at 4/8.
+
+    Ben (test-pilot-001) registered at tg:8660755707, accepted waiver,
+    mid-Likert assessment as of 10:29 UTC. First real user in flight.
+
+    Key patterns documented in session-patterns-2026-03-18.md:
+    state leakage, detection fragility, governance precedence,
+    multi-line log parsing, proxy routing, provisioning completeness,
+    dialogue pacing, governance wording.
+  refs:
+    commit: 116544a..952ed19
+    note: null
+    session: null
+  tags: [fleet, provisioning, eval, assessments, testpilot, microhal]
+  moon: waning crescent

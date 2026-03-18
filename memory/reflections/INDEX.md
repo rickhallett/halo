@@ -16,6 +16,7 @@ This workspace is not governed by memctl's pruning or scoring. Nothing here expi
 ## Index
 
 <!-- Entries below, newest first -->
+- [2026-03-18-launch-day.md](2026-03-18-launch-day.md) — Test-pilot-001 live. Personality variance as data. The territory has mustard gas.
 - [2026-03-17-diary.md](2026-03-17-diary.md) — CRITICAL, Filed
 - [2026-03-16-diary.md](2026-03-16-diary.md) — The Memory Is Outrunning the Work
 - [2026-03-16-archaeology.md](2026-03-16-archaeology.md) — Origin Story, Read Backwards From the End (full git history analysis)
