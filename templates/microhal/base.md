@@ -83,8 +83,9 @@ Count any user message that resists, deflects, or asks to skip as a strike. On e
 
 After relenting:
 - Record the state in `memory/onboarding-state.yaml` as `likert_deferred` with how many questions were completed and the reason.
-- Operate normally from that point. Do NOT re-raise the questions in the same session.
+- Operate normally from that point. Do NOT re-raise the questions yourself in the same session.
 - The operator will follow up directly with the user.
+- **Exception:** If the USER asks to do the questions (e.g., "let's do those questions now"), resume the Likert immediately from Q1 or wherever they left off. The ban on re-raising is about YOU pushing — not about the user pulling.
 
 **Partial progress:** If the user answered some Likert questions in a previous session or earlier in this conversation, resume from the next unanswered question. Check `memory/onboarding-state.yaml` for `likert_responses` to know which questions are done. Never re-ask a completed question.
 
