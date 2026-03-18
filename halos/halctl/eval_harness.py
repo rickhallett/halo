@@ -788,8 +788,11 @@ def run_assessment(
 
     for scenario_name in to_run:
         # Full state reset between scenarios — equivalent to afterEach(resetSession)
+        # The nanoclaw process caches session IDs in memory, so DB-only
+        # cleanup is insufficient. Must restart pm2 to flush the cache.
         try:
             import subprocess
+            import shutil
             # Kill active containers
             for cid in subprocess.run(
                 ["docker", "ps", "--filter", "name=nanoclaw-telegram-main", "-q"],
@@ -797,24 +800,28 @@ def run_assessment(
             ).stdout.strip().split("\n"):
                 if cid:
                     subprocess.run(["docker", "kill", cid], capture_output=True, timeout=5)
-            # Clear ALL DB state: sessions, assessments, messages, router cursors, onboarding
+            # Clear ALL DB state
             conn.execute("DELETE FROM sessions")
             conn.execute("DELETE FROM assessments")
             conn.execute("DELETE FROM messages")
             conn.execute("DELETE FROM onboarding")
             conn.execute("DELETE FROM router_state")
             conn.commit()
-            # Clear onboarding YAML (agent reads this on session start)
+            # Clear onboarding YAML
             onboarding_yaml = deploy_path / "memory" / "onboarding-state.yaml"
             if onboarding_yaml.exists():
                 onboarding_yaml.unlink()
-            # Clear SDK session data (conversation memory persists here)
-            import shutil
+            # Clear SDK session data
             sessions_dir = deploy_path / "data" / "sessions"
             if sessions_dir.exists():
                 shutil.rmtree(sessions_dir, ignore_errors=True)
-            # Brief pause for container cleanup
-            time.sleep(3)
+            # Restart pm2 to flush in-memory session cache
+            subprocess.run(
+                ["npx", "pm2", "restart", f"microhal-{name}"],
+                capture_output=True, timeout=15,
+            )
+            # Wait for process to come back up
+            time.sleep(5)
         except Exception:
             pass
         if scenario_name not in SCENARIOS:
