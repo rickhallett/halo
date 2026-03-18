@@ -9,6 +9,8 @@ export interface ChannelOpts {
   onMessage: OnInboundMessage;
   onChatMetadata: OnChatMetadata;
   registeredGroups: () => Record<string, RegisteredGroup>;
+  /** Return the JIDs previously owned by the named channel (from DB). */
+  getInitialJids: (channelName: string) => string[];
 }
 
 export type ChannelFactory = (opts: ChannelOpts) => Channel | null;

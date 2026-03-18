@@ -21,6 +21,7 @@ export interface TelegramChannelOpts {
   onMessage: OnInboundMessage;
   onChatMetadata: OnChatMetadata;
   registeredGroups: () => Record<string, RegisteredGroup>;
+  getInitialJids: (channelName: string) => string[];
 }
 
 /**
@@ -136,18 +137,27 @@ export async function sendPoolMessage(
 }
 
 export class TelegramChannel implements Channel {
-  name = 'telegram';
+  name: string;
 
   private bot: Bot | null = null;
   private opts: TelegramChannelOpts;
   private botToken: string;
+  /** JIDs this bot instance has received messages from (used for routing). */
+  private ownedJids = new Set<string>();
 
-  constructor(botToken: string, opts: TelegramChannelOpts) {
+  constructor(botToken: string, opts: TelegramChannelOpts, channelName = 'telegram') {
+    this.name = channelName;
     this.botToken = botToken;
     this.opts = opts;
   }
 
   async connect(): Promise<void> {
+    // Restore JID ownership from DB so routing works on restart without waiting
+    // for the first inbound message.
+    for (const jid of this.opts.getInitialJids(this.name)) {
+      this.ownedJids.add(jid);
+    }
+
     this.bot = new Bot(this.botToken);
 
     // Command to get chat ID (useful for registration)
@@ -181,6 +191,9 @@ export class TelegramChannel implements Channel {
       }
 
       const chatJid = `tg:${ctx.chat.id}`;
+      // Claim this JID for this bot instance so routing works
+      this.ownedJids.add(chatJid);
+
       let content = ctx.message.text;
       const timestamp = new Date(ctx.message.date * 1000).toISOString();
       const senderName =
@@ -224,7 +237,7 @@ export class TelegramChannel implements Channel {
         chatJid,
         timestamp,
         chatName,
-        'telegram',
+        this.name,
         isGroup,
       );
 
@@ -258,6 +271,7 @@ export class TelegramChannel implements Channel {
     // Handle non-text messages with placeholders so the agent knows something was sent
     const storeNonText = (ctx: any, placeholder: string) => {
       const chatJid = `tg:${ctx.chat.id}`;
+      this.ownedJids.add(chatJid);
       const group = this.opts.registeredGroups()[chatJid];
       if (!group) return;
 
@@ -275,7 +289,7 @@ export class TelegramChannel implements Channel {
         chatJid,
         timestamp,
         undefined,
-        'telegram',
+        this.name,
         isGroup,
       );
       this.opts.onMessage(chatJid, {
@@ -364,7 +378,11 @@ export class TelegramChannel implements Channel {
   }
 
   ownsJid(jid: string): boolean {
-    return jid.startsWith('tg:');
+    if (!jid.startsWith('tg:')) return false;
+    // If we have prior knowledge, only own what we've seen
+    if (this.ownedJids.size > 0) return this.ownedJids.has(jid);
+    // Bootstrap: no history yet — claim all tg: JIDs (first bot wins in findChannel)
+    return true;
   }
 
   async disconnect(): Promise<void> {
@@ -394,5 +412,5 @@ registerChannel('telegram', (opts: ChannelOpts) => {
     logger.warn('Telegram: TELEGRAM_BOT_TOKEN not set');
     return null;
   }
-  return new TelegramChannel(token, opts);
+  return new TelegramChannel(token, opts, 'telegram');
 });

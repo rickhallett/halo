@@ -6,7 +6,10 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 vi.mock('./registry.js', () => ({ registerChannel: vi.fn() }));
 
 // Mock env reader (used by the factory, not needed in unit tests)
-vi.mock('../env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
+vi.mock('../env.js', () => ({
+  readEnvFile: vi.fn(() => ({})),
+  readEnvFileByPrefix: vi.fn(() => ({})),
+}));
 
 // Mock config
 vi.mock('../config.js', () => ({
@@ -79,6 +82,7 @@ function createTestOpts(
   return {
     onMessage: vi.fn(),
     onChatMetadata: vi.fn(),
+    getInitialJids: vi.fn(() => []),
     registeredGroups: vi.fn(() => ({
       'tg:100200300': {
         name: 'Test Group',

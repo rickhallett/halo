@@ -40,3 +40,45 @@ export function readEnvFile(keys: string[]): Record<string, string> {
 
   return result;
 }
+
+/**
+ * Parse the .env file and return all key-value pairs whose key starts with
+ * the given prefix. Also checks process.env for the same prefix (file wins).
+ * Same secret-isolation guarantee as readEnvFile.
+ */
+export function readEnvFileByPrefix(prefix: string): Record<string, string> {
+  const result: Record<string, string> = {};
+
+  // Seed from process.env (lower priority)
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith(prefix) && value) result[key] = value;
+  }
+
+  // Override with .env file values (higher priority)
+  const envFile = path.join(process.cwd(), '.env');
+  let content: string;
+  try {
+    content = fs.readFileSync(envFile, 'utf-8');
+  } catch {
+    return result;
+  }
+
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    if (!key.startsWith(prefix)) continue;
+    let value = trimmed.slice(eqIdx + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (value) result[key] = value;
+  }
+
+  return result;
+}

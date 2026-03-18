@@ -539,6 +539,11 @@ async function main(): Promise<void> {
 
   // Channel callbacks (shared by all channels)
   const channelOpts = {
+    getInitialJids: (channelName: string): string[] => {
+      return getAllChats()
+        .filter((c) => c.channel === channelName)
+        .map((c) => c.jid);
+    },
     onMessage: (chatJid: string, msg: NewMessage) => {
       // Remote control commands — intercept before storage
       const trimmed = msg.content.trim();
