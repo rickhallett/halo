@@ -61,20 +61,52 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 
 ## Key Files
 
+### Source
+
 | File | Purpose |
 |------|---------|
 | `src/index.ts` | Orchestrator: state, message loop, agent invocation |
+| `src/channels/telegram.ts` | Telegram channel: polling, onboarding gate, welcome sequence |
 | `src/channels/registry.ts` | Channel registry (self-registration at startup) |
+| `src/container-runner.ts` | Spawns agent containers with mounts (fleet + prime write access) |
+| `src/config.ts` | Trigger pattern, paths, intervals, CONTAINER_PROXY_PORT |
+| `src/db.ts` | SQLite: messages, sessions, onboarding, assessments |
 | `src/ipc.ts` | IPC watcher and task processing |
 | `src/router.ts` | Message formatting and outbound routing |
-| `src/config.ts` | Trigger pattern, paths, intervals |
-| `src/container-runner.ts` | Spawns agent containers with mounts |
 | `src/task-scheduler.ts` | Runs scheduled tasks |
-| `src/db.ts` | SQLite operations |
-| `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
+
+### Fleet & Governance
+
+| File | Purpose |
+|------|---------|
+| `halfleet/fleet-config.yaml` | Fleet provisioning config: profiles, exclude/lock lists |
+| `halos/halctl/provision.py` | Instance lifecycle: create, push, freeze, fold, fry |
+| `halos/halctl/smoke.py` | Tier 2 smoke test: infrastructure + agent capability checks |
+| `halos/halctl/eval_harness.py` | Assessment eval: single-injection + multi-turn dialogue scenarios |
+| `groups/telegram_main/CLAUDE.md` | HAL-prime identity, fleet awareness, operator context |
+| `templates/microhal/base.md` | Fleet governance: assessment protocol, three-strike rule |
+| `templates/microhal/profiles/*.yaml` | Personality dimension profiles (per user) |
+| `templates/microhal/user/*.md` | User context templates (biographical, family) |
+| `templates/microhal/welcome/*.md` | Welcome message sequence (01-greeting through 04-ready) |
+| `templates/microhal/assessments.yaml` | Likert + qualitative question bank with stable keys |
+
+### Data & Memory
+
+| File | Purpose |
+|------|---------|
 | `memory/INDEX.md` | Memory index (auto-maintained by memctl) |
 | `memctl.yaml` | Memory governance config |
+| `store/messages.db` | SQLite: messages, sessions, onboarding, assessments, groups |
 | `container/skills/agent-browser.md` | Browser automation tool (available to all agents via Bash) |
+
+### Documentation
+
+| Directory | Purpose |
+|-----------|---------|
+| `docs/d1/` | Operational: debug checklist, security, diagrams, briefings, session patterns |
+| `docs/d2/` | Architecture: specs, requirements, research, capability maps |
+| `docs/d3/` | Deep dives + archive: SDK, Docker, completed plans, superseded docs |
+| `docs-audit.py` | Repeatable docs audit (size, placement, staleness detection) |
 
 ## Skills
 

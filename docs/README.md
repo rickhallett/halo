@@ -4,23 +4,32 @@ BFS-friendly documentation hierarchy. Depth correlates with lookup frequency.
 
 ```
 docs/
-├── d1/          Operational — day-to-day reference
+├── d1/              Operational — day-to-day reference
+│   ├── briefings/   Daily operator digests (morning/nightly)
 │   ├── DEBUG_CHECKLIST.md
-│   └── SECURITY.md
-├── d2/          Architecture — design decisions, specs
+│   ├── SECURITY.md
+│   ├── architecture-diagrams.md   ← mermaid diagrams (system, fleet, tools, eval)
+│   ├── halos-modules.md
+│   ├── memctl-operations.md
+│   ├── microhal-operations.md
+│   └── session-patterns-*.md      ← post-session lessons learned
+├── d2/              Architecture — design decisions, specs
 │   ├── REQUIREMENTS.md
 │   ├── SPEC.md
-│   ├── nanoclaw-architecture-final.md
-│   ├── nanorepo-architecture.md
-│   └── skills-as-branches.md
-├── d3/          Deep dives — historical, niche topics
-│   ├── APPLE-CONTAINER-NETWORKING.md
+│   ├── spec-microhal.md
+│   ├── spec-nightctl-merge.md
+│   ├── spec-bathw.md
+│   ├── spec-portfolio-showcase.md
+│   ├── personality-config-plan.md
+│   └── ...
+├── d3/              Deep dives — historical, niche, archived
+│   ├── archive/     Completed plans, superseded docs
+│   ├── SDK_DEEP_DIVE.md
 │   ├── docker-sandboxes.md
-│   └── SDK_DEEP_DIVE.md
-└── plans/       Implementation plans (ephemeral, per-feature)
+│   └── APPLE-CONTAINER-NETWORKING.md
+└── docs-audit.py    Repeatable documentation audit script
 ```
 
-**d1/** — Things you grep for during a debugging session or incident.
-**d2/** — Things you read when planning a feature or understanding the system.
-**d3/** — Things you read once, then never again unless something breaks in that area.
-**plans/** — Timestamped implementation plans. Consumed during development, archived after.
+**d1/** — Things you grep for during a debugging session or incident. Includes briefings and operational guides.
+**d2/** — Things you read when planning a feature or understanding the system. Specs, architecture reviews, research.
+**d3/** — Things you read once, then never again unless something breaks. Includes archive/ for completed plans and superseded docs.
