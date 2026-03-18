@@ -200,7 +200,89 @@ stateDiagram-v2
     end note
 ```
 
-## 6. halctl — Fleet Management
+## 6. Eval Harness — Assessment Testing
+
+```mermaid
+flowchart TB
+    subgraph Reset["State Reset (per scenario)"]
+        direction LR
+        kill["docker kill containers"]
+        cleardb["DELETE FROM sessions,<br/>messages, assessments,<br/>onboarding, router_state"]
+        clearyaml["rm onboarding-state.yaml"]
+        clearsdk["rm -rf data/sessions/"]
+        kill --> cleardb --> clearyaml --> clearsdk
+    end
+
+    subgraph SingleInjection["Single-Injection Scenarios"]
+        direction TB
+        s1["likert_delivery<br/>— does agent initiate assessment?"]
+        s2["qualitative_not_too_early<br/>— holds off before 3 conversations?"]
+        s3["qualitative_dropin_eligible<br/>— finds natural moment after 3+?"]
+        s4["no_interrupt_during_task<br/>— prioritises task over questions?"]
+        s5["likert_deflection<br/>— relents after 3 strikes?"]
+    end
+
+    subgraph Dialogue["Multi-Turn Dialogue Scenarios"]
+        direction TB
+        d1["tangent_and_resume (11 turns)<br/>answer Q1-Q2 → tangent →<br/>resume from Q3 → complete"]
+        d2["deflect_then_resume (7 turns)<br/>3 strikes → relent → normal ops →<br/>user-initiated resume"]
+        d3["edit_response (6 turns)<br/>answer Q1-Q2 → edit Q1 →<br/>confirm → continue"]
+    end
+
+    subgraph Injection["DB Injection"]
+        inject["INSERT INTO messages<br/>(fake user message)"]
+        poll["Poll pm2 log for<br/>'Agent output:' lines"]
+        capture["Capture multi-line response<br/>(collect_all mode)"]
+        inject --> poll --> capture
+    end
+
+    subgraph Output["Eval Record (YAML)"]
+        record["record_id · scenario · timestamp<br/>conditions · dialogue turns<br/>behaviour · assertions · passed"]
+    end
+
+    Reset --> SingleInjection & Dialogue
+    SingleInjection --> Injection
+    Dialogue -->|"per turn"| Injection
+    Injection --> Output
+
+    style Reset fill:#c0392b,stroke:#922b21
+    style Dialogue fill:#1a1a2e,stroke:#16213e
+    style Output fill:#0f3460,stroke:#533483
+```
+
+```mermaid
+sequenceDiagram
+    participant H as halctl assess
+    participant DB as SQLite
+    participant ML as Message Loop
+    participant C as Container (Claude SDK)
+    participant PM2 as pm2 stdout log
+
+    Note over H,PM2: State Reset
+    H->>DB: DELETE FROM sessions, messages, ...
+    H->>C: docker kill (if active)
+
+    Note over H,PM2: Turn 1
+    H->>DB: INSERT message "hello"
+    H->>PM2: snapshot line count
+    ML->>DB: getNewMessages()
+    ML->>C: spawn container
+    C->>PM2: Agent output: "Welcome..."
+    H->>PM2: poll for new Agent output lines
+    H->>H: assert(response)
+
+    Note over H,PM2: Turn 2 (piped to existing container)
+    H->>DB: INSERT message "3"
+    ML->>C: pipe via IPC stdin
+    C->>PM2: Agent output: "Got it..."
+    H->>PM2: poll for new lines
+    H->>H: assert(response)
+
+    Note over H,PM2: Write Record
+    H->>H: YAML with all turns, assertions, metadata
+```
+
+## 7. halctl — Fleet Management
 
 ```mermaid
 flowchart LR
