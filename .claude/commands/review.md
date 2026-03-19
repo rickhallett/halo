@@ -1,28 +1,26 @@
 # Adversarial Review (Orchestrated)
 
-Run a full adversarial review cycle: handoff → blind review → targeted verification.
+Run a full adversarial review cycle: blind review → handoff → targeted verification.
 
 ## Process
 
-This review uses three separate passes with strict isolation:
+This review uses three rounds. The order matters: blind review MUST happen before the implementation model produces its handoff, otherwise the handoff framing contaminates the review.
 
-### Round 1: Handoff Generation
+### Round 1: Blind Review
 
-First, produce the review handoff document by running `/review-handoff`.
+Run `/review-blind` FIRST.
 
-Save the output — you will need it for Round 3, but **do not read it yet**.
+Approach the code fresh. Assume the author is overstating what the code proves. Document all findings.
 
-### Round 2: Blind Review
+You have not seen any author claims yet. This is intentional.
 
-Now run `/review-blind`.
+### Round 2: Handoff Generation
 
-**Critical**: Do not reference the handoff document. Approach the code fresh. Assume the author is overstating what the code proves.
+NOW produce the review handoff by running `/review-handoff`.
 
-Document all findings before proceeding.
+This documents what the implementation claims to do, where to look, and what it explicitly does NOT prove.
 
 ### Round 3: Targeted Verification
-
-Now — and only now — read the handoff from Round 1.
 
 Run `/review-targeted` with the handoff as input.
 
@@ -76,15 +74,13 @@ Produce a unified review report:
 
 ## Rules
 
-1. **Isolation is mandatory.** Do not let Round 1 output influence Round 2 thinking. If you cannot maintain this separation, say so.
+1. **Order is mandatory.** Blind review → handoff → targeted. Never generate the handoff before blind review.
 
-2. **Blind review comes first.** The handoff exists to help verification, not to frame perception.
+2. **Prefer skepticism.** "Partially true" over "confirmed" unless evidence is unambiguous.
 
-3. **Prefer skepticism.** "Partially true" over "confirmed" unless evidence is unambiguous.
+3. **Name the non-claims.** What does this change explicitly NOT prove? The author should have said; verify they did.
 
-4. **Name the non-claims.** What does this change explicitly NOT prove? The author should have said; verify they did.
-
-5. **Discrepancies are signal.** If blind review found something the handoff omitted, that's information about handoff quality.
+4. **Discrepancies are signal.** If blind review found something the handoff omitted, that's information about handoff quality.
 
 ## When to Use
 
@@ -95,6 +91,6 @@ Produce a unified review report:
 
 ## Limitations
 
-This orchestration asks one model to maintain separation between rounds. True adversarial review would use separate model instances. This is a pragmatic approximation — better than no review, worse than true isolation.
+This orchestration runs in a single context. The blind review genuinely happens before the handoff exists, so there's no contamination in that direction. However, the same model that did the implementation is doing the review — true adversarial review would use a separate model instance with no shared context.
 
-If you find yourself unable to "unsee" the handoff during blind review, acknowledge it and note which findings may be contaminated.
+This is a pragmatic approximation: better than self-certification, worse than independent review.
