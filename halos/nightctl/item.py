@@ -14,15 +14,13 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+import yaml
 
 
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
+
 
 class ValidationError(Exception):
     """Invalid data on creation or field update."""
@@ -53,10 +51,18 @@ class SaveError(Exception):
 VALID_KINDS = ("task", "job", "agent-job")
 
 VALID_STATUSES = (
-    "open", "planning", "plan-review", "in-progress",
-    "running", "review", "testing",
-    "blocked", "deferred",
-    "done", "failed", "cancelled",
+    "open",
+    "planning",
+    "plan-review",
+    "in-progress",
+    "running",
+    "review",
+    "testing",
+    "blocked",
+    "deferred",
+    "done",
+    "failed",
+    "cancelled",
 )
 
 TERMINAL_STATUSES = ("done", "cancelled")
@@ -69,28 +75,27 @@ VALID_SCHEDULES = ("overnight", "immediate", "once")
 
 _BASE_TRANSITIONS: dict[str, list[str]] = {
     # Entry
-    "open":         ["planning", "in-progress", "deferred", "cancelled"],
-
+    "open": ["planning", "in-progress", "deferred", "cancelled"],
     # Planning track (agent-jobs)
-    "planning":     ["plan-review", "cancelled"],
-    "plan-review":  ["in-progress", "planning", "cancelled"],
-
+    "planning": ["plan-review", "cancelled"],
+    "plan-review": ["in-progress", "planning", "cancelled"],
     # Execution
-    "in-progress":  ["review", "running", "blocked", "cancelled"],
-    "running":      ["done", "failed", "in-progress"],  # in-progress = retry with remaining attempts
-
+    "in-progress": ["review", "running", "blocked", "cancelled"],
+    "running": [
+        "done",
+        "failed",
+        "in-progress",
+    ],  # in-progress = retry with remaining attempts
     # Review track (human path)
-    "review":       ["in-progress", "testing", "done"],
-    "testing":      ["in-progress", "done"],
-
+    "review": ["in-progress", "testing", "done"],
+    "testing": ["in-progress", "done"],
     # Recovery
-    "failed":       ["plan-review", "in-progress"],
-    "blocked":      ["in-progress", "cancelled"],
-    "deferred":     ["open", "cancelled"],
-
+    "failed": ["plan-review", "in-progress"],
+    "blocked": ["in-progress", "cancelled"],
+    "deferred": ["open", "cancelled"],
     # Terminal
-    "done":         [],
-    "cancelled":    [],
+    "done": [],
+    "cancelled": [],
 }
 
 # Kind-specific exclusions: (status, kind) → statuses to remove
@@ -98,15 +103,13 @@ _KIND_EXCLUSIONS: dict[tuple[str, str], set[str]] = {
     # agent-jobs CAN skip planning if context is sufficient (e.g. research jobs).
     # The executor validates that plan OR context exists before running.
     # Recovery from failure still goes through plan-review for structured jobs.
-    ("failed", "agent-job"):    {"in-progress"},
-
+    ("failed", "agent-job"): {"in-progress"},
     # tasks cannot enter running state (no execution engine for humans)
-    ("in-progress", "task"):    {"running"},
+    ("in-progress", "task"): {"running"},
     # tasks don't have plans to revise
-    ("failed", "task"):         {"plan-review"},
-
+    ("failed", "task"): {"plan-review"},
     # jobs recover via direct retry, not plan-review
-    ("failed", "job"):          {"plan-review"},
+    ("failed", "job"): {"plan-review"},
 }
 
 
@@ -123,6 +126,7 @@ def valid_transitions(status: str, kind: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -146,6 +150,7 @@ def _slugify(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Item model
 # ---------------------------------------------------------------------------
+
 
 class Item:
     """A unit of work in nightctl.
@@ -283,8 +288,14 @@ class Item:
         if self.plan:
             validate_plan_xml(self.plan)
         elif self.plan_ref:
+            # Resolve plan_ref relative to project root, not item file location.
+            # Items live in queue/items/, plans in queue/plans/ — both relative to project root.
+            # Go up from queue/items/ to project root (2 levels).
             base_dir = self.file_path.parent if self.file_path else Path.cwd()
-            validate_plan_ref(self.plan_ref, base_dir)
+            project_root = (
+                base_dir.parent.parent
+            )  # queue/items/ -> queue/ -> project root
+            validate_plan_ref(self.plan_ref, project_root)
         elif self.context and len(self.context.strip()) >= 50:
             # Context-only mode: sufficient detail can substitute for a plan.
             # 50 chars is a minimal threshold — "research X" is not enough,
@@ -292,7 +303,9 @@ class Item:
             pass
         else:
             raise PlanValidationError(
-                ["agent-job requires a plan (inline or plan_ref) or detailed context (50+ chars) before promotion"]
+                [
+                    "agent-job requires a plan (inline or plan_ref) or detailed context (50+ chars) before promotion"
+                ]
             )
 
     # -- Execution support --
@@ -351,11 +364,15 @@ class Item:
 
         priority = self.data.get("priority", 3)
         if not isinstance(priority, int) or isinstance(priority, bool):
-            raise ValidationError(f"priority must be int, got {type(priority).__name__}")
+            raise ValidationError(
+                f"priority must be int, got {type(priority).__name__}"
+            )
 
         schedule = self.data.get("schedule")
         if schedule is not None and schedule not in VALID_SCHEDULES:
-            raise ValidationError(f"invalid schedule: {schedule}. Valid: {VALID_SCHEDULES}")
+            raise ValidationError(
+                f"invalid schedule: {schedule}. Valid: {VALID_SCHEDULES}"
+            )
 
         if kind == "job" and not self.data.get("command"):
             raise ValidationError("command is required for kind=job")
@@ -416,11 +433,14 @@ class Item:
         if kind == "job" and not (command or "").strip():
             raise ValidationError("--command is required for kind=job")
         if schedule is not None and schedule not in VALID_SCHEDULES:
-            raise ValidationError(f"invalid schedule: {schedule}. Valid: {VALID_SCHEDULES}")
+            raise ValidationError(
+                f"invalid schedule: {schedule}. Valid: {VALID_SCHEDULES}"
+            )
 
         # Eager plan validation if provided at creation
         if plan:
             from .plan import validate_plan_xml
+
             validate_plan_xml(plan)
 
         item_id = _now_id()
@@ -464,9 +484,11 @@ class Item:
 # Collection helpers (shared by cli.py and executor.py)
 # ---------------------------------------------------------------------------
 
+
 def load_all_items(items_dir: Path) -> list["Item"]:
     """Load all items from a directory. Skips files that fail validation."""
     import sys
+
     if not items_dir or not items_dir.exists():
         return []
     items = []

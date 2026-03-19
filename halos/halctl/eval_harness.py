@@ -20,10 +20,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    from halos.nightctl import yaml_shim as yaml
+import yaml
 
 from halos.common.log import hlog
 from .config import load_fleet_manifest, fleet_dir

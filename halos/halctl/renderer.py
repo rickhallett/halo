@@ -9,10 +9,7 @@ Key invariant: deterministic. Same inputs = same output. No LLM. No randomness.
 from pathlib import Path
 from typing import Any
 
-try:
-    import yaml
-except ImportError:
-    from halos.nightctl import yaml_shim as yaml
+import yaml
 
 
 class SchemaValidationError(Exception):

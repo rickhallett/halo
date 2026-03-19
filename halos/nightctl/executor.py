@@ -1,9 +1,7 @@
 import shlex
 import subprocess
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+
+import yaml
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -43,8 +41,16 @@ def _in_window(window_str: str, tz_name: str) -> bool:
     return now_mins >= start_mins or now_mins < end_mins
 
 
-def _run_record(job_id: str, attempt: int, started: str, finished: str,
-                exit_code: int, stdout: str, stderr: str, outcome: str) -> dict:
+def _run_record(
+    job_id: str,
+    attempt: int,
+    started: str,
+    finished: str,
+    exit_code: int,
+    stdout: str,
+    stderr: str,
+    outcome: str,
+) -> dict:
     started_dt = datetime.fromisoformat(started.replace("Z", "+00:00"))
     finished_dt = datetime.fromisoformat(finished.replace("Z", "+00:00"))
     duration = int((finished_dt - started_dt).total_seconds())
@@ -76,7 +82,9 @@ def _get_attempt_number(runs_dir: Path, job_id: str) -> int:
     return len(existing) + 1
 
 
-def execute_job(job: Job, runs_dir: Path, notifier: Notifier, dry_run: bool = False) -> str:
+def execute_job(
+    job: Job, runs_dir: Path, notifier: Notifier, dry_run: bool = False
+) -> str:
     """Execute a single legacy job. Returns outcome: done | failed | timeout."""
     attempt = _get_attempt_number(runs_dir, job.id)
 
@@ -109,7 +117,9 @@ def execute_job(job: Job, runs_dir: Path, notifier: Notifier, dry_run: bool = Fa
         stderr = f"timeout after {job.timeout_secs}s"
         outcome = "timeout"
 
-    record = _run_record(job.id, attempt, started, finished, exit_code, stdout, stderr, outcome)
+    record = _run_record(
+        job.id, attempt, started, finished, exit_code, stdout, stderr, outcome
+    )
     _write_run_record(runs_dir, job.id, record)
 
     if outcome != "done":
@@ -124,7 +134,15 @@ def execute_job(job: Job, runs_dir: Path, notifier: Notifier, dry_run: bool = Fa
     return "done"
 
 
-def execute_item(item: Item, runs_dir: Path, notifier: Notifier, dry_run: bool = False) -> str:
+def execute_item(
+    item: Item,
+    runs_dir: Path,
+    notifier: Notifier,
+    dry_run: bool = False,
+    ipc_dir: Path | None = None,
+    plans_dir: Path | None = None,
+    target_jid: str = "",
+) -> str:
     """Execute a unified Item (job or agent-job). Returns outcome: done | failed | timeout."""
     attempt = _get_attempt_number(runs_dir, item.id)
 
@@ -135,11 +153,17 @@ def execute_item(item: Item, runs_dir: Path, notifier: Notifier, dry_run: bool =
     # Agent-jobs: delegate to container-runner via IPC
     if item.kind == "agent-job":
         from .container import prepare_agent_job, ContainerError
+
         started = _now_iso()
         print(f"  running  {item.id}  {item.title}  [agent-job]")
 
         try:
-            result_info = prepare_agent_job(item)
+            result_info = prepare_agent_job(
+                item,
+                ipc_dir=ipc_dir,
+                plans_dir=plans_dir,
+                target_jid=target_jid,
+            )
 
             # IPC message is required for agent-jobs to actually execute.
             # If ipc_dir was None or the write was skipped, the job is a no-op.
@@ -149,28 +173,48 @@ def execute_item(item: Item, runs_dir: Path, notifier: Notifier, dry_run: bool =
                     f"(ipc_dir not configured). Job would not execute."
                 )
 
-            hlog("nightctl", "info", "agent_job_dispatched", {
-                "id": item.id,
-                "plan_path": str(result_info["plan_path"]),
-                "ipc_path": str(result_info["ipc_path"]),
-            })
+            hlog(
+                "nightctl",
+                "info",
+                "agent_job_dispatched",
+                {
+                    "id": item.id,
+                    "plan_path": str(result_info["plan_path"]),
+                    "ipc_path": str(result_info["ipc_path"]),
+                },
+            )
             finished = _now_iso()
             stdout = f"agent-job dispatched: plan at {result_info['plan_path']}, IPC at {result_info['ipc_path']}"
-            record = _run_record(item.id, attempt, started, finished, 0, stdout, "", "done")
+            record = _run_record(
+                item.id, attempt, started, finished, 0, stdout, "", "done"
+            )
             _write_run_record(runs_dir, item.id, record)
             return "done"
         except (ContainerError, Exception) as e:
             finished = _now_iso()
             stderr = str(e)
-            hlog("nightctl", "error", "agent_job_failed", {
-                "id": item.id,
-                "error": stderr,
-            })
-            record = _run_record(item.id, attempt, started, finished, 1, "", stderr, "failed")
+            hlog(
+                "nightctl",
+                "error",
+                "agent_job_failed",
+                {
+                    "id": item.id,
+                    "error": stderr,
+                },
+            )
+            record = _run_record(
+                item.id, attempt, started, finished, 1, "", stderr, "failed"
+            )
             _write_run_record(runs_dir, item.id, record)
             remaining = item.decrement_retries()
             if remaining <= 0:
-                notifier.failure(item.id, item.title, f"agent-job: {item.plan_ref or 'inline'}", 1, stderr)
+                notifier.failure(
+                    item.id,
+                    item.title,
+                    f"agent-job: {item.plan_ref or 'inline'}",
+                    1,
+                    stderr,
+                )
                 return "failed"
             else:
                 print(f"  retry    {item.id}  ({remaining} retries remaining)")
@@ -206,7 +250,9 @@ def execute_item(item: Item, runs_dir: Path, notifier: Notifier, dry_run: bool =
         stderr = f"timeout after {item.timeout_secs}s"
         outcome = "timeout"
 
-    record = _run_record(item.id, attempt, started, finished, exit_code, stdout, stderr, outcome)
+    record = _run_record(
+        item.id, attempt, started, finished, exit_code, stdout, stderr, outcome
+    )
     _write_run_record(runs_dir, item.id, record)
 
     if outcome != "done":
@@ -244,6 +290,7 @@ class Executor:
             return True
         # Check items dir for done status
         from .item import load_all_items
+
         items_dir = getattr(self.cfg, "items_dir", None)
         all_items = {i.id: i for i in load_all_items(items_dir)} if items_dir else {}
         for dep_id in deps:
@@ -252,23 +299,29 @@ class Executor:
                 return False
         return True
 
-    def run(self, force: bool = False, limit: int = None, dry_run: bool = False) -> dict:
+    def run(
+        self, force: bool = False, limit: int | None = None, dry_run: bool = False
+    ) -> dict:
         exec_cfg = self.cfg.execution
         window = exec_cfg.get("overnight_window", "02:00-05:00")
         tz = exec_cfg.get("timezone", "Europe/London")
 
         if not force and not _in_window(window, tz):
-            print(f"outside overnight window ({window} {tz}) -- use --force to override")
+            print(
+                f"outside overnight window ({window} {tz}) -- use --force to override"
+            )
             return {"done": 0, "failed": 0, "skipped": 0, "outside_window": True}
 
         counts = {"done": 0, "failed": 0, "skipped": 0}
 
         # --- Execute unified Items (in-progress, kind in job/agent-job) ---
         from .item import load_all_items
+
         items_dir = getattr(self.cfg, "items_dir", None)
         items = load_all_items(items_dir) if items_dir else []
         executable_items = [
-            i for i in items
+            i
+            for i in items
             if i.status == "in-progress" and i.kind in ("job", "agent-job")
         ]
         executable_items.sort(key=lambda i: (i.priority, i.created))
@@ -283,18 +336,38 @@ class Executor:
                 counts["skipped"] += 1
                 continue
 
-            # Transition: in-progress -> running
-            try:
-                item.transition("running")
-                item.save()
-            except Exception as e:
-                print(f"  error    {item.id}  transition to running failed: {e}")
-                counts["skipped"] += 1
-                continue
+            # In dry-run mode, skip state transitions
+            if not dry_run:
+                # Transition: in-progress -> running
+                try:
+                    item.transition("running")
+                    item.save()
+                except Exception as e:
+                    print(f"  error    {item.id}  transition to running failed: {e}")
+                    counts["skipped"] += 1
+                    continue
 
-            outcome = execute_item(item, self.cfg.runs_dir, self.notifier, dry_run=dry_run)
+            # Resolve IPC config for agent-jobs
+            ipc_dir = None
+            if hasattr(self.cfg, "ipc_dir") and hasattr(self.cfg, "ipc_group"):
+                ipc_dir = self.cfg.ipc_dir / self.cfg.ipc_group
+            plans_dir = getattr(self.cfg, "plans_dir", None)
+            target_jid = getattr(self.cfg, "main_jid", "") or ""
 
-            if outcome == "done":
+            outcome = execute_item(
+                item,
+                self.cfg.runs_dir,
+                self.notifier,
+                dry_run=dry_run,
+                ipc_dir=ipc_dir,
+                plans_dir=plans_dir,
+                target_jid=target_jid,
+            )
+
+            # In dry-run mode, don't update state
+            if dry_run:
+                counts["done"] += 1
+            elif outcome == "done":
                 item.transition("done")
                 item.save()
                 counts["done"] += 1
@@ -314,7 +387,9 @@ class Executor:
         # --- Execute legacy jobs from manifest ---
         remaining_limit = (limit - executed) if limit else None
         if remaining_limit is not None and remaining_limit <= 0:
-            self.notifier.success_summary(counts["done"], counts["failed"], counts["skipped"])
+            self.notifier.success_summary(
+                counts["done"], counts["failed"], counts["skipped"]
+            )
             return counts
 
         pending = self.manifest.pending_jobs()
@@ -341,7 +416,9 @@ class Executor:
             job.save()
             self.manifest.update_status(job.id, "running")
 
-            outcome = execute_job(job, self.cfg.runs_dir, self.notifier, dry_run=dry_run)
+            outcome = execute_job(
+                job, self.cfg.runs_dir, self.notifier, dry_run=dry_run
+            )
 
             if outcome == "done":
                 job.set_status("done")
@@ -359,5 +436,7 @@ class Executor:
                 self.manifest.update_status(job.id, "pending")
                 counts["skipped"] += 1
 
-        self.notifier.success_summary(counts["done"], counts["failed"], counts["skipped"])
+        self.notifier.success_summary(
+            counts["done"], counts["failed"], counts["skipped"]
+        )
         return counts

@@ -2,10 +2,7 @@
 
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    from halos.nightctl import yaml_shim as yaml
+import yaml
 
 
 def _resolve_source(raw: str) -> Path:

@@ -1,8 +1,6 @@
 import os
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+
+import yaml
 from pathlib import Path
 
 
@@ -12,6 +10,10 @@ DEFAULTS = {
     "manifest_file": "./queue/MANIFEST.yaml",
     "archive_dir": "./queue/archive",
     "runs_dir": "./queue/runs",
+    "plans_dir": "./queue/plans",
+    "ipc_dir": "./data/ipc",
+    "ipc_group": "telegram_main",
+    "main_jid": "",  # Auto-resolved from DB if empty
     "execution": {
         "mode": "serial",
         "max_workers": 1,
@@ -23,7 +25,16 @@ DEFAULTS = {
         "default_timeout_secs": 300,
         "default_schedule": "overnight",
         "valid_schedules": ["overnight", "immediate", "once"],
-        "valid_tags": ["maintenance", "memctl", "data", "sync", "report", "cleanup", "backup", "infra"],
+        "valid_tags": [
+            "maintenance",
+            "memctl",
+            "data",
+            "sync",
+            "report",
+            "cleanup",
+            "backup",
+            "infra",
+        ],
     },
     "notify": {
         "on_failure": True,
@@ -85,6 +96,43 @@ class Config:
     @property
     def runs_dir(self) -> Path:
         return self._resolve(self._data["runs_dir"])
+
+    @property
+    def plans_dir(self) -> Path:
+        return self._resolve(self._data.get("plans_dir", "./queue/plans"))
+
+    @property
+    def ipc_dir(self) -> Path:
+        return self._resolve(self._data.get("ipc_dir", "./data/ipc"))
+
+    @property
+    def ipc_group(self) -> str:
+        return self._data.get("ipc_group", "telegram_main")
+
+    @property
+    def main_jid(self) -> str:
+        jid = self._data.get("main_jid", "")
+        if not jid:
+            # Auto-resolve from database
+            jid = self._resolve_main_jid()
+        return jid
+
+    def _resolve_main_jid(self) -> str:
+        """Look up the main group's JID from the NanoClaw database."""
+        db_path = self.base_dir / "store" / "messages.db"
+        if not db_path.exists():
+            return ""
+        try:
+            import sqlite3
+
+            conn = sqlite3.connect(str(db_path))
+            row = conn.execute(
+                "SELECT jid FROM registered_groups WHERE is_main = 1 LIMIT 1"
+            ).fetchone()
+            conn.close()
+            return row[0] if row else ""
+        except Exception:
+            return ""
 
     @property
     def execution(self) -> dict:

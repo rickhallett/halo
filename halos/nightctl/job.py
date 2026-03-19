@@ -1,10 +1,7 @@
 import hashlib
 import re
 import uuid
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+import yaml
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional

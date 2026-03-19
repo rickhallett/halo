@@ -16,10 +16,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+import yaml
 
 from .item import Item
 from .plan import validate_plan_xml, validate_plan_ref, PlanValidationError
@@ -42,15 +39,11 @@ def resolve_plan(item: Item) -> str:
         return item.plan
 
     if item.plan_ref:
-        # Resolve plan_ref relative to the item's file location
+        # Resolve plan_ref relative to project root, not item file location.
+        # Items live in queue/items/, plans in queue/plans/ — both relative to project root.
         base_dir = item.file_path.parent if item.file_path else Path.cwd()
-        # Go up to project root (queue/items/ -> project root)
-        project_root = base_dir
-        for _ in range(3):  # queue/items/ -> queue/ -> project root
-            parent = project_root.parent
-            if parent == project_root:
-                break
-            project_root = parent
+        # Go up from queue/items/ to project root (2 levels).
+        project_root = base_dir.parent.parent
 
         ref_path = Path(item.plan_ref)
         if not ref_path.is_absolute():
@@ -70,6 +63,7 @@ def resolve_plan(item: Item) -> str:
         plan_text = ref_path.read_text()
         # Use the same extraction logic as plan.py (handles <plan> with attributes)
         from .plan import extract_plan_from_file, PlanValidationError
+
         try:
             plan_xml = extract_plan_from_file(plan_text)
             validate_plan_xml(plan_xml)
@@ -110,7 +104,9 @@ def write_plan_file(plan_xml: str, item: Item, plans_dir: Path | None = None) ->
     return plan_path
 
 
-def create_ipc_message(item: Item, plan_path: Path, ipc_dir: Path, target_jid: str = "") -> Path:
+def create_ipc_message(
+    item: Item, plan_path: Path, ipc_dir: Path, target_jid: str = ""
+) -> Path:
     """Create an IPC task message for the TypeScript container-runner.
 
     Writes a JSON file to the IPC tasks directory that src/ipc.ts will
@@ -180,12 +176,17 @@ def prepare_agent_job(
     if item.kind != "agent-job":
         raise ContainerError(f"Item {item.id} is kind={item.kind}, not agent-job")
 
-    hlog("nightctl", "info", "agent_job_prepare", {
-        "id": item.id,
-        "title": item.title,
-        "has_plan": bool(item.plan),
-        "has_plan_ref": bool(item.plan_ref),
-    })
+    hlog(
+        "nightctl",
+        "info",
+        "agent_job_prepare",
+        {
+            "id": item.id,
+            "title": item.title,
+            "has_plan": bool(item.plan),
+            "has_plan_ref": bool(item.plan_ref),
+        },
+    )
 
     # Step 1: Resolve and validate plan
     plan_xml = resolve_plan(item)
@@ -198,11 +199,16 @@ def prepare_agent_job(
     if ipc_dir:
         ipc_path = create_ipc_message(item, plan_path, ipc_dir, target_jid=target_jid)
 
-    hlog("nightctl", "info", "agent_job_prepared", {
-        "id": item.id,
-        "plan_path": str(plan_path),
-        "ipc_path": str(ipc_path) if ipc_path else None,
-    })
+    hlog(
+        "nightctl",
+        "info",
+        "agent_job_prepared",
+        {
+            "id": item.id,
+            "plan_path": str(plan_path),
+            "ipc_path": str(ipc_path) if ipc_path else None,
+        },
+    )
 
     return {
         "plan_xml": plan_xml,

@@ -10,10 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+import yaml
 
 from .config import load_config
 from .item import Item, ValidationError, TransitionError, VALID_KINDS, load_all_items, find_item

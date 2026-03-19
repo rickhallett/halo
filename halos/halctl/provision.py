@@ -6,10 +6,7 @@ import stat
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    from halos.nightctl import yaml_shim as yaml
+import yaml
 
 import sqlite3 as sqlite
 

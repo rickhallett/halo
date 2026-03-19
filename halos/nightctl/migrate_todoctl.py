@@ -14,10 +14,7 @@ import os
 import sys
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    from . import yaml_shim as yaml
+import yaml
 
 from .item import Item, _slugify
 
