@@ -365,6 +365,11 @@ async function runQuery(
   let lastAssistantUuid: string | undefined;
   let messageCount = 0;
   let resultCount = 0;
+  let textResultCount = 0;
+
+  // Spin detection thresholds
+  const MAX_TURNS_WITHOUT_RESULT = 150;
+  const RATE_LIMIT_EARLY_EXIT_WINDOW = 10;
 
   // Load global CLAUDE.md as additional system context (shared across all groups)
   const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
@@ -452,15 +457,48 @@ async function runQuery(
       log(`Task notification: task=${tn.task_id} status=${tn.status} summary=${tn.summary}`);
     }
 
+    // Layer 3: Rate-limit early exit — only when RESUMING an existing session.
+    // A rate limit on a fresh session is normal (API quota); the SDK retries
+    // automatically. But on a resumed session, an immediate rate limit likely
+    // means the context is bloated and the session should be discarded.
+    if (message.type === 'rate_limit_event' && messageCount <= RATE_LIMIT_EARLY_EXIT_WINDOW && sessionId) {
+      log(`SPIN DETECTED: rate_limit_event at message #${messageCount} on resumed session ${sessionId}. Aborting — session likely poisoned.`);
+      stream.end();
+      ipcPolling = false;
+      writeOutput({
+        status: 'error',
+        result: null,
+        error: `Rate limit hit at message #${messageCount} on resumed session. Session discarded — starting fresh next time.`,
+      });
+      // Return WITHOUT newSessionId so host drops the poisoned session
+      return { newSessionId: undefined, lastAssistantUuid, closedDuringQuery: true };
+    }
+
     if (message.type === 'result') {
       resultCount++;
       const textResult = 'result' in message ? (message as { result?: string }).result : null;
+      if (textResult) textResultCount++;
       log(`Result #${resultCount}: subtype=${message.subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`);
       writeOutput({
         status: 'success',
         result: textResult || null,
         newSessionId
       });
+    }
+
+    // Layer 2: Max turns without meaningful output — if we've churned through
+    // many messages without producing any text result, we're spinning.
+    if (messageCount >= MAX_TURNS_WITHOUT_RESULT && textResultCount === 0) {
+      log(`SPIN DETECTED: ${messageCount} messages with 0 text results. Aborting.`);
+      stream.end();
+      ipcPolling = false;
+      writeOutput({
+        status: 'error',
+        result: null,
+        error: `Spin detected: ${messageCount} messages with no text output. Container killed.`,
+      });
+      // Return WITHOUT newSessionId so host drops the poisoned session
+      return { newSessionId: undefined, lastAssistantUuid, closedDuringQuery: true };
     }
   }
 

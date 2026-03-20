@@ -39,6 +39,7 @@ import {
   initDatabase,
   setRegisteredGroup,
   setRouterState,
+  clearSession,
   setSession,
   storeChatMetadata,
   storeMessage,
@@ -314,6 +315,10 @@ async function runAgent(
           sessions[group.folder] = output.newSessionId;
           setSession(group.folder, output.newSessionId);
         }
+        if (output.status === 'error' && !output.newSessionId && sessions[group.folder]) {
+          delete sessions[group.folder];
+          clearSession(group.folder);
+        }
         await onOutput(output);
       }
     : undefined;
@@ -340,6 +345,18 @@ async function runAgent(
     }
 
     if (output.status === 'error') {
+      // When agent-runner detects a poisoned session (spin/rate-limit), it
+      // omits newSessionId to signal "drop this session." Without this,
+      // the stale session ID stays in the DB and every retry hits the same
+      // rate limit — the death loop that prompted this fix.
+      if (!output.newSessionId && sessions[group.folder]) {
+        logger.warn(
+          { group: group.name },
+          'Agent signalled poisoned session, clearing for fresh start',
+        );
+        delete sessions[group.folder];
+        clearSession(group.folder);
+      }
       logger.error(
         { group: group.name, error: output.error },
         'Container agent error',
