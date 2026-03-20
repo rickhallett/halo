@@ -366,6 +366,11 @@ async function runQuery(
   let messageCount = 0;
   let resultCount = 0;
   let textResultCount = 0;
+  // AGR.SPIN.02: Track tool use events separately. Tool-heavy turns
+  // (subagent orchestration, long Bash runs) produce many SDK messages
+  // without text results. The spin heuristic should distinguish "no
+  // progress" from "progress via tools without text output yet".
+  let toolUseCount = 0;
 
   // Spin detection thresholds
   const MAX_TURNS_WITHOUT_RESULT = 150;
@@ -457,6 +462,14 @@ async function runQuery(
       log(`Task notification: task=${tn.task_id} status=${tn.status} summary=${tn.summary}`);
     }
 
+    // AGR.SPIN.02: Track tool use as evidence of forward progress
+    if (message.type === 'assistant' && 'content' in message) {
+      const content = (message as { content?: Array<{ type: string }> }).content;
+      if (content?.some((c) => c.type === 'tool_use')) {
+        toolUseCount++;
+      }
+    }
+
     // Layer 3: Rate-limit early exit — only when RESUMING an existing session.
     // A rate limit on a fresh session is normal (API quota); the SDK retries
     // automatically. But on a resumed session, an immediate rate limit likely
@@ -488,14 +501,23 @@ async function runQuery(
 
     // Layer 2: Max turns without meaningful output — if we've churned through
     // many messages without producing any text result, we're spinning.
-    if (messageCount >= MAX_TURNS_WITHOUT_RESULT && textResultCount === 0) {
-      log(`SPIN DETECTED: ${messageCount} messages with 0 text results. Aborting.`);
+    // AGR.SPIN.02: Allow tool-heavy turns to continue. If the agent is making
+    // tool calls, it's likely doing real work (subagent orchestration, long
+    // Bash runs). Only trigger the spin kill when there's genuinely no
+    // forward progress — neither text output nor tool invocations.
+    const hasToolProgress = toolUseCount > 0;
+    const effectiveLimit = hasToolProgress
+      ? MAX_TURNS_WITHOUT_RESULT * 3  // 450 messages for tool-heavy turns
+      : MAX_TURNS_WITHOUT_RESULT;      // 150 messages for no-progress turns
+
+    if (messageCount >= effectiveLimit && textResultCount === 0) {
+      log(`SPIN DETECTED: ${messageCount} messages with 0 text results (${toolUseCount} tool uses). Aborting.`);
       stream.end();
       ipcPolling = false;
       writeOutput({
         status: 'error',
         result: null,
-        error: `Spin detected: ${messageCount} messages with no text output. Container killed.`,
+        error: `Spin detected: ${messageCount} messages with no text output (${toolUseCount} tool uses). Container killed.`,
       });
       // Return WITHOUT newSessionId so host drops the poisoned session
       return { newSessionId: undefined, lastAssistantUuid, closedDuringQuery: true };

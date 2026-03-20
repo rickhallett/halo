@@ -397,8 +397,14 @@ export async function runContainerAgent(
 
     // Streaming output: parse OUTPUT_START/END marker pairs as they arrive
     let parseBuffer = '';
+    // CTR.PARSE.02: Cap parseBuffer to prevent unbounded growth when an
+    // end marker never arrives (broken runner emitting partial markers).
+    const MAX_PARSE_BUFFER = CONTAINER_MAX_OUTPUT_SIZE;
     let newSessionId: string | undefined;
     let outputChain = Promise.resolve();
+    // CTR.PARSE.03 / COMB.SILENT.01: Track valid parsed frames so we can
+    // distinguish "success with output" from "success with no valid output".
+    let validFrameCount = 0;
 
     container.stdout.on('data', (data) => {
       const chunk = data.toString();
@@ -421,6 +427,17 @@ export async function runContainerAgent(
       // Stream-parse for output markers
       if (onOutput) {
         parseBuffer += chunk;
+
+        // CTR.PARSE.02: If parseBuffer exceeds the cap (no end marker arriving),
+        // truncate from the front to prevent unbounded host memory growth.
+        if (parseBuffer.length > MAX_PARSE_BUFFER) {
+          logger.warn(
+            { group: group.name, size: parseBuffer.length },
+            'Parse buffer exceeded limit, truncating (possible missing end marker)',
+          );
+          parseBuffer = parseBuffer.slice(-MAX_PARSE_BUFFER);
+        }
+
         let startIdx: number;
         while ((startIdx = parseBuffer.indexOf(OUTPUT_START_MARKER)) !== -1) {
           const endIdx = parseBuffer.indexOf(OUTPUT_END_MARKER, startIdx);
@@ -436,12 +453,21 @@ export async function runContainerAgent(
             if (parsed.newSessionId) {
               newSessionId = parsed.newSessionId;
             }
+            validFrameCount++;
             hadStreamingOutput = true;
             // Activity detected — reset the hard timeout
             resetTimeout();
-            // Call onOutput for all markers (including null results)
-            // so idle timers start even for "silent" query completions.
-            outputChain = outputChain.then(() => onOutput(parsed));
+            // CTR.CHAIN.01: Wrap onOutput call with .catch() so a rejected
+            // callback (e.g., DB error in session update) does not leave
+            // outputChain unresolved and wedge the group queue permanently.
+            outputChain = outputChain.then(() =>
+              onOutput(parsed).catch((err) => {
+                logger.error(
+                  { group: group.name, err },
+                  'Streaming onOutput callback failed, continuing chain',
+                );
+              }),
+            );
           } catch (err) {
             logger.warn(
               { group: group.name, error: err },
@@ -526,12 +552,13 @@ export async function runContainerAgent(
           ].join('\n'),
         );
 
-        // Timeout after output = idle cleanup, not failure.
+        // Timeout after valid output = idle cleanup, not failure.
         // The agent already sent its response; this is just the
         // container being reaped after the idle period expired.
-        if (hadStreamingOutput) {
+        // CTR.PARSE.03: Only treat as success if valid frames were actually parsed.
+        if (hadStreamingOutput && validFrameCount > 0) {
           logger.info(
-            { group: group.name, containerName, duration, code },
+            { group: group.name, containerName, duration, code, validFrameCount },
             'Container timed out after output (idle cleanup)',
           );
           outputChain.then(() => {
@@ -639,8 +666,26 @@ export async function runContainerAgent(
       // Streaming mode: wait for output chain to settle, return completion marker
       if (onOutput) {
         outputChain.then(() => {
+          // CTR.PARSE.03 / COMB.SILENT.01: If the container exited cleanly
+          // but no valid output frame was ever parsed, treat it as an error.
+          // This prevents silent success when output is malformed or missing,
+          // which would leave the cursor advanced with no user-visible response.
+          if (validFrameCount === 0) {
+            logger.error(
+              { group: group.name, duration, newSessionId },
+              'Container exited successfully but produced no valid output frames',
+            );
+            resolve({
+              status: 'error',
+              result: null,
+              newSessionId,
+              error: 'Container produced no valid output (parse failure or empty run)',
+            });
+            return;
+          }
+
           logger.info(
-            { group: group.name, duration, newSessionId },
+            { group: group.name, duration, newSessionId, validFrameCount },
             'Container completed (streaming mode)',
           );
           resolve({
