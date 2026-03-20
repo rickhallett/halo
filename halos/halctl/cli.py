@@ -634,6 +634,25 @@ def cmd_messages(args):
 
 
 @logged
+def cmd_session(args):
+    """Session lifecycle management (list/clear/clear-all)."""
+    from .session import session_list, session_clear, session_clear_all
+
+    action = args.session_action
+    instance = getattr(args, "instance", None)
+
+    if action == "list":
+        return session_list(instance)
+    elif action == "clear":
+        return session_clear(args.group_folder, instance)
+    elif action == "clear-all":
+        return session_clear_all(instance)
+    else:
+        print("ERROR: unknown session action", file=sys.stderr)
+        return 1
+
+
+@logged
 def cmd_restart(args):
     """Restart a fleet instance via pm2."""
     pm2_name = (
@@ -812,6 +831,23 @@ def build_parser():
     re_ = sub.add_parser("restart", help="Restart a fleet instance via pm2")
     re_.add_argument("name", help="Instance name")
 
+    # session
+    se = sub.add_parser("session", help="Session lifecycle (list/clear/clear-all)")
+    se_sub = se.add_subparsers(dest="session_action")
+    se_list = se_sub.add_parser("list", help="List active sessions")
+    se_list.add_argument(
+        "--instance", default=None, help="Fleet instance name (default: prime)"
+    )
+    se_clear = se_sub.add_parser("clear", help="Clear session for a group folder")
+    se_clear.add_argument("group_folder", help="Group folder name (e.g. telegram_main)")
+    se_clear.add_argument(
+        "--instance", default=None, help="Fleet instance name (default: prime)"
+    )
+    se_clear_all = se_sub.add_parser("clear-all", help="Clear all sessions")
+    se_clear_all.add_argument(
+        "--instance", default=None, help="Fleet instance name (default: prime)"
+    )
+
     return parser
 
 
@@ -841,6 +877,7 @@ def main():
         "health": cmd_health,
         "messages": cmd_messages,
         "restart": cmd_restart,
+        "session": cmd_session,
     }
 
     if args.subcommand in dispatch:

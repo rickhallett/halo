@@ -48,6 +48,7 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | reportctl | `reportctl`    | Periodic digests from halos ecosystem                                      |
 | agentctl  | `agentctl`     | LLM session tracking and spin detection                                    |
 | briefings | `hal-briefing` | Cron-driven daily Telegram digests (0600 morning, 2100 nightly)            |
+| halctl    | `halctl`       | Fleet management + session lifecycle (see below)                           |
 
 ## Agents & Commands
 
@@ -66,6 +67,24 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | /review-handoff      | command | `.claude/commands/review-handoff.md`     | Implementation model produces review map (not self-certification)             |
 | /review-blind        | command | `.claude/commands/review-blind.md`       | Pass 1: blind adversarial review, ignores author framing                      |
 | /review-targeted     | command | `.claude/commands/review-targeted.md`    | Pass 2: verify handoff claims against code                                    |
+
+## Session Management
+
+Agent sessions (Claude SDK conversation state) are managed through `halctl session`. **Never clear sessions via raw sqlite3 commands** — always use halctl so mutations are logged via hlog and discoverable in logctl.
+
+```bash
+halctl session list                              # list prime sessions
+halctl session list --instance ben               # list fleet instance sessions
+halctl session clear telegram_main               # clear a specific group's session (prime)
+halctl session clear telegram_main --instance ben # clear fleet instance session
+halctl session clear-all                         # nuclear: clear all prime sessions
+halctl session clear-all --instance ben          # nuclear: clear all fleet sessions
+```
+
+When to clear a session:
+- Agent is unresponsive or spinning (poisoned context)
+- Rate limit on resume (bloated session)
+- After major CLAUDE.md or prompt changes that need a clean start
 
 ## Key Files
 

@@ -481,10 +481,10 @@ export async function runContainerAgent(
     // graceful _close sentinel has time to trigger before the hard kill fires.
     const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
 
-    const killOnTimeout = () => {
+    const killOnTimeout = (reason: string) => {
       timedOut = true;
       logger.error(
-        { group: group.name, containerName },
+        { group: group.name, containerName, reason },
         'Container timeout, stopping gracefully',
       );
       exec(stopContainer(containerName), { timeout: 15000 }, (err) => {
@@ -498,12 +498,12 @@ export async function runContainerAgent(
       });
     };
 
-    let timeout = setTimeout(killOnTimeout, timeoutMs);
+    let timeout = setTimeout(() => killOnTimeout('idle'), timeoutMs);
 
-    // Reset the timeout whenever there's activity (streaming output)
+    // Reset the idle timeout whenever there's activity (streaming output)
     const resetTimeout = () => {
       clearTimeout(timeout);
-      timeout = setTimeout(killOnTimeout, timeoutMs);
+      timeout = setTimeout(() => killOnTimeout('idle'), timeoutMs);
     };
 
     container.on('close', (code) => {
