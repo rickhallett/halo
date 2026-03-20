@@ -82,8 +82,13 @@ function loadWelcomeMessages(): string[] {
 }
 
 /**
- * Write onboarding state to memory/onboarding-state.yaml for agent handoff.
- * The agent reads this file to know where the bot-level onboarding left off.
+ * Write onboarding state to memory/onboarding/{groupFolder}-{senderId}.yaml
+ * for agent handoff. The agent reads this file to know where the bot-level
+ * onboarding left off.
+ *
+ * FLT.ONBOARD.01: Each sender/group pair now gets its own file instead of
+ * sharing one global onboarding-state.yaml. This prevents concurrent
+ * onboarding flows from overwriting each other across users and groups.
  */
 function writeOnboardingYaml(
   groupFolder: string,
@@ -91,9 +96,11 @@ function writeOnboardingYaml(
   state: OnboardingState,
   waiverAcceptedAt?: string,
 ): void {
-  const groupDir = path.join(process.cwd(), 'groups', groupFolder);
-  const memDir = path.join(process.cwd(), 'memory');
-  const yamlPath = path.join(memDir, 'onboarding-state.yaml');
+  const onboardDir = path.join(process.cwd(), 'memory', 'onboarding');
+  const yamlPath = path.join(
+    onboardDir,
+    `${groupFolder}-${senderId}.yaml`,
+  );
 
   const content =
     [
@@ -109,8 +116,11 @@ function writeOnboardingYaml(
       .join('\n') + '\n';
 
   try {
-    fs.mkdirSync(memDir, { recursive: true });
+    fs.mkdirSync(onboardDir, { recursive: true });
     fs.writeFileSync(yamlPath, content);
+    // Also write the legacy path for backwards compatibility during transition
+    const legacyPath = path.join(process.cwd(), 'memory', 'onboarding-state.yaml');
+    fs.writeFileSync(legacyPath, content);
   } catch (err) {
     logger.warn({ err, yamlPath }, 'Failed to write onboarding YAML');
   }

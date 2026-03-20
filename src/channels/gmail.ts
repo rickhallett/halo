@@ -200,9 +200,19 @@ export class GmailChannel implements Channel {
 
       for (const stub of messages) {
         if (!stub.id || this.processedIds.has(stub.id)) continue;
-        this.processedIds.add(stub.id);
 
-        await this.processMessage(stub.id);
+        // CHL.GM.02: Mark as processed AFTER successful processing, not before.
+        // Previously, a transient fetch/parse failure would permanently suppress
+        // redelivery of the message for the rest of the process lifetime.
+        try {
+          await this.processMessage(stub.id);
+          this.processedIds.add(stub.id);
+        } catch (err) {
+          logger.warn(
+            { messageId: stub.id, err },
+            'Gmail message processing failed, will retry on next poll',
+          );
+        }
       }
 
       // Cap processed ID set to prevent unbounded growth
