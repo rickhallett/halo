@@ -14,8 +14,19 @@ export interface SenderAllowlistConfig {
   logDenied: boolean;
 }
 
+// DEFAULT_CONFIG is used when no allowlist file exists (ENOENT).
+// This is the correct behavior: no config = no restriction.
 const DEFAULT_CONFIG: SenderAllowlistConfig = {
   default: { allow: '*', mode: 'trigger' },
+  chats: {},
+  logDenied: true,
+};
+
+// SEC.L5.03: DENY_CONFIG is used when a config file exists but is
+// unreadable, unparseable, or has invalid schema. Fail closed: a broken
+// security config denies everything rather than silently allowing all.
+const DENY_CONFIG: SenderAllowlistConfig = {
+  default: { allow: [], mode: 'trigger' },
   chats: {},
   logDenied: true,
 };
@@ -39,30 +50,37 @@ export function loadSenderAllowlist(
   try {
     raw = fs.readFileSync(filePath, 'utf-8');
   } catch (err: unknown) {
+    // No config file = no restriction (intended unconfigured state)
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return DEFAULT_CONFIG;
-    logger.warn(
+    // SEC.L5.03: Config exists but is unreadable — fail closed
+    logger.error(
       { err, path: filePath },
-      'sender-allowlist: cannot read config',
+      'sender-allowlist: cannot read config, failing closed (all senders denied)',
     );
-    return DEFAULT_CONFIG;
+    return DENY_CONFIG;
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    logger.warn({ path: filePath }, 'sender-allowlist: invalid JSON');
-    return DEFAULT_CONFIG;
+    // SEC.L5.03: Config exists but is not valid JSON — fail closed
+    logger.error(
+      { path: filePath },
+      'sender-allowlist: invalid JSON, failing closed (all senders denied)',
+    );
+    return DENY_CONFIG;
   }
 
   const obj = parsed as Record<string, unknown>;
 
   if (!isValidEntry(obj.default)) {
-    logger.warn(
+    // SEC.L5.03: Config exists but has invalid schema — fail closed
+    logger.error(
       { path: filePath },
-      'sender-allowlist: invalid or missing default entry',
+      'sender-allowlist: invalid or missing default entry, failing closed (all senders denied)',
     );
-    return DEFAULT_CONFIG;
+    return DENY_CONFIG;
   }
 
   const chats: Record<string, ChatAllowlistEntry> = {};

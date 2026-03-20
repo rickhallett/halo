@@ -183,6 +183,12 @@ export function startCredentialProxy(
           }
         }
 
+        // RESP.BOUNDARY.01: Set a request-level timeout on upstream calls so
+        // hung API connections fail fast instead of consuming the full container
+        // timeout budget. The 5-minute timeout is generous enough for long
+        // streaming responses but prevents indefinite hangs.
+        const UPSTREAM_TIMEOUT_MS = 5 * 60 * 1000;
+
         const upstream = makeRequest(
           {
             hostname: upstreamUrl.hostname,
@@ -190,6 +196,7 @@ export function startCredentialProxy(
             path: req.url,
             method: req.method,
             headers,
+            timeout: UPSTREAM_TIMEOUT_MS,
           } as RequestOptions,
           (upRes) => {
             res.writeHead(upRes.statusCode!, upRes.headers);
@@ -203,6 +210,14 @@ export function startCredentialProxy(
             }
           },
         );
+
+        upstream.on('timeout', () => {
+          logger.error(
+            { url: req.url, timeoutMs: UPSTREAM_TIMEOUT_MS },
+            'Credential proxy upstream timeout',
+          );
+          upstream.destroy(new Error('Upstream timeout'));
+        });
 
         upstream.on('error', (err) => {
           logger.error(
