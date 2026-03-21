@@ -386,12 +386,46 @@ When to clear a session:
 
 ### Documentation
 
-| Directory       | Purpose                                                                       |
-| --------------- | ----------------------------------------------------------------------------- |
-| `docs/d1/`      | Operational: debug checklist, security, diagrams, briefings, session patterns |
-| `docs/d2/`      | Architecture: specs, requirements, research, capability maps                  |
-| `docs/d3/`      | Deep dives + archive: SDK, Docker, completed plans, superseded docs           |
-| `docs-audit.py` | Repeatable docs audit (size, placement, staleness detection)                  |
+All markdown files in `docs/` MUST have YAML frontmatter with four required fields:
+
+```yaml
+---
+title: "Short descriptive title"
+category: spec | analysis | runbook | review | briefing | reference | guide | journal | archive
+status: draft | active | superseded | archived
+created: YYYY-MM-DD
+---
+```
+
+**Directory semantics** — placement follows information lifecycle:
+
+| Directory | Purpose | Rule of thumb |
+|-----------|---------|---------------|
+| `docs/d1/` | Working reference — operational runbooks, guides, briefings, journals | You'd `cat` this mid-task |
+| `docs/d2/` | Design record — specs, analyses, reviews, research | You'd read this before starting a task |
+| `docs/d3/` | Archive — superseded, completed, historical | Archaeology only |
+
+**Category vocabulary** — nine words, controlled, no synonyms:
+
+| Category | Where it lives | What it is |
+|----------|----------------|------------|
+| `runbook` | d1 | How to do X, step-by-step, command-oriented |
+| `guide` | d1 | Setup, config, onboarding, narrative |
+| `reference` | d1 | Module registry, security model, API surface |
+| `journal` | d1 | Logbook, lessons learned, session patterns |
+| `briefing` | d1/briefings | Machine-generated daily output |
+| `spec` | d2 | Prescriptive — what to build |
+| `analysis` | d2 | Descriptive — research, investigation, decision support |
+| `review` | d2/reviews | Audit findings, code review output |
+| `archive` | d3 | Superseded, completed, historical |
+
+**Indexes** — each directory has an auto-generated `INDEX.md` (never hand-edit). Rebuild with `docctl index rebuild` or the index generation script.
+
+**When creating docs:** Add frontmatter, pick the right category, put it in the right directory. When in doubt: d2 for new analysis/specs, d1 for how-to content.
+
+| File            | Purpose                                                      |
+|-----------------|--------------------------------------------------------------|
+| `docs-audit.py` | Repeatable docs audit (size, placement, staleness detection) |
 
 ## Skills
 
