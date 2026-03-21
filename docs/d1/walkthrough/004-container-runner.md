@@ -10,11 +10,11 @@ Spawns Docker containers for agent execution with per-group filesystem isolation
 
 | Function | Lines | Purpose |
 |----------|-------|---------|
-| `buildVolumeMounts()` | 60–287 | Constructs mount list: read-only project, writable group/memory/IPC, credential shadow, fleet visibility |
-| `buildContainerArgs()` | 289–339 | Translates mounts + auth into `docker run` CLI args |
-| `runContainerAgent()` | 341–717 | Main entry: spawn, pipe stdin, stream output, timeout, reap |
-| `writeTasksSnapshot()` | 719–743 | Filter tasks by group visibility, write to IPC |
-| `writeGroupsSnapshot()` | 752–781 | Write group list to IPC (main sees all; non-main sees empty) |
+| `buildVolumeMounts()` | ~60–290 | Constructs mount list: read-only project, writable group/memory/IPC, credential shadow, fleet visibility |
+| `buildContainerArgs()` | ~290–340 | Translates mounts + auth into `docker run` CLI args |
+| `runContainerAgent()` | ~340–770 | Main entry: spawn, pipe stdin, stream output, parse buffer cap, valid frame tracking, timeout, reap |
+| `writeTasksSnapshot()` | ~770–795 | Filter tasks by group visibility, write to IPC |
+| `writeGroupsSnapshot()` | ~800–833 | Write group list to IPC (main sees all; non-main sees empty) |
 
 The orchestrator ([003-orchestrator.md](003-orchestrator.md)) calls `runContainerAgent()` for every inbound message that passes the trigger filter. The orchestrator also calls `writeTasksSnapshot()` and `writeGroupsSnapshot()` to pre-populate the IPC namespace before each spawn.
 
@@ -216,10 +216,11 @@ The `.env` shadow and credential proxy together form the secrets isolation bound
 
 ## Complexity Hotspots
 
-1. **Sentinel parsing** — circular buffer logic with split-across-chunks risk. No explicit bounds check on `parseBuffer` size.
-2. **Output chain choreography** — promise chain ensures callbacks settle before resolving. Misbehaving callback stalls all subsequent messages for that group.
-3. **Mount sync for agent-runner source** — compares VERSION files; thrashes if VERSION missing.
-4. **Auth mode detection** — called on every spawn with no caching.
+1. ~~**Sentinel parsing buffer**~~ — *Resolved (CTR.PARSE.02):* `parseBuffer` now capped at `MAX_PARSE_BUFFER` with front-truncation when exceeded.
+2. ~~**Output chain stall**~~ — *Partially resolved (CTR.CHAIN.01):* `onOutput` callbacks wrapped with `.catch()` so a rejected callback no longer wedges the chain. Still worth monitoring.
+3. **Valid frame tracking** (CTR.PARSE.03) — Container exit with 0 valid frames now returns error instead of silent success.
+4. **Mount sync for agent-runner source** — compares VERSION files; thrashes if VERSION missing.
+5. **Auth mode detection** — called on every spawn with no caching.
 
 ## Estimated Review Time
 

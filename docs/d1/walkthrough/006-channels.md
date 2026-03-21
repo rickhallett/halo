@@ -89,7 +89,7 @@ classDiagram
 | Slack | `slack:{channelId}` | (future) |
 | Discord | `dc:{serverId}:{channelId}` | (future) |
 
-## Telegram (`src/channels/telegram.ts`, 571 LOC)
+## Telegram (`src/channels/telegram.ts`, 582 LOC)
 
 ### Telegram Message Processing
 
@@ -156,7 +156,7 @@ Bot Pool Round-Robin Assignment
 State machine intercepting messages before agent sees user:
 1. `/start` or `/welcome` → sends welcome messages 01-03
 2. State: `welcome_sent` → waits for YES/NO
-3. YES → sends message 04, advances to `active`, writes YAML for agent handoff
+3. YES → sends message 04, advances to `active`, writes per-sender YAML to `memory/onboarding/{groupFolder}-{senderId}.yaml` for agent handoff (FLT.ONBOARD.01 — prevents concurrent onboarding flows from overwriting each other)
 4. Non-YES → "No rush" redirect
 
 ```mermaid
@@ -188,12 +188,13 @@ flowchart TD
 - Markdown fallback: tries Markdown parse, falls back to plain text on error
 - JID ownership bootstrap: empty set → claims all `tg:` JIDs (first bot wins)
 
-## Gmail (`src/channels/gmail.ts`, 364 LOC)
+## Gmail (`src/channels/gmail.ts`, 374 LOC)
 
 ### Polling Model
 - Polls `is:unread category:primary` every 60s
 - Exponential backoff on error (cap: 30 minutes)
 - Processed IDs tracked in memory set (capped at 5000)
+- IDs added *after* successful processing, not before (CHL.GM.02 — transient failures no longer permanently suppress redelivery)
 
 ```mermaid
 sequenceDiagram
@@ -245,8 +246,8 @@ sequenceDiagram
 | File | LOC | Time |
 |------|-----|------|
 | registry.ts | 31 | 3 min |
-| telegram.ts | 571 | 45 min |
-| gmail.ts | 364 | 35 min |
+| telegram.ts | 582 | 45 min |
+| gmail.ts | 374 | 35 min |
 | index.ts | 15 | 2 min |
 | **Total** | **981** | **~85 min** |
 

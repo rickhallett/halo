@@ -134,8 +134,9 @@ erDiagram
 ## Key Functions
 
 **Messages:**
-- `getNewMessages(jids[], lastTimestamp, botPrefix, limit)` — finds unprocessed user messages across multiple chats. Uses subquery: inner DESC LIMIT for efficiency, outer ASC for chronological order.
+- `getNewMessages(jids[], lastTimestamp, botPrefix, limit)` — finds unprocessed user messages across multiple chats. Simple `ORDER BY timestamp ASC LIMIT N` returns the oldest unseen messages first.
 - `getMessagesSince(chatJid, since, botPrefix, limit)` — single-chat variant.
+- `storeMessageDirect(msg)` — persists outbound agent responses to SQLite for observability (OBS.LOG.02).
 
 **Tasks:**
 - `getDueTasks()` — active tasks where `next_run <= now()`, ordered by next_run.
@@ -148,45 +149,34 @@ erDiagram
 - `getSession()` / `setSession()` — read/write Claude SDK session IDs per group folder. The orchestrator ([003-orchestrator.md](003-orchestrator.md)) loads the session before spawning a container, and saves the `newSessionId` returned by the container runner ([004-container-runner.md](004-container-runner.md)).
 - `getRouterState()` / `setRouterState()` — cursor persistence for the message polling loop.
 
-### Message Query Flow (Subquery Reversal)
+### Message Query Flow
 
-The pagination pattern is used by both `getNewMessages()` and `getMessagesSince()`. The inner query grabs the N most recent matching rows (DESC), then the outer query flips them back to chronological order (ASC) for the consumer:
+Both `getNewMessages()` and `getMessagesSince()` use a straightforward `ORDER BY timestamp ASC LIMIT N` — returning the oldest unseen messages first, in chronological order.
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  SELECT * FROM (                                            │
-│    ┌─────────────────────────────────────────────────────┐  │
-│    │  Inner query: newest N rows                        │  │
-│    │  SELECT ... FROM messages                          │  │
-│    │  WHERE timestamp > ? AND chat_jid IN (...)         │  │
-│    │    AND is_bot_message = 0 AND is_from_me = 0       │  │
-│    │    AND content NOT LIKE 'BotName:%'                 │  │
-│    │    AND content != '' AND content IS NOT NULL        │  │
-│    │  ORDER BY timestamp DESC  ←── grab newest first    │  │
-│    │  LIMIT ?                  ←── cap at N rows        │  │
-│    └─────────────────────────────────────────────────────┘  │
-│  ) ORDER BY timestamp          ←── flip to chronological   │
-│                                                             │
-│  Result: up to N rows, oldest-first, from the newest end   │
-└─────────────────────────────────────────────────────────────┘
+SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me
+FROM messages
+WHERE timestamp > ? AND chat_jid IN (...)
+  AND is_bot_message = 0 AND is_from_me = 0
+  AND content NOT LIKE 'BotName:%'
+  AND content != '' AND content IS NOT NULL
+ORDER BY timestamp ASC
+LIMIT ?
 
-Why not just ORDER BY timestamp ASC LIMIT N?
-  → That would return the N *oldest* unprocessed messages.
-  → If a backlog exceeds N, the agent would never catch up
-    to the present — it would always process stale messages.
-  → The reversal ensures the agent sees the *most recent* N,
-    skipping the stale tail.
+Result: up to N rows, oldest-first from the cursor position.
 ```
+
+*Historical note:* An earlier version used a DESC subquery reversal to return the *newest* N messages. This was replaced (DAT.QUERY.01) because it permanently skipped older messages when backlogs exceeded the cap — the agent could never catch up.
 
 ## Migration Strategy
 
-Append-only ALTER TABLE wrapped in try-catch for idempotence:
+Append-only ALTER TABLE via `migrateColumn()` helper (DAT.MIG.01). The helper distinguishes "duplicate column" (safe to skip) from real errors (disk full, corruption) — propagating the latter instead of silently swallowing:
 - `context_mode` added to scheduled_tasks (default: 'isolated')
 - `is_bot_message` added to messages (backfilled from ASSISTANT_NAME prefix)
 - `is_main` added to registered_groups (backfilled where folder = 'main')
 - `channel` and `is_group` added to chats (backfilled from JID patterns)
 
-No schema version tracking — relies on try-catch idempotence.
+No schema version tracking — relies on migrateColumn() idempotence.
 
 ### Migration Flow
 
@@ -223,8 +213,8 @@ See [007-security.md](007-security.md) for the broader container isolation model
 
 ## Complexity Hotspots
 
-1. **Message query filters** — dual filtering by is_bot_message AND content prefix for backward compat. Subquery reversal for pagination is correct but not immediately obvious.
-2. **Migration safety** — silent try-catch swallows schema errors. No version tracking means no way to distinguish "never migrated" from "already migrated."
+1. **Message query filters** — dual filtering by is_bot_message AND content prefix for backward compat.
+2. ~~**Migration safety**~~ — *Resolved (DAT.MIG.01):* `migrateColumn()` now propagates real errors. Only "duplicate column" is swallowed.
 3. **Chat metadata upserts** — MAX() function for timestamp ordering could invert if system clock skews.
 
 ## Estimated Review Time

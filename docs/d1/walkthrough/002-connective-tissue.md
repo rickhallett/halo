@@ -178,7 +178,7 @@ The `IpcDeps` interface lets [src/index.ts](003-orchestrator.md) provide the act
 
 **Connections:** Called from [src/index.ts](003-orchestrator.md) (starts the watcher). Depends on [src/db.ts](005-data-layer.md) for task CRUD. Depends on `src/config.ts` for paths and intervals. The container-side counterpart is `ipc-mcp-stdio.ts`.
 
-## `src/group-queue.ts` (365 LOC) — The Traffic Controller
+## `src/group-queue.ts` (430 LOC) — The Traffic Controller
 
 Manages container concurrency across groups. This is the scheduler that decides *when* containers run.
 
@@ -220,15 +220,15 @@ sequenceDiagram
 
 ### Follow-up message delivery
 
-`sendMessage(groupJid, text)` writes a JSON file to `data/ipc/{groupFolder}/input/`, which the container polls. This is how messages reach an already-running container without restarting it.
+`sendMessage(groupJid, text)` writes a JSON file to `data/ipc/{groupFolder}/input/`, which the container polls. This is how messages reach an already-running container without restarting it. The cursor (`lastAgentTimestamp`) is **not** advanced on pipe (RESP.IPC.01) — if the process crashes before the container drains the file, restart recovery re-fetches these messages from SQLite.
 
 ### Retry logic
 
-Exponential backoff: base 5s, doubling, max 5 retries. After max retries, drops messages but will retry on next incoming.
+Exponential backoff: base 5s, doubling, max 5 retries. After max retries, schedules a recovery check (GQ.RETRY.02) so stranded messages are eventually retried even if the conversation goes quiet.
 
 ### Graceful shutdown
 
-`shutdown()` detaches containers rather than killing them. This prevents WhatsApp reconnection restarts from murdering working agents — containers finish via their own idle timeout.
+`shutdown()` signals active containers to close via `_close` sentinel, waits up to `gracePeriodMs` for them to exit, then force-stops stragglers via `docker stop` (SVC.SHUT.01). This prevents the startup orphan cleanup from killing containers with in-flight responses.
 
 **Connections:** Used by [src/index.ts](003-orchestrator.md) (creates the queue, provides `processMessagesFn`). Used by `src/task-scheduler.ts` (enqueues tasks). Manages `ChildProcess` references from [src/container-runner.ts](004-container-runner.md).
 
@@ -275,7 +275,7 @@ Small but structurally important. Three functions:
 
 **Connections:** Called by [src/index.ts](003-orchestrator.md) for both inbound formatting and outbound routing. `stripInternalTags` gives agents a way to "think out loud" without the output reaching users. Uses the [`Channel`](#srctypests-108-loc--the-vocabulary) interface from `src/types.ts` — see [006-channels.md](006-channels.md) for implementations.
 
-## `container/agent-runner/src/index.ts` (601 LOC) — The Agent Brain
+## `container/agent-runner/src/index.ts` (657 LOC) — The Agent Brain
 
 What actually runs inside the Docker container. This is the other side of the host/container boundary. See [004-container-runner.md](004-container-runner.md) for the host side.
 
@@ -309,11 +309,12 @@ parse stdin → build prompt (+ drain pending IPC)
 
 A push-based async iterable that keeps the SDK's `isSingleUserTurn` false. This is important — it allows agent teams subagents to run to completion. Without it, the SDK would exit after a single turn.
 
-### Spin detection (three layers)
+### Spin detection (four layers)
 
 1. **Rate limit on resume** (within 10 messages) → session poisoned, discard. Returns without `newSessionId` so host drops the session.
-2. **Max turns without output** (150 messages, 0 text results) → spinning, kill. Also discards session.
-3. **`_close` sentinel** → graceful exit from host.
+2. **Max turns without output** — 150 messages with 0 text results and no tool use → spinning, kill. Tool-heavy turns (subagent orchestration) get 3× the limit (450 messages) since tool calls indicate forward progress (AGR.SPIN.02).
+3. **Query timeout** (RESP.BOUNDARY.01) — 10-minute inactivity timer inside each query. Catches hung SDK connections before the outer container timeout fires.
+4. **`_close` sentinel** → graceful exit from host.
 
 ### SDK configuration
 

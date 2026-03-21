@@ -1,10 +1,10 @@
 # 009 — Halos Ecosystem
 
-*2026-03-20 — The Python tooling layer (16,471 LOC)*
+*2026-03-20 — The Python tooling layer (~17,200 LOC)*
 
 ## One-Sentence Purpose
 
-Eight CLI tools providing fleet management, work tracking, structured memory, briefings, logging, agent monitoring, cron management, and reporting — collectively larger than the runtime they support.
+Nine CLI tools providing fleet management, work tracking, structured memory, briefings, logging, agent monitoring, cron management, personal metrics tracking, and reporting — collectively larger than the runtime they support.
 
 ## Module Map
 
@@ -30,8 +30,9 @@ Eight CLI tools providing fleet management, work tracking, structured memory, br
  nightctl memctl    agentctl
  (work)  (memory)  (sessions)
     │
- cronctl
- (cron)
+    ├───────┐
+ cronctl  trackctl
+ (cron)   (metrics)
 ```
 
 ```mermaid
@@ -46,6 +47,7 @@ flowchart TD
     memctl["memctl<br/>Structured Memory<br/>1,167 LOC"]
     agentctl["agentctl<br/>Session Tracking<br/>555 LOC"]
     cronctl["cronctl<br/>Cron Management<br/>519 LOC"]
+    trackctl["trackctl<br/>Personal Metrics<br/>728 LOC"]
 
     halctl -- "PM2 management" --> runtime
     briefings -- "IPC delivery" --> runtime
@@ -58,6 +60,7 @@ flowchart TD
     halctl --> memctl
     halctl --> agentctl
     nightctl --> cronctl
+    briefings -- "imports summaries" --> trackctl
 
     briefings -- "subprocess calls" --> logctl
     briefings -- "subprocess calls" --> agentctl
@@ -72,13 +75,14 @@ flowchart TD
 ## LOC Distribution
 
 ```mermaid
-pie title Lines of Code by Module (16,471 total)
+pie title Lines of Code by Module (~17,200 total)
     "halctl (4,321)" : 4321
     "nightctl (2,452)" : 2452
     "memctl (1,167)" : 1167
     "logctl (831)" : 831
     "briefings (818)" : 818
     "reportctl (801)" : 801
+    "trackctl (728)" : 728
     "agentctl (555)" : 555
     "cronctl (519)" : 519
 ```
@@ -231,6 +235,19 @@ Briefings are triggered by cron — see [002-connective-tissue.md](002-connectiv
 
 **Review time:** ~45 min
 
+### trackctl — Personal Metrics Tracker (728 LOC, SIMPLE)
+
+**Commands:** domains, add, list, edit, delete, streak, summary, export
+
+**Key concepts:**
+- Pluggable domain system: each domain is a Python file in `domains/` that calls `register(name, description, target=N)`
+- SQLite-per-domain storage (`store/track_<domain>.db`)
+- Streak logic: any UTC calendar day with >= 1 entry counts; missing a day resets current streak
+- Briefing integration: `engine.text_summary(domain, target)` returns one-liner for morning/nightly digests
+- Current domains: zazen, movement, study-source, study-neetcode, study-crafters
+
+**Review time:** ~30 min
+
 ### cronctl — Cron Management (519 LOC, SIMPLE)
 
 **Commands:** add, list, enable, disable, install, uninstall, status, run
@@ -268,6 +285,7 @@ halctl          memctl          shared memory dir       read
 logctl          reportctl       Python import          pull
 reportctl       logctl          collector data          pull
 nightctl        cronctl         job definitions         read
+trackctl        briefings       text_summary() import   pull
 cronctl         system cron     generated crontab       push
 agentctl        container logs  file parsing            pull
 all modules     hlog            structured JSON logs    push
@@ -282,7 +300,7 @@ all modules     hlog            structured JSON logs    push
 
 ## Total Estimated Review Time
 
-~545 human-minutes (~9 hours) for all modules. Critical path: halctl → nightctl → briefings (300 min / 5 hours).
+~575 human-minutes (~9.5 hours) for all modules. Critical path: halctl → nightctl → briefings (300 min / 5 hours).
 
 ## See Also
 

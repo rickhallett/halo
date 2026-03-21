@@ -4,45 +4,45 @@
 
 ## Summary
 
-~28,000 LOC across three codebases: nanoclaw core (TypeScript), halos tooling (Python), and the container agent runner (TypeScript). Plus ~1,100 lines of templates.
+~29,000 LOC across three codebases: nanoclaw core (TypeScript), halos tooling (Python), and the container agent runner (TypeScript). Plus ~1,100 lines of templates.
 
 ```mermaid
 %%{init: {"pie": {"textPosition": 0.75}}}%%
 pie title LOC Distribution by Module
-    "halos (Python)" : 16471
-    "src (TypeScript)" : 10358
-    "container" : 1122
+    "halos (Python)" : 17200
+    "src (TypeScript)" : 10610
+    "container" : 1160
     "templates" : 1079
 ```
 
 ## Module Sizes
 
-### nanoclaw core (`src/`) — 10,358 LOC
+### nanoclaw core (`src/`) — ~10,610 LOC
 
 | File | LOC | Role |
 |------|-----|------|
 | `channels/telegram.test.ts` | 953 | Telegram channel tests |
-| [`container-runner.ts`](004-container-runner.md) | 781 | Spawns agent containers with mounts |
-| [`db.ts`](005-data-layer.md) | 765 | SQLite: messages, sessions, onboarding, assessments |
+| [`container-runner.ts`](004-container-runner.md) | 833 | Spawns agent containers with mounts |
+| [`db.ts`](005-data-layer.md) | 773 | SQLite: messages, sessions, onboarding, assessments |
 | `ipc-auth.test.ts` | 678 | IPC auth tests |
-| [`index.ts`](003-orchestrator.md) | 674 | Orchestrator: state, message loop, agent invocation |
-| [`channels/telegram.ts`](006-channels.md) | 571 | Telegram channel: polling, onboarding, welcome |
+| [`index.ts`](003-orchestrator.md) | 755 | Orchestrator: state, message loop, agent invocation |
+| [`channels/telegram.ts`](006-channels.md) | 582 | Telegram channel: polling, onboarding, welcome |
 | `group-queue.test.ts` | 484 | Group queue tests |
 | `db.test.ts` | 484 | DB tests |
 | [`ipc.ts`](002-connective-tissue.md) | 465 | IPC watcher and task processing |
 | [`mount-security.ts`](007-security.md) | 419 | Filesystem mount security |
 | `remote-control.test.ts` | 392 | Remote control tests |
-| [`group-queue.ts`](002-connective-tissue.md) | 365 | Per-group message queueing |
-| [`channels/gmail.ts`](006-channels.md) | 364 | Gmail channel |
+| [`group-queue.ts`](002-connective-tissue.md) | 430 | Per-group message queueing |
+| [`channels/gmail.ts`](006-channels.md) | 374 | Gmail channel |
 | [`task-scheduler.ts`](002-connective-tissue.md) | 282 | Scheduled task runner |
 | `formatting.test.ts` | 256 | Formatting tests |
-| [`credential-proxy.ts`](007-security.md) | 236 | Credential proxy for containers |
+| [`credential-proxy.ts`](007-security.md) | 251 | Credential proxy for containers |
 | [`remote-control.ts`](007-security.md) | 218 | Remote control interface |
 | Everything else | ~1,370 | Config, types, env, router, smaller modules |
 
 **Test code:** ~3,900 LOC (38% of src/) — healthy ratio.
 
-### halos (`halos/`) — 16,471 LOC
+### halos (`halos/`) — ~17,200 LOC
 
 | Module | LOC | Purpose |
 |--------|-----|---------|
@@ -55,6 +55,7 @@ pie title LOC Distribution by Module
 | [`agentctl/`](009-halos-ecosystem.md) | 555 | LLM session tracking, spin detection |
 | `todoctl/` | 673 | Todo management (predecessor to nightctl) |
 | [`cronctl/`](009-halos-ecosystem.md) | 519 | Cron job definitions |
+| [`trackctl/`](009-halos-ecosystem.md) | 728 | Personal metrics tracker |
 | `halyt/` | 362 | Transcript analysis |
 | `microhal/` | 279 | Onboarding system |
 | `telemetry/` | 240 | Telemetry emission |
@@ -66,7 +67,7 @@ pie title LOC Distribution by Module
 
 | File | LOC | Role |
 |------|-----|------|
-| [`agent-runner/src/index.ts`](002-connective-tissue.md) | 601 | Agent SDK runner inside container |
+| [`agent-runner/src/index.ts`](002-connective-tissue.md) | 657 | Agent SDK runner inside container |
 | [`agent-runner/src/ipc-mcp-stdio.ts`](002-connective-tissue.md) | 338 | MCP stdio bridge for IPC |
 | `skills/agent-browser/SKILL.md` | 159 | Browser automation skill |
 | `build.sh` | 24 | Container build script |
@@ -111,9 +112,9 @@ xychart-beta
 ### Interpretation
 
 The **critical path** runs through three files:
-1. **[`src/index.ts`](003-orchestrator.md)** (674 LOC, 3,924 churn) — The orchestrator. Everything flows through here.
-2. **[`src/container-runner.ts`](004-container-runner.md)** (781 LOC, 1,663 churn) — How agents get spawned. High churn = still stabilising.
-3. **[`src/db.ts`](005-data-layer.md)** (765 LOC, ~832 churn) — Data layer. Schema has been evolving.
+1. **[`src/index.ts`](003-orchestrator.md)** (755 LOC, 3,924+ churn) — The orchestrator. Everything flows through here.
+2. **[`src/container-runner.ts`](004-container-runner.md)** (833 LOC, 1,663+ churn) — How agents get spawned. High churn = still stabilising.
+3. **[`src/db.ts`](005-data-layer.md)** (773 LOC, ~832+ churn) — Data layer. Schema has been evolving.
 
 The **halos side** is more stable — most modules were written in focused passes and haven't churned much since. [`halctl`](009-halos-ecosystem.md) is the exception (fleet management is inherently complex).
 

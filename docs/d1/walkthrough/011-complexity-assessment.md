@@ -18,7 +18,7 @@ An engineer with 80%+ understanding of how everything fits together would be sol
 
 **Fleet personality composition.** Four-layer prompt assembly (governance → personality YAML → user context → group identity), onboarding state machines with three-strike rules, Likert assessments. Domain-specific complexity with no analogue in standard software patterns.
 
-**Eight Python CLI modules** (halos) that cross-cut the TypeScript runtime — structured logging, memory governance with decay pruning, fleet provisioning with cascade freezing. Two languages, two ecosystems, shared state via SQLite and filesystem.
+**Nine Python CLI modules** (halos) that cross-cut the TypeScript runtime — structured logging, memory governance with decay pruning, fleet provisioning with cascade freezing. Two languages, two ecosystems, shared state via SQLite and filesystem.
 
 ## What Keeps It Below Truly Hard Systems
 
@@ -49,7 +49,7 @@ An engineer with 80%+ understanding of how everything fits together would be sol
 
 ## Summary
 
-NanoClaw's complexity is **architectural, not algorithmic**. There are no clever algorithms — the difficulty is in understanding how ~15 moving parts coordinate across two languages, a container boundary, and file-based IPC, with security constraints at every seam. Reading any single file is straightforward; tracing a message end-to-end through all ten steps of the flow requires holding a lot of context simultaneously.
+NanoClaw's complexity is **architectural, not algorithmic**. There are no clever algorithms — the difficulty is in understanding how ~17 moving parts coordinate across two languages, a container boundary, and file-based IPC, with security constraints at every seam. Reading any single file is straightforward; tracing a message end-to-end through all ten steps of the flow requires holding a lot of context simultaneously.
 
 The closest industrial analogue is a **CI runner** (think a simplified BuildKite agent or GitHub Actions runner): spawn containers, feed them work, parse their output, manage concurrency, handle timeouts, persist state. The fleet/personality layer is the genuinely novel part — there's no off-the-shelf comparison for "spawn an AI agent with a composed personality profile and onboarding assessment protocol."
 

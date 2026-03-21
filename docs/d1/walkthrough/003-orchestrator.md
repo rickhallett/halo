@@ -8,19 +8,19 @@ Main entry point and message loop controller that coordinates channel connection
 
 ## Structural Breakdown
 
-| Section | Lines | Purpose |
+| Section | Lines (approx) | Purpose |
 |---------|-------|---------|
-| Imports & Setup | 1–66 | Load dependencies |
-| Global State | 68–75 | Message loop state, session tracking, registered groups |
-| State Management | 77–97 | `loadState()` / `saveState()` — persist cursors and sessions to SQLite |
-| Group Registration | 99–121 | `registerGroup()` — validate and store group metadata |
-| Group Enumeration | 127–139 | `getAvailableGroups()` — export sorted group list for agent visibility |
-| Message Processing | 152–274 | `processGroupMessages()` — core: fetch, trigger check, invoke agent |
-| Agent Execution | 276–355 | `runAgent()` — wrap container invocation, track sessions, write snapshots |
-| Main Message Loop | 357–456 | `startMessageLoop()` — infinite poll, deduplicate, queue or pipe |
-| Startup Recovery | 462–474 | `recoverPendingMessages()` — check for stalled messages on restart |
-| Container System Init | 476–479 | Verify Docker runtime, clean orphans |
-| Main & Shutdown | 481–674 | `main()` — startup sequence, signal handlers, channel connection |
+| Imports & Setup | 1–70 | Load dependencies |
+| Global State | 70–80 | Message loop state, session tracking, registered groups |
+| State Management | 80–100 | `loadState()` / `saveState()` — persist cursors and sessions to SQLite |
+| Group Registration | 100–125 | `registerGroup()` — validate and store group metadata |
+| Group Enumeration | 130–145 | `getAvailableGroups()` — export sorted group list for agent visibility |
+| Message Processing | 155–290 | `processGroupMessages()` — core: fetch, trigger check, invoke agent, persist outbound responses (OBS.LOG.02) |
+| Agent Execution | 290–370 | `runAgent()` — wrap container invocation, track sessions, write snapshots |
+| Main Message Loop | 370–490 | `startMessageLoop()` — infinite poll, deduplicate, queue or pipe (cursor no longer advanced on pipe — RESP.IPC.01) |
+| Startup Recovery | 495–510 | `recoverPendingMessages()` — check for stalled messages on restart |
+| Container System Init | 510–515 | Verify Docker runtime, clean orphans |
+| Main & Shutdown | 515–755 | `main()` — startup sequence, graceful shutdown (SVC.SHUT.01), channel connection, outbound message persistence |
 
 ## Global State
 

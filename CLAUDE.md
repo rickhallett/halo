@@ -23,6 +23,112 @@ This section will evolve. For now, it's a tone seed — the personality equivale
 
 Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
 
+## System Schematic
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ NanoClaw Runtime (Node.js, src/ ~10,600 LOC)                       │
+│                                                                     │
+│  ┌──────────┐   ┌──────────┐                                       │
+│  │ Telegram  │   │  Gmail   │   (channels self-register via        │
+│  │  :582     │   │  :374    │    registry.ts:31)                    │
+│  └────┬──┬──┘   └────┬──┬──┘                                       │
+│       │  ▲           │  ▲                                           │
+│       ▼  │           ▼  │                                           │
+│  ┌───────┴───────────┴──────────────────────────────────────┐      │
+│  │ index.ts:755 — Orchestrator                               │      │
+│  │  startup → store msg → trigger check → enqueue            │      │
+│  └──────┬───────────────────────────────────┬───────────────┘      │
+│         │                                   │                       │
+│         ▼                                   ▼                       │
+│  ┌──────────────┐                   ┌───────────────┐              │
+│  │ group-queue   │                   │ task-scheduler │              │
+│  │ :430          │                   │ :286           │              │
+│  │ max 5 concur  │                   │ 60s poll       │              │
+│  │ per-group     │                   │ drift-resist   │              │
+│  │ mutex         │                   └───────┬───────┘              │
+│  └──────┬───────┘                           │                       │
+│         │                                   │                       │
+│         ▼                                   ▼                       │
+│  ┌─────────────────────────────────────────────────────────┐       │
+│  │ container-runner.ts:833                                  │       │
+│  │  Docker spawn · mount validation · sentinel parsing      │       │
+│  │  OUTPUT_START/END framing · parse buffer cap             │       │
+│  └──────┬──────────────────────────────────┬───────────────┘       │
+│         │ docker run                       ▲ stdout                 │
+│  ═══════╪══════════════════════════════════╪═══ Docker boundary ══  │
+│         ▼                                  │                        │
+│  ┌─────────────────────────────────────────┴───────────────┐       │
+│  │ container/agent-runner/src/index.ts:657                  │       │
+│  │  SDK query loop · 3-layer spin detection · 10min timeout │       │
+│  └──────┬──────────────────────────────────────────────────┘       │
+│         │ MCP tool calls                                            │
+│         ▼                                                           │
+│  ┌─────────────────────────────────────────────────────────┐       │
+│  │ ipc-mcp-stdio.ts:338 — MCP tools                        │       │
+│  │  send_message · task CRUD · list_tasks · register_group  │       │
+│  │  writes IPC files (write-then-rename atomicity)          │       │
+│  └──────┬──────────────────────────────────────────────────┘       │
+│  ═══════╪══════════════════════════════════════ Docker boundary ══  │
+│         ▼                                                           │
+│  ┌──────────────┐     ┌────────────────┐                           │
+│  │ ipc.ts:465   │────▶│ router.ts:52   │──▶ Channel ──▶ User      │
+│  │ 1s poll      │     │ XML formatting │                           │
+│  │ isMain auth  │     └────────────────┘                           │
+│  └──────────────┘                                                   │
+│                                                                     │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐   │
+│  │ credential-proxy │  │ mount-security    │  │ sender-allowlist│   │
+│  │ :251             │  │ :419             │  │ :146            │   │
+│  │ key substitution │  │ allowlist+block  │  │ per-chat filter │   │
+│  │ 5min upstream TO │  │ symlink resolve  │  └─────────────────┘   │
+│  └─────────────────┘  └──────────────────┘                         │
+│                                                                     │
+│  db.ts:773 (9 tables) · config.ts:94 · types.ts:107               │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ Halos Python Tooling (halos/, ~17,200 LOC, install: uv sync)       │
+│                                                                     │
+│  Fleet & Ops          Tracking & Memory       Reporting             │
+│  ├─ halctl    :4321   ├─ nightctl  :2452      ├─ briefings  :818   │
+│  │  provision/smoke   │  task state machine    │  morning+nightly   │
+│  │  session mgmt      ├─ memctl    :1167      ├─ reportctl  :801   │
+│  │  eval harness      │  decay pruning        ├─ logctl     :831   │
+│  ├─ agentctl  :555    ├─ trackctl  :728       │  fleet aggregation │
+│  │  spin detection    │  pluggable domains    └─ cronctl    :519   │
+│  └────────────────    └───────────────           crontab gen       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Architectural Invariants
+
+- **IPC = filesystem**: write-then-rename atomicity, 1s host polling, no sockets
+- **Sentinel framing**: container stdout parsed via OUTPUT_START/END markers
+- **isMain**: single boolean gates all authorization decisions in IPC
+- **Cursor advance**: cursor advances before processing, rolls back on error-without-output
+- **Graceful shutdown**: `_close` sentinel → drain queue → `docker stop`
+- **Parse buffer cap**: prevents unbounded memory growth from container output
+- **Query timeout**: 10min inside container catches hung SDK; 5min on credential proxy upstream
+
+### File Lookup by Task
+
+| Task | Start at |
+|---|---|
+| Message handling | `src/index.ts` → `src/group-queue.ts` |
+| Container/Docker | `src/container-runner.ts`, `src/mount-security.ts` |
+| Agent behavior | `container/agent-runner/src/index.ts` |
+| MCP tools | `container/agent-runner/src/ipc-mcp-stdio.ts` |
+| Add a channel | `src/channels/registry.ts`, copy `telegram.ts` pattern |
+| Security audit | `mount-security` → `credential-proxy` → `sender-allowlist` |
+| DB schema | `src/db.ts` (9 tables, see CREATE statements) |
+| Fleet ops | `halos/halctl/` (provision, smoke, eval, session) |
+| Work tracking | `halos/nightctl/` (state machine: open→active→done) |
+| Scheduled tasks | `src/task-scheduler.ts` + `ipc-mcp-stdio.ts` (schedule_task) |
+| Cron/briefings | `halos/cronctl/`, `halos/briefings/` |
+| Memory system | `halos/memctl/`, `memory/INDEX.md` |
+| Metrics | `halos/trackctl/` (add domain: `halos/trackctl/domains/`) |
+
 ## Memory System
 
 Structured memory is managed by `memctl` (Python CLI, installed via `uv sync`).
@@ -42,13 +148,76 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | Module    | Command        | Purpose                                                                    |
 | --------- | -------------- | -------------------------------------------------------------------------- |
 | memctl    | `memctl`       | Structured memory governance                                               |
-| nightctl  | `nightctl`     | Unified work tracker: tasks, jobs, agent-jobs with validated state machine |
+| nightctl  | `nightctl`     | Unified work tracker with Eisenhower matrix (q1-q4), state machine, overnight execution |
 | cronctl   | `cronctl`      | Cron job definitions and crontab generation                                |
 | logctl    | `logctl`       | Structured log reader and search                                           |
 | reportctl | `reportctl`    | Periodic digests from halos ecosystem                                      |
 | agentctl  | `agentctl`     | LLM session tracking and spin detection                                    |
 | briefings | `hal-briefing` | Cron-driven daily Telegram digests (0600 morning, 2100 nightly)            |
+| trackctl  | `trackctl`     | Personal metrics tracker (domains: zazen, movement, study-source, study-neetcode, study-crafters) |
+| dashctl   | `dashctl`      | TUI dashboard — RPG character sheet for personal metrics + Eisenhower view |
 | halctl    | `halctl`       | Fleet management + session lifecycle (see below)                           |
+
+### trackctl API
+
+Personal metrics tracker with pluggable domains. Each domain gets its own SQLite DB in `store/track_<domain>.db`.
+
+```bash
+trackctl domains                                    # list registered domains
+trackctl add <domain> --duration MINS [--notes TXT] # log an entry
+trackctl add zazen --duration 25 --time 06:00       # override time (UTC)
+trackctl add zazen --duration 120 --date 2026-03-20 # backfill a date
+trackctl list <domain> [--days N] [--json]          # list entries
+trackctl edit <domain> ID [--duration N] [--notes T]# edit entry
+trackctl delete <domain> ID                         # delete entry
+trackctl streak <domain> [--json]                   # current/longest streak
+trackctl summary [--domain D] [--json]              # all domains or one
+trackctl export <domain>                            # full JSON dump
+```
+
+**Adding a new domain:** Create `halos/trackctl/domains/<name>.py` that calls `register(name, description, target=N)`. The domain auto-discovers at import time. No other wiring needed.
+
+**Streak logic:** Any calendar day (UTC) with >= 1 entry counts. Missing a day resets current streak to 0. Longest streak is preserved.
+
+**Briefing integration:** `engine.text_summary(domain, target=N)` returns a one-liner like `"zazen: 5-day streak (longest: 12) [target: 100, 95 to go] | today: 25min | all-time: 1,240min (48 days)"`.
+
+**Programmatic access:**
+- `halos.trackctl.store.add_entry(domain, duration_mins, notes, timestamp)` — returns entry dict
+- `halos.trackctl.engine.compute_summary(domain, target)` — returns full stats dict
+- `halos.trackctl.engine.text_summary(domain, target)` — returns one-line string
+
+### nightctl Eisenhower Matrix
+
+Items use Eisenhower quadrants instead of numeric priority:
+
+| Quadrant | Meaning | Action |
+|----------|---------|--------|
+| `q1` | Urgent + Important | Do first |
+| `q2` | Important, not urgent | Schedule |
+| `q3` | Urgent, not important | Delegate |
+| `q4` | Neither | Eliminate |
+
+```bash
+nightctl add --title "..." --quadrant q2       # new item in Q2
+nightctl edit <ID> --quadrant q1               # reclassify
+nightctl graph                                 # Eisenhower-grouped view
+```
+
+Default display (`nightctl graph`) groups by quadrant. `--priority` is accepted as legacy input and auto-maps to `q<N>`.
+
+### dashctl API
+
+TUI dashboard for personal metrics. Renders trackctl domains + nightctl Eisenhower matrix.
+
+```bash
+dashctl                # single render (Rich TUI)
+dashctl --live         # auto-refresh every 30s (Ctrl-C to exit)
+dashctl --live --interval 10  # custom refresh interval
+dashctl --json         # JSON export of all domain summaries
+dashctl --text         # plain-text for agent/briefing consumption
+```
+
+**Programmatic access:** `halos.dashctl.panels.full_dashboard()` returns a list of Rich renderables.
 
 ## Agents & Commands
 

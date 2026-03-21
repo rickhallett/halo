@@ -17,9 +17,9 @@ NERVOUS SYSTEM (Tier 4) — The halos Python tooling ecosystem
 flowchart TB
     subgraph T1["🦴 TIER 1 — Spine (~2,220 LOC)"]
         direction LR
-        S1["src/index.ts\n674 LOC | 3,924 churn"]
-        S2["src/container-runner.ts\n781 LOC | 1,663 churn"]
-        S3["src/db.ts\n765 LOC | 832 churn"]
+        S1["src/index.ts\n755 LOC | 3,924+ churn"]
+        S2["src/container-runner.ts\n833 LOC | 1,663+ churn"]
+        S3["src/db.ts\n773 LOC | 832+ churn"]
     end
 
     subgraph T2["🔩 TIER 2 — Skeleton (~1,830 LOC)"]
@@ -27,10 +27,10 @@ flowchart TB
         K1["types.ts\n108 LOC"]
         K2["config.ts\n94 LOC"]
         K3["ipc.ts\n465 LOC"]
-        K4["group-queue.ts\n365 LOC"]
+        K4["group-queue.ts\n430 LOC"]
         K5["task-scheduler.ts\n282 LOC"]
         K6["router.ts\n52 LOC"]
-        K7["agent-runner/index.ts\n601 LOC"]
+        K7["agent-runner/index.ts\n657 LOC"]
         K8["ipc-mcp-stdio.ts\n338 LOC"]
     end
 
@@ -41,7 +41,7 @@ flowchart TB
         O3["Fleet & Personality\ntemplates, profiles"]
     end
 
-    subgraph T4["🧠 TIER 4 — Nervous System (~16,471 LOC)"]
+    subgraph T4["🧠 TIER 4 — Nervous System (~17,200 LOC)"]
         direction LR
         N1["halctl\n4,321"]
         N2["nightctl\n2,452"]
@@ -51,6 +51,7 @@ flowchart TB
         N6["agentctl\n555"]
         N7["cronctl\n519"]
         N8["reportctl\n801"]
+        N9["trackctl\n728"]
     end
 
     T1 --> T2
@@ -64,9 +65,9 @@ flowchart TB
 
 | # | File | LOC | Churn | Review | Walkthrough |
 |---|------|-----|-------|--------|-------------|
-| S1 | [`src/index.ts`](003-orchestrator.md) | 674 | 3,924 | 45 min | [003](003-orchestrator.md) |
-| S2 | [`src/container-runner.ts`](004-container-runner.md) | 781 | 1,663 | 60 min | [004](004-container-runner.md) |
-| S3 | [`src/db.ts`](005-data-layer.md) | 765 | 832 | 38 min | [005](005-data-layer.md) |
+| S1 | [`src/index.ts`](003-orchestrator.md) | 755 | 3,924+ | 45 min | [003](003-orchestrator.md) |
+| S2 | [`src/container-runner.ts`](004-container-runner.md) | 833 | 1,663+ | 60 min | [004](004-container-runner.md) |
+| S3 | [`src/db.ts`](005-data-layer.md) | 773 | 832+ | 38 min | [005](005-data-layer.md) |
 
 **Subtotal: ~143 min (~2.4 hours)**
 
@@ -77,10 +78,10 @@ flowchart TB
 | K1 | [`src/types.ts`](002-connective-tissue.md) | 108 | 8 min | [002](002-connective-tissue.md) |
 | K2 | [`src/config.ts`](002-connective-tissue.md) | 94 | 6 min | [002](002-connective-tissue.md) |
 | K3 | [`src/ipc.ts`](002-connective-tissue.md) | 465 | 25 min | [002](002-connective-tissue.md) |
-| K4 | [`src/group-queue.ts`](002-connective-tissue.md) | 365 | 20 min | [002](002-connective-tissue.md) |
+| K4 | [`src/group-queue.ts`](002-connective-tissue.md) | 430 | 20 min | [002](002-connective-tissue.md) |
 | K5 | [`src/task-scheduler.ts`](002-connective-tissue.md) | 282 | 15 min | [002](002-connective-tissue.md) |
 | K6 | [`src/router.ts`](002-connective-tissue.md) | 52 | 5 min | [002](002-connective-tissue.md) |
-| K7 | [`container/agent-runner/src/index.ts`](002-connective-tissue.md) | 601 | 30 min | [002](002-connective-tissue.md) |
+| K7 | [`container/agent-runner/src/index.ts`](002-connective-tissue.md) | 657 | 30 min | [002](002-connective-tissue.md) |
 | K8 | [`container/agent-runner/src/ipc-mcp-stdio.ts`](002-connective-tissue.md) | 338 | 18 min | [002](002-connective-tissue.md) |
 
 **Subtotal: ~127 min (~2.1 hours)**
@@ -107,8 +108,9 @@ flowchart TB
 | N6 | [agentctl](009-halos-ecosystem.md) | 555 | Simple | 45 min | [009](009-halos-ecosystem.md) |
 | N7 | [cronctl](009-halos-ecosystem.md) | 519 | Simple | 35 min | [009](009-halos-ecosystem.md) |
 | N8 | [reportctl](009-halos-ecosystem.md) | 801 | Simple | 30 min | [009](009-halos-ecosystem.md) |
+| N9 | [trackctl](009-halos-ecosystem.md) | 728 | Simple | 30 min | [009](009-halos-ecosystem.md) |
 
-**Subtotal: ~545 min (~9 hours)**
+**Subtotal: ~575 min (~9.5 hours)**
 
 ## Grand Total
 
@@ -117,8 +119,8 @@ flowchart TB
 | 1 — Spine | 2,220 | 2.4 hours |
 | 2 — Skeleton | 1,830 | 2.1 hours |
 | 3 — Organs | 2,960 | 4.5 hours |
-| 4 — Nervous System | 16,471 | 9.0 hours |
-| **Total** | **~23,500** | **~18 hours** |
+| 4 — Nervous System | ~17,200 | 9.5 hours |
+| **Total** | **~24,200** | **~18.5 hours** |
 
 (Remaining ~5,500 LOC is test files — review alongside their source, not separately.)
 

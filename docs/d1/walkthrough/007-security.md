@@ -57,6 +57,8 @@ sequenceDiagram
 
 **Telemetry:** SSE response stream tapped for token usage (`model`, `input_tokens`, `output_tokens`). Logged to `api-usage.jsonl`. Best-effort (never crashes proxy).
 
+**Upstream timeout** (RESP.BOUNDARY.01): 5-minute request-level timeout on upstream API calls. Prevents hung connections from consuming the full container timeout budget.
+
 **Key property:** API keys never enter container address space.
 
 ## Layer 3: Mount Security (`src/mount-security.ts`, 419 LOC)
@@ -124,7 +126,7 @@ isMain Privilege Matrix
   isMain = false: all fleet instances, non-main groups
 ```
 
-## Layer 5: Sender Allowlist (`src/sender-allowlist.ts`, 128 LOC)
+## Layer 5: Sender Allowlist (`src/sender-allowlist.ts`, 146 LOC)
 
 **Config:** `~/.config/nanoclaw/sender-allowlist.json`
 
@@ -156,8 +158,8 @@ Inbound message
 | File | LOC | Time |
 |------|-----|------|
 | mount-security.ts | 419 | 12 min |
-| credential-proxy.ts | 236 | 15 min |
-| sender-allowlist.ts | 128 | 8 min |
+| credential-proxy.ts | 251 | 15 min |
+| sender-allowlist.ts | 146 | 8 min |
 | IPC auth (from ipc.ts) | — | 10 min |
 | remote-control.ts | 218 | 8 min |
 | **Total** | **~1,000** | **~53 min** |
