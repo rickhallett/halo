@@ -16,6 +16,7 @@ This workspace is not governed by memctl's pruning or scoring. Nothing here expi
 ## Index
 
 <!-- Entries below, newest first -->
+- [2026-03-20-diary.md](2026-03-20-diary.md) — Still Running
 - [2026-03-19-diary.md](2026-03-19-diary.md) — Clearing the Ledger
 - [2026-03-18-launch-day.md](2026-03-18-launch-day.md) — Test-pilot-001 live. Personality variance as data. The territory has mustard gas.
 - [2026-03-17-diary.md](2026-03-17-diary.md) — CRITICAL, Filed

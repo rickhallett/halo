@@ -558,7 +558,13 @@ export async function runContainerAgent(
         // CTR.PARSE.03: Only treat as success if valid frames were actually parsed.
         if (hadStreamingOutput && validFrameCount > 0) {
           logger.info(
-            { group: group.name, containerName, duration, code, validFrameCount },
+            {
+              group: group.name,
+              containerName,
+              duration,
+              code,
+              validFrameCount,
+            },
             'Container timed out after output (idle cleanup)',
           );
           outputChain.then(() => {
@@ -679,7 +685,8 @@ export async function runContainerAgent(
               status: 'error',
               result: null,
               newSessionId,
-              error: 'Container produced no valid output (parse failure or empty run)',
+              error:
+                'Container produced no valid output (parse failure or empty run)',
             });
             return;
           }

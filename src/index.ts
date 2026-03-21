@@ -333,7 +333,11 @@ async function runAgent(
           sessions[group.folder] = output.newSessionId;
           setSession(group.folder, output.newSessionId);
         }
-        if (output.status === 'error' && !output.newSessionId && sessions[group.folder]) {
+        if (
+          output.status === 'error' &&
+          !output.newSessionId &&
+          sessions[group.folder]
+        ) {
           delete sessions[group.folder];
           clearSession(group.folder);
         }
@@ -687,7 +691,10 @@ async function main(): Promise<void> {
             is_bot_message: true,
           });
         } catch (err) {
-          logger.warn({ jid, err }, 'Failed to persist outbound scheduler response');
+          logger.warn(
+            { jid, err },
+            'Failed to persist outbound scheduler response',
+          );
         }
       }
     },

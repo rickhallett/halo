@@ -97,10 +97,7 @@ function writeOnboardingYaml(
   waiverAcceptedAt?: string,
 ): void {
   const onboardDir = path.join(process.cwd(), 'memory', 'onboarding');
-  const yamlPath = path.join(
-    onboardDir,
-    `${groupFolder}-${senderId}.yaml`,
-  );
+  const yamlPath = path.join(onboardDir, `${groupFolder}-${senderId}.yaml`);
 
   const content =
     [
@@ -119,7 +116,11 @@ function writeOnboardingYaml(
     fs.mkdirSync(onboardDir, { recursive: true });
     fs.writeFileSync(yamlPath, content);
     // Also write the legacy path for backwards compatibility during transition
-    const legacyPath = path.join(process.cwd(), 'memory', 'onboarding-state.yaml');
+    const legacyPath = path.join(
+      process.cwd(),
+      'memory',
+      'onboarding-state.yaml',
+    );
     fs.writeFileSync(legacyPath, content);
   } catch (err) {
     logger.warn({ err, yamlPath }, 'Failed to write onboarding YAML');
