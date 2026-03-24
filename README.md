@@ -6,9 +6,16 @@ A personal operating system layer, built for agents.
 
 ## What This Is
 
-Halo is a suite of composable CLI modules that form a personal operating system — not in the kernel sense, but in the "everything you need to manage a life and its projects" sense. Each module is a focused tool that does one thing. Together, they create an expressive runtime layer where an agent can manage work, track habits, monitor infrastructure, process email, produce reports, and maintain memory — all without a single GUI application.
+Halo is a monorepo containing three systems that compose into a single personal infrastructure:
 
-A single Node.js process connects messaging channels (Telegram, Slack, Discord, Gmail) to Claude agents running in isolated Docker containers. Each agent has its own filesystem, memory, and conversation history. The **halos** Python toolchain wraps everything in structured CLI modules that compose through text, files, and SQLite.
+```
+halo/
+├── gateway/     Message gateway — routes Telegram, Gmail to Claude agents in containers
+├── halos/       Life-management CLIs — 17 tools for work, finance, health, memory
+├── agent/       macOS computer-use — GUI automation, terminal control, job server
+```
+
+A single Node.js process connects messaging channels to Claude agents running in isolated Docker containers. Each agent has its own filesystem, memory, and conversation history. The **halos** Python toolchain provides structured CLI modules that compose through text, files, and SQLite. The **agent** toolkit gives those agents eyes and hands on macOS.
 
 The architectural thesis: if 75% of software is GUI chrome over simple data operations, then a personal system built entirely from composable CLI tools should be more powerful, more automatable, and more coherent than any collection of GUI apps.
 
@@ -17,163 +24,86 @@ The architectural thesis: if 75% of software is GUI chrome over simple data oper
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Human Interface                          │
-│   Telegram · Gmail · Slack · Discord                            │
-│   (channels — messages in, responses out)                       │
+│   Telegram · Gmail · Slack · Discord · Hermes CLI               │
 ├─────────────────────────────────────────────────────────────────┤
-│                     Briefings & Reports                         │
-│   hal-briefing morning/nightly · reportctl digest               │
-│   (synthesis layer — pulls from everything below)               │
+│                     gateway/ (TypeScript)                        │
+│   Channel routing · Container orchestration · Credential proxy  │
+│   Group isolation · Session management · Fleet provisioning     │
 ├─────────────────────────────────────────────────────────────────┤
-│                      Dashboard & Views                          │
-│   dashctl (TUI/HTML/JSON/text) · nightctl graph                 │
-│   (presentation layer — renders data for consumption)           │
+│                     agent/ (Swift + Python)                      │
+│   steer: GUI automation (screenshot, OCR, click, type, hotkey)  │
+│   drive: terminal control (tmux sessions, parallel execution)   │
+│   listen: job server (HTTP → agent worker) · direct: CLI client │
 ├─────────────────────────────────────────────────────────────────┤
-│                    Domain Modules                               │
-│   nightctl    work tracking, Eisenhower matrix, state machine   │
-│   trackctl    personal metrics (zazen, movement, study)         │
-│   memctl      structured memory, decay pruning, graph analysis  │
-│   mailctl     Gmail operations, triage rules, filter mgmt       │
-│   cronctl     cron definitions, crontab generation              │
-│   calctl      unified schedule (calendar + tasks + cron)        │
-│   ledgerctl   plain-text accounting, bank CSV import            │
+│                     halos/ (Python)                              │
+│   nightctl · calctl · trackctl · ledgerctl · mailctl · memctl   │
+│   cronctl · halctl · dashctl · statusctl · logctl · reportctl   │
+│   briefings · agentctl · backupctl · blogctl · carnivorectl     │
 ├─────────────────────────────────────────────────────────────────┤
-│                   Observability                                 │
-│   logctl      structured log search, fleet aggregation          │
-│   agentctl    session tracking, spin detection                  │
-│   statusctl   fleet health: service/container/host metrics      │
-├─────────────────────────────────────────────────────────────────┤
-│                   Operations                                    │
-│   halctl      fleet provisioning, session lifecycle, eval       │
-│   backupctl   SQLite-safe backup policy, restic/tar backend     │
-├─────────────────────────────────────────────────────────────────┤
-│                   Foundation                                    │
-│   hlog        structured telemetry (all modules emit here)      │
-│   SQLite      per-domain data stores (store/*.db)               │
-│   YAML        configuration + work items (queue/items/*.yaml)   │
-│   Markdown    notes + templates (memory/*.md)                   │
+│                     Foundation                                   │
+│   SQLite (per-domain) · YAML (config + work items) · Markdown   │
+│   hlog telemetry · filesystem-as-IPC                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
 ```bash
+# Clone
 gh repo fork rickhallett/halo --clone
 cd halo
-npm install
-cp .env.example .env  # add your ANTHROPIC_API_KEY and TELEGRAM_BOT_TOKEN
-npm run build
-npm run dev
 
-# Install halos tools
+# Gateway (TypeScript — message routing + containers)
+cd gateway && npm install && npm run build && cd ..
+
+# Halos (Python — CLI tools)
 uv sync
+
+# Configure
+cp .env.example .env   # add TELEGRAM_BOT_TOKEN, ANTHROPIC_API_KEY, etc.
+
+# Run
+cd gateway && npm run dev        # start gateway
+uv run dashctl                   # halos dashboard
+uv run nightctl add --title "Ship it" --quadrant q1
 ```
 
-## Module Reference
+## Module Overview
 
-### Work & Planning
+### gateway/ — Message Gateway
 
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| nightctl | `nightctl` | Work tracking with Eisenhower matrix (q1-q4), 13-state machine, overnight execution |
-| cronctl | `cronctl` | Cron job definitions as YAML, crontab generation, manual triggering |
-| calctl | `calctl` | Unified schedule — Google Calendar + nightctl deadlines + cronctl jobs |
+TypeScript · ~10,700 LOC · [README →](gateway/README.md)
 
-```bash
-nightctl add --title "Fix race condition" --quadrant q1
-nightctl graph                              # Eisenhower matrix view
-calctl today                                # everything happening today
-calctl conflicts                            # overlapping commitments
-calctl free --duration 60                   # find open 60-min slots
-```
+Routes messages from Telegram, Gmail (and Slack, Discord, WhatsApp via plugins) to Claude agents running in Docker containers. Handles credential proxying, group isolation, session management, and fleet provisioning.
 
-### Personal Metrics
+### halos/ — Life-Management CLIs
 
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| trackctl | `trackctl` | Habit tracker with pluggable domains, streak engine, daily sums |
-| dashctl | `dashctl` | TUI dashboard — RPG character sheet for metrics + Eisenhower view |
-| ledgerctl | `ledgerctl` | Plain-text accounting, bank CSV import, categorisation rules |
+Python · 17 CLI tools · [README →](halos/README.md)
 
-```bash
-trackctl add zazen --duration 25            # log 25 minutes of meditation
-trackctl streak zazen                       # current: 12, longest: 47, target: 100
-dashctl                                     # full TUI dashboard
-dashctl --html --output dashboard.html      # self-contained HTML export
-ledgerctl import --bank anz --csv statement.csv
-ledgerctl balance                           # P&L by account
-```
+| Category | Modules | Purpose |
+|----------|---------|---------|
+| Work & Planning | nightctl, cronctl, calctl | Task tracking, scheduling, unified calendar |
+| Personal Metrics | trackctl, dashctl, ledgerctl | Habits, dashboard, finances |
+| Memory & Knowledge | memctl | Structured notes, entity linking, graph analysis |
+| Communication | mailctl | Gmail triage, filters, send |
+| Observability | logctl, agentctl, statusctl | Logs, sessions, fleet health |
+| Operations | halctl, backupctl | Fleet provisioning, backups |
+| Synthesis | hal-briefing, reportctl | Daily briefings, periodic digests |
 
-### Memory & Knowledge
+### agent/ — macOS Computer-Use
 
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| memctl | `memctl` | Structured memory — atomic notes, entity linking, decay pruning, graph analysis |
+Swift + Python · [README →](agent/README.md)
 
-```bash
-memctl new --title "..." --type decision --tags "arch,security" --body "..."
-memctl search --tags arch --type decision
-memctl graph                                # interactive knowledge graph (HTML)
-memctl graph --format dot -o graph.svg      # export as SVG via Graphviz
-memctl stats                                # corpus health
-```
+Gives AI agents full control of macOS — clicking buttons, reading screens via OCR, typing into apps, and orchestrating terminals via tmux.
 
-### Communication
-
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| mailctl | `mailctl` | Gmail via himalaya — inbox, search, triage, filters, send |
-
-```bash
-mailctl inbox --unread                      # what needs attention
-mailctl triage --execute                    # apply deterministic triage rules
-mailctl summary                             # "mailctl: 12 unread (3 from ben) | 247 total"
-```
-
-### Observability
-
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| logctl | `logctl` | Structured log search, fleet aggregation, token usage tracking |
-| agentctl | `agentctl` | Session tracking, spin detection, error streaks |
-| statusctl | `statusctl` | Fleet health — service, container, agent, and host metrics |
-
-```bash
-logctl errors                               # errors in last 24h
-logctl usage --since 7d --by model          # token cost breakdown
-statusctl                                   # full health report
-statusctl check                             # exit 0 if HEALTHY, exit 1 if not
-```
-
-### Operations
-
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| halctl | `halctl` | Fleet provisioning, session lifecycle, eval harness, supervisor |
-| backupctl | `backupctl` | Structured backup policy, SQLite-safe snapshots, restic/tar backend |
-
-```bash
-halctl create --name ben --personality discovering-ben
-halctl session clear telegram_main          # clear poisoned session
-backupctl run                               # backup all targets
-backupctl verify                            # check integrity
-```
-
-### Synthesis
-
-| Module | Command | What It Does |
-|--------|---------|-------------|
-| briefings | `hal-briefing` | Daily digests — morning, nightly, overnight summary, diary, check-in |
-| reportctl | `reportctl` | Periodic data collection — briefing, weekly, health, digest |
-
-```bash
-hal-briefing morning                        # 0600 daily briefing
-hal-briefing diary                          # autonomous reflection entry
-reportctl digest --since 24h               # activity digest
-```
+| Tool | Language | Purpose |
+|------|----------|---------|
+| steer | Swift | 14 GUI commands (see, click, type, hotkey, OCR, scroll, drag, find...) |
+| drive | Python | 6 tmux commands (session, run, send, logs, poll, fanout) |
+| listen | Python | FastAPI job server — accepts prompts, spawns Claude agents |
+| direct | Python | CLI client for listen |
 
 ## How Modules Compose
-
-The power isn't in any single module. It's in how they compose.
 
 **Morning briefing pipeline:**
 ```
@@ -185,81 +115,48 @@ cronctl (6:00 trigger)
     → trackctl summary    → "zazen: 12-day streak"
     → mailctl summary     → "8 unread (2 from ben)"
     → statusctl report    → "HEALTHY | CPU 12%"
-    → logctl errors       → "2 errors in last 12h"
     → synthesise (LLM)    → narrative briefing
     → deliver (Telegram)  → message to Operator
 ```
 
-**Habit tracking → dashboard → briefing:**
+**Agent computer-use pipeline:**
 ```
-trackctl add zazen --duration 25
-  → SQLite entry in store/track_zazen.db
-  → dashctl reads → streak bar ████████████░░░░░░░░ 13%
-  → briefings gather → "zazen: 13-day streak..."
-  → morning briefing includes streak update
+Telegram message → gateway routes → container spawns Claude agent
+  → agent reads CLAUDE.md (knows about halos tools)
+  → agent runs: steer see --app Safari (screenshot)
+  → agent runs: steer ocr --app Safari (read text)
+  → agent runs: nightctl add --title "Found bug in header"
+  → agent responds via Telegram
 ```
-
-**Infrastructure monitoring → alert → briefing:**
-```
-cronctl (periodic statusctl check)
-  → statusctl check → if exit 1: degradation logged
-  → nightly briefing: "statusctl: DEGRADED — disk at 91%"
-```
-
-## The Telemetry Spine
-
-Every module emits structured events via `hlog(source, level, event, data)`. logctl reads them. agentctl detects anomalies. briefings synthesise them. The structured log is the nervous system.
 
 ## Data Architecture
 
 ```
-store/              SQLite databases (per-domain), journal, rules
-memory/             Markdown notes (memctl), reflections (diary)
+store/              SQLite databases (per-domain)
+memory/             Markdown notes (memctl), reflections
 queue/items/        YAML work items (nightctl)
+cron/jobs/          YAML cron definitions
 logs/               Structured event stream (hlog → JSONL)
+templates/          Personality templates for fleet instances
 ```
 
-**Storage principle:** SQLite for queryable data. YAML for human-readable config and work items. Markdown for prose. JSONL for append-only events.
-
-## Fleet Management
-
-```
-~/code/halo/          HAL-prime (this repo)
-~/code/halfleet/
-  microhal-ben/           Independent instance (personality: discovering-ben)
-  microhal-dad/           Independent instance (personality: The Captain)
-  microhal-mum/           Independent instance (personality: warm, minimal)
-```
-
-Each fleet instance has its own bot token, personality dimensions, and sandboxed environment. Governance (CLAUDE.md, src/, halos/) is chmod 444/555 — users can't alter their own governance.
+Storage principle: SQLite for queryable data. YAML for human-readable config. Markdown for prose. JSONL for append-only events.
 
 ## Key Decisions
 
-- **Isolation over convenience.** Agents run in containers, not behind permission checks. Fleet instances can't see prime or each other.
-- **Memory is structured.** One claim per note. Backlinks create a graph. Time-decay pruning prevents bloat.
-- **No LLM on untrusted input.** Triage rules are deterministic pattern matching. Prompt injection risk rules out LLM classification of external content.
-- **The filesystem is the workspace.** IPC is write-then-rename atomicity. State is files, not hidden variables.
-- **Assessment before deployment.** Every user gets a Likert pre-assessment. The eval harness tests at machine speed.
-- **Scope in agent-minutes.** No wall-clock estimates. "~15 agent-minutes + ~30 human-minutes of review."
-
-## Documentation
-
-```
-docs/
-├── d1/    Operational — debug checklist, security, diagrams, session patterns
-├── d2/    Architecture — specs, requirements, ecosystem digest, research
-├── d3/    Deep dives + archive — SDK, Docker, completed plans
-```
-
-See [docs/d2/halos-ecosystem-digest.md](docs/d2/halos-ecosystem-digest.md) for the full module API reference and composition patterns.
+- **Isolation over convenience.** Agents run in containers. Fleet instances can't see each other.
+- **The filesystem is the API.** Gateway (TS) and halos (Python) share no imports — YAML files and directory conventions are the interface.
+- **Memory is structured.** One claim per note. Backlinks form a graph. Time-decay pruning prevents bloat.
+- **No LLM on untrusted input.** Triage rules are deterministic pattern matching.
+- **Assessment before deployment.** Fleet users get Likert pre-assessment. Eval harness tests at machine speed.
 
 ## Requirements
 
-- Linux or macOS
-- Node.js 20+
-- Docker
-- Python 3.11+ with [uv](https://docs.astral.sh/uv/) (for halos tools)
-- [Claude Code](https://claude.ai/download) (for agent SDK)
+- Linux or macOS (agent/ requires macOS)
+- Node.js 20+ (gateway)
+- Docker (container runtime)
+- Python 3.11+ with [uv](https://docs.astral.sh/uv/) (halos)
+- [Claude Code](https://claude.ai/download) (agent SDK)
 
 ## License
 
@@ -267,4 +164,4 @@ MIT
 
 ## Provenance
 
-Forked from [qwibitai/halo](https://github.com/qwibitai/halo). Diverged significantly — fleet management, structured memory, halos toolchain, and the full ecosystem described above are original work.
+Forked from [qwibitai/nanoclaw](https://github.com/qwibitai/nanoclaw). Diverged significantly — the monorepo structure, fleet management, halos toolchain, agent computer-use integration, and full ecosystem are original work.
