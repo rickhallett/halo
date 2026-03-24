@@ -30,7 +30,7 @@ Files reviewed:
 - `src/credential-proxy.ts`
 - `src/channels/telegram.ts`
 - `container/agent-runner/src/index.ts`
-- `~/.config/systemd/user/nanoclaw.service`
+- `~/.config/systemd/user/halo.service`
 
 ## Summary
 
@@ -134,7 +134,7 @@ Evidence:
 - the main process handles `SIGTERM`/`SIGINT` and then calls `queue.shutdown(...)` followed by `process.exit(0)` in `src/index.ts:511-520`;
 - `GroupQueue.shutdown()` explicitly does not kill or await active containers and only logs them as detached in `src/group-queue.ts:347-363`;
 - startup recovery stops all matching orphaned containers in `src/container-runtime.ts:103-127`;
-- the systemd unit still restarts the service automatically and has no `TimeoutStopSec` override in `~/.config/systemd/user/nanoclaw.service:5-14`.
+- the systemd unit still restarts the service automatically and has no `TimeoutStopSec` override in `~/.config/systemd/user/halo.service:5-14`.
 
 Impact:
 - any response still in flight when the service shuts down loses its host-side callback chain immediately;

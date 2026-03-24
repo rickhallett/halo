@@ -1,11 +1,11 @@
 id: 20260317-102759-948
-title: 'Port function: clone nanoclaw for non-technical n>1 users'
+title: 'Port function: clone halo for non-technical n>1 users'
 kind: task
 status: cancelled
 tags:
 - architecture
 entities:
-- nanoclaw
+- halo
 - telegram
 context: 'Strip personal memories, clone working config, generate new Telegram bot
   per user. Likert scale on first contact + re-measure later. Friends/family as test

@@ -119,7 +119,7 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | `/setup`            | First-time installation, authentication, service configuration    |
 | `/customize`        | Adding channels, integrations, changing behavior                  |
 | `/debug`            | Container issues, logs, troubleshooting                           |
-| `/update-nanoclaw`  | Bring upstream NanoClaw updates into a customized install         |
+| `/update-halo`  | Bring upstream NanoClaw updates into a customized install         |
 | `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch     |
 | `/get-qodo-rules`   | Load org- and repo-level coding rules from Qodo before code tasks |
 
@@ -149,19 +149,19 @@ Service management:
 
 ```bash
 # macOS (launchd)
-launchctl load ~/Library/LaunchAgents/com.nanoclaw.plist
-launchctl unload ~/Library/LaunchAgents/com.nanoclaw.plist
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # restart
+launchctl load ~/Library/LaunchAgents/com.halo.plist
+launchctl unload ~/Library/LaunchAgents/com.halo.plist
+launchctl kickstart -k gui/$(id -u)/com.halo  # restart
 
 # Linux (systemd)
-systemctl --user start nanoclaw
-systemctl --user stop nanoclaw
-systemctl --user restart nanoclaw
+systemctl --user start halo
+systemctl --user stop halo
+systemctl --user restart halo
 ```
 
 ## Troubleshooting
 
-**WhatsApp not connecting after upgrade:** WhatsApp is now a separate channel fork, not bundled in core. Run `/add-whatsapp` (or `git remote add whatsapp https://github.com/qwibitai/nanoclaw-whatsapp.git && git fetch whatsapp main && (git merge whatsapp/main || { git checkout --theirs package-lock.json && git add package-lock.json && git merge --continue; }) && npm run build`) to install it. Existing auth credentials and groups are preserved.
+**WhatsApp not connecting after upgrade:** WhatsApp is now a separate channel fork, not bundled in core. Run `/add-whatsapp` (or `git remote add whatsapp https://github.com/qwibitai/halo-whatsapp.git && git fetch whatsapp main && (git merge whatsapp/main || { git checkout --theirs package-lock.json && git add package-lock.json && git merge --continue; }) && npm run build`) to install it. Existing auth credentials and groups are preserved.
 
 ## Container Build Cache
 

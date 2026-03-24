@@ -11,7 +11,7 @@ created: 2026-03-20
 
 ## Summary
 
-~29,000 LOC across three codebases: nanoclaw core (TypeScript), halos tooling (Python), and the container agent runner (TypeScript). Plus ~1,100 lines of templates.
+~29,000 LOC across three codebases: halo core (TypeScript), halos tooling (Python), and the container agent runner (TypeScript). Plus ~1,100 lines of templates.
 
 ```mermaid
 %%{init: {"pie": {"textPosition": 0.75}}}%%
@@ -24,7 +24,7 @@ pie title LOC Distribution by Module
 
 ## Module Sizes
 
-### nanoclaw core (`src/`) — ~10,610 LOC
+### halo core (`src/`) — ~10,610 LOC
 
 | File | LOC | Role |
 |------|-----|------|
@@ -173,7 +173,7 @@ ROI Heatmap — Read Priority by Tier
 ### Tier 4 — Reference only
 - Test files (read alongside their source when exploring)
 - [Templates](008-fleet-personality.md) (personality config, mostly declarative)
-- Skills in `.claude/skills/` (upstream NanoClaw, high churn but formulaic)
+- Skills in `.claude/skills/` (upstream Halo, high churn but formulaic)
 
 ## See also
 

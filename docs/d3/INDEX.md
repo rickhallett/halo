@@ -5,7 +5,7 @@
 
 | Title | File | Category | Status | Created |
 |-------|------|----------|--------|---------|
-| NanoClaw Skills Architecture | archive/nanorepo-architecture.md | archive | superseded | 2026-03-15 |
+| Halo Skills Architecture | archive/nanorepo-architecture.md | archive | superseded | 2026-03-15 |
 | memctl — Memory Governance CLI Implementation Plan | archive/2026-03-15-memctl.md | archive | superseded | 2026-03-15 |
 | Claude Agent SDK Deep Dive | SDK_DEEP_DIVE.md | reference | active | 2026-03-15 |
-| NanoClaw Skills Architecture | archive/nanoclaw-architecture-final.md | spec | superseded | 2026-02-19 |
+| Halo Skills Architecture | archive/halo-architecture-final.md | spec | superseded | 2026-02-19 |

@@ -10,7 +10,7 @@ import click
 from jobctl.db import get_conn, init_db
 from jobctl.scorer import score
 
-VACANCIES_PATH = Path.home() / "code/nanoclaw/docs/job-applications/vacancies-march-2026.md"
+VACANCIES_PATH = Path.home() / "code/halo/docs/job-applications/vacancies-march-2026.md"
 
 
 def parse_vacancies(text: str) -> list[dict]:

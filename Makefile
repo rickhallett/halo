@@ -3,6 +3,7 @@
 # The gate: must pass before any commit is considered done
 gate: test lint typecheck
 
+# ── Halos (Python) ──────────────────────────────────────
 test:
 	uv run pytest tests/ -v --tb=short
 
@@ -14,10 +15,21 @@ lint:
 
 typecheck:
 	@echo "typecheck: no type checker configured for halos (Python). Placeholder."
-	@# Node.js side:
-	@npm run build 2>&1 | tail -1
 
-# Run just one module's tests
+# ── Gateway (TypeScript) ────────────────────────────────
+gateway-build:
+	cd gateway && npm run build
+
+gateway-typecheck:
+	cd gateway && npx tsc --noEmit
+
+gateway-test:
+	cd gateway && npm test
+
+gateway-dev:
+	cd gateway && npm run dev
+
+# ── Per-module test shortcuts ───────────────────────────
 test-memctl:
 	uv run pytest tests/memctl/ -v
 

@@ -3,7 +3,7 @@ title: 'Agent commit hygiene: only commit own work, not unrelated staged changes
 kind: task
 status: cancelled
 tags:
-- nanoclaw
+- halo
 - governance
 - container
 entities: []

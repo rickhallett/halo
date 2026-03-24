@@ -7,7 +7,7 @@ created: 2026-03-15
 
 # halos in brief
 
-NanoClaw runs agents. halos is what they remember, schedule, and audit.
+Halo runs agents. halos is what they remember, schedule, and audit.
 
 Seven CLI tools, one `uv sync`. Files as state, YAML as schema, `cat` as debugger.
 

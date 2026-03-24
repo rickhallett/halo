@@ -9,14 +9,14 @@ created: 2026-03-16
 
 ## What halos is
 
-Seven Python CLI tools installed as a single package via `uv sync`. They manage the operational state around a NanoClaw agent — memory, jobs, cron, backlog, logs, reports, session tracking. None of them replace NanoClaw's core runtime. They sit alongside it.
+Seven Python CLI tools installed as a single package via `uv sync`. They manage the operational state around a Halo agent — memory, jobs, cron, backlog, logs, reports, session tracking. None of them replace Halo's core runtime. They sit alongside it.
 
-NanoClaw handles message routing, container orchestration, credential proxying, and the Claude Agent SDK integration. halos handles everything the agent needs to *know*, *remember*, *schedule*, and *audit* outside of a single conversation turn.
+Halo handles message routing, container orchestration, credential proxying, and the Claude Agent SDK integration. halos handles everything the agent needs to *know*, *remember*, *schedule*, and *audit* outside of a single conversation turn.
 
 ## The architecture
 
 ```
-NanoClaw (Node.js)                    halos (Python)
+Halo (Node.js)                    halos (Python)
 ─────────────────                     ──────────────
 Telegram/WhatsApp ←→ Messages         memctl    — what the agent knows
 Container runner  ←→ Agent execution  nightctl  — what the agent deferred
@@ -27,7 +27,7 @@ Credential proxy  ←→ API auth         reportctl — the digest
                                       agentctl  — how much agent time was spent
 ```
 
-The boundary is clean: NanoClaw owns the runtime, halos owns the state. They communicate through the filesystem — the same IPC mechanism NanoClaw already uses for container-to-host messaging.
+The boundary is clean: Halo owns the runtime, halos owns the state. They communicate through the filesystem — the same IPC mechanism Halo already uses for container-to-host messaging.
 
 ## Established patterns
 
@@ -41,7 +41,7 @@ The boundary is clean: NanoClaw owns the runtime, halos owns the state. They com
 
 **Archive not delete.** From the slopodar taxonomy's own design invariant. Pruning moves files, never removes them. Destructive operations require explicit flags and config changes. This is the "append-only log" pattern from event sourcing, applied to memory governance.
 
-**Atomic writes.** Temp file then `os.replace()`. Borrowed from database WAL design and NanoClaw's own IPC file protocol (which uses the same pattern for container-to-host messages). Prevents partial writes on crash.
+**Atomic writes.** Temp file then `os.replace()`. Borrowed from database WAL design and Halo's own IPC file protocol (which uses the same pattern for container-to-host messages). Prevents partial writes on crash.
 
 ## Where it innovates
 
@@ -77,7 +77,7 @@ The boundary is clean: NanoClaw owns the runtime, halos owns the state. They com
 
 **The adversarial review pattern should be automated.** We ran it manually and it found 91 issues. A scheduled job that dispatches review agents against each module on a weekly cadence would catch drift as the codebase evolves. Right now it's a one-shot — the paper guardrail problem, again.
 
-**logctl is a reader without a writer.** halos modules don't emit structured logs. They print to stdout/stderr. logctl can parse NanoClaw's pino output but has no halos-native log source to consume. The "halos structured" format is defined in the parser but nothing writes it. logctl is infrastructure waiting for a use case.
+**logctl is a reader without a writer.** halos modules don't emit structured logs. They print to stdout/stderr. logctl can parse Halo's pino output but has no halos-native log source to consume. The "halos structured" format is defined in the parser but nothing writes it. logctl is infrastructure waiting for a use case.
 
 **reportctl's cross-module coupling is the most fragile point.** It reads other modules' data files without importing their code (correct design), but the field names are implicit contracts. The `status` vs `outcome` bug proved this. Integration tests between modules would catch these, and we have none.
 

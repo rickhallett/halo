@@ -1,19 +1,19 @@
 ---
-title: "MEMCTL — NanoClaw Memory Governance System"
+title: "MEMCTL — Halo Memory Governance System"
 category: spec
 status: active
 created: 2026-03-15
 ---
 
 ================================================================
-MEMCTL — NanoClaw Memory Governance System
+MEMCTL — Halo Memory Governance System
 Implementation Specification v1.0
 ================================================================
 
 OVERVIEW
 --------
 memctl is a Go CLI binary that manages atomic memory notes for a
-NanoClaw agent. It maintains a CLAUDE.md index for fast agent
+Halo agent. It maintains a CLAUDE.md index for fast agent
 lookup, enforces note schema at write time, detects and reports
 index drift via hash verification, and runs scripted pruning/
 archival of orphaned or stale notes.
@@ -226,7 +226,7 @@ Pass --json for machine-readable output in any command
 --- main.go comment block template ---
 
 /*
-memctl — NanoClaw memory governance CLI
+memctl — Halo memory governance CLI
 
 USAGE
   memctl <command> [flags]

@@ -14,7 +14,7 @@ def _mock_health_report(grade="HEALTHY", checks=None, metrics=None):
     """Create a mock health_report function."""
     if checks is None:
         checks = [
-            {"name": "nanoclaw", "status": "ok", "message": "running", "metrics": {}},
+            {"name": "halo", "status": "ok", "message": "running", "metrics": {}},
             {"name": "docker", "status": "ok", "message": "running", "metrics": {}},
         ]
     if metrics is None:
@@ -46,7 +46,7 @@ class TestCheckCommand:
 
     def test_down_exit_1(self):
         report = _mock_health_report("DOWN", checks=[
-            {"name": "nanoclaw", "status": "fail", "message": "not running", "metrics": {}},
+            {"name": "halo", "status": "fail", "message": "not running", "metrics": {}},
         ])
         with patch("halos.statusctl.engine.health_report", return_value=report):
             from halos.statusctl.cli import cmd_check

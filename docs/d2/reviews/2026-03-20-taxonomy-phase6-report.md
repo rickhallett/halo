@@ -47,15 +47,15 @@ Reviewed areas with no material findings in this pass:
 
 ### HALO.HALCTL.04 [TC12] S2
 
-`halctl session clear` mutates only the SQLite `sessions` table; it does not coordinate with the live NanoClaw process, its in-memory session map, or any still-running containers.
+`halctl session clear` mutates only the SQLite `sessions` table; it does not coordinate with the live Halo process, its in-memory session map, or any still-running containers.
 
 Evidence:
 - `session_clear()` and `session_clear_all()` only delete rows from SQLite in `halos/halctl/session.py:64-121`;
-- NanoClaw loads sessions into memory at startup and then reads/writes its in-memory map independently in `src/index.ts:70-71`, `src/index.ts:87`, `src/index.ts:284`, and `src/index.ts:313-359`.
+- Halo loads sessions into memory at startup and then reads/writes its in-memory map independently in `src/index.ts:70-71`, `src/index.ts:87`, `src/index.ts:284`, and `src/index.ts:313-359`.
 
 Impact:
 - an operator can believe a session was cleared while a live process still resumes or rewrites the old session ID;
-- the administrative boundary crosses from Halos into NanoClaw without a coherence mechanism.
+- the administrative boundary crosses from Halos into Halo without a coherence mechanism.
 
 Why `[TC12]`:
 - the operation claims to clear a cross-process session boundary but actually mutates only one side of that boundary.
@@ -81,5 +81,5 @@ Observed coverage:
 - targeted Python slices passed, including `tests/nightctl/test_executor.py`, `tests/cronctl/test_adversarial_fixes.py`, and `tests/reportctl/test_formatters.py`.
 
 Important gaps:
-- no targeted test covers `halctl session clear` interacting with a live NanoClaw process;
+- no targeted test covers `halctl session clear` interacting with a live Halo process;
 - no test asserts atomicity for `_write_run_record()`.

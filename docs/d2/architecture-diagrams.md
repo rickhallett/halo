@@ -154,12 +154,12 @@ flowchart TD
 ```mermaid
 graph LR
     subgraph Host["Host Filesystem"]
-        PR["~/code/nanoclaw"]
-        MEM["~/code/nanoclaw/memory"]
-        GRP["~/code/nanoclaw/groups/telegram_main"]
-        IPC["~/code/nanoclaw/data/ipc/telegram_main"]
+        PR["~/code/halo"]
+        MEM["~/code/halo/memory"]
+        GRP["~/code/halo/groups/telegram_main"]
+        IPC["~/code/halo/data/ipc/telegram_main"]
         FLT["~/code/halfleet/"]
-        ENV["~/code/nanoclaw/.env"]
+        ENV["~/code/halo/.env"]
     end
 
     subgraph Container["Docker Container"]

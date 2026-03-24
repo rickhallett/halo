@@ -21,7 +21,7 @@ def _write_fleet_config(tmp: str, source: str) -> str:
             "exclude": [
                 "memory/",
                 ".env*",
-                "nanoclaw.db",
+                "halo.db",
                 "groups/",
                 "queue/",
             ],
@@ -48,8 +48,8 @@ def _write_fleet_config(tmp: str, source: str) -> str:
 
 
 def _create_mock_source(tmp: str) -> str:
-    """Create a mock prime nanoclaw source tree."""
-    source = os.path.join(tmp, "nanoclaw")
+    """Create a mock prime halo source tree."""
+    source = os.path.join(tmp, "halo")
     os.makedirs(source)
 
     # Governance files (should be locked after provision)
@@ -61,14 +61,14 @@ def _create_mock_source(tmp: str) -> str:
     os.makedirs(os.path.join(source, "memory", "notes"), exist_ok=True)
     Path(source, "memory", "INDEX.md").write_text("# Memory\n")
     Path(source, ".env").write_text("SECRET=bad\n")
-    Path(source, "nanoclaw.db").write_text("fake-db\n")
+    Path(source, "halo.db").write_text("fake-db\n")
     os.makedirs(os.path.join(source, "groups", "telegram_main"), exist_ok=True)
     Path(source, "groups", "telegram_main", "chat.txt").write_text("msg\n")
     os.makedirs(os.path.join(source, "queue"), exist_ok=True)
     Path(source, "queue", "job.yaml").write_text("job\n")
 
     # Regular files (should be copied)
-    Path(source, "package.json").write_text('{"name": "nanoclaw"}\n')
+    Path(source, "package.json").write_text('{"name": "halo"}\n')
     os.makedirs(os.path.join(source, "container"))
     Path(source, "container", "Dockerfile").write_text("FROM node\n")
 
@@ -134,7 +134,7 @@ class TestExcludedFiles(BaseHalctlTest):
     def test_excluded_database_not_present(self):
         entry = self._provision()
         deploy = Path(entry["path"])
-        self.assertFalse((deploy / "nanoclaw.db").exists(), "nanoclaw.db must not be copied")
+        self.assertFalse((deploy / "halo.db").exists(), "halo.db must not be copied")
 
     def test_excluded_groups_not_copied(self):
         entry = self._provision()

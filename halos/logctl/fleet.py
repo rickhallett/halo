@@ -53,7 +53,7 @@ def discover_sources(
 
     # Prime
     if include_prime and not instance_filter:
-        prime_pm2 = Path.home() / ".pm2" / "logs" / "nanoclaw-out.log"
+        prime_pm2 = Path.home() / ".pm2" / "logs" / "halo-out.log"
         if prime_pm2.exists():
             sources.append({
                 "instance": "prime",

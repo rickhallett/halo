@@ -2180,7 +2180,7 @@ def run_behavioral_smoke(
     # Resolve instance path
     if name == "prime":
         deploy_path = Path(__file__).parent.parent.parent
-        pm2_name = "nanoclaw"
+        pm2_name = "halo"
         chat_jid = os.environ.get("TELEGRAM_MAIN_CHAT_JID", "tg:-1001234567890")
         sender_id = os.environ.get("TELEGRAM_OPERATOR_ID", "5967394003")
         is_main = True

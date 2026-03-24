@@ -66,9 +66,9 @@ The only record of what the agent said is `Agent output: ${raw.slice(0, 200)}` i
 
 **File:** pm2 log format: `[HH:MM:SS.mmm] LEVEL (pid): message`
 
-pm2's default log format omits the date. Combined with OBS.LOG.01, this makes cross-day analysis unreliable. The systemd unit redirects stdout to `logs/nanoclaw.log` — check whether this file has the same format or includes dates.
+pm2's default log format omits the date. Combined with OBS.LOG.01, this makes cross-day analysis unreliable. The systemd unit redirects stdout to `logs/halo.log` — check whether this file has the same format or includes dates.
 
-**Review:** `~/.config/systemd/user/nanoclaw.service` — StandardOutput goes to `logs/nanoclaw.log`. Is the pm2 log a different output path? Are both active simultaneously?
+**Review:** `~/.config/systemd/user/halo.service` — StandardOutput goes to `logs/halo.log`. Is the pm2 log a different output path? Are both active simultaneously?
 
 ---
 
@@ -210,7 +210,7 @@ When hard timeout fires: `docker stop` (15s grace) → SIGKILL. But the systemd 
 
 **Evidence:** Three `Failed with result 'timeout'` events overnight confirm this chain is happening.
 
-**Review:** `~/.config/systemd/user/nanoclaw.service` — add `TimeoutStopSec=120` or implement a SIGTERM handler in `src/index.ts` that aggressively kills containers.
+**Review:** `~/.config/systemd/user/halo.service` — add `TimeoutStopSec=120` or implement a SIGTERM handler in `src/index.ts` that aggressively kills containers.
 
 ### CTR.05 — Container cleanup on process exit
 
@@ -352,7 +352,7 @@ Ben's containers route API calls through prime's credential proxy. If the proxy 
 
 ### FLEET.02 — pm2 vs systemd dual management
 
-The fleet uses pm2 (`halfleet/ecosystem.config.js`) while prime uses systemd (`nanoclaw.service`). The systemd unit outputs to `logs/nanoclaw.log`, pm2 outputs to `~/.pm2/logs/microhal-ben-out.log`. These are independent processes.
+The fleet uses pm2 (`halfleet/ecosystem.config.js`) while prime uses systemd (`halo.service`). The systemd unit outputs to `logs/halo.log`, pm2 outputs to `~/.pm2/logs/microhal-ben-out.log`. These are independent processes.
 
 **Review:** When systemd restarts the prime process (which hosts the credential proxy), do pm2 fleet instances detect the proxy outage? Or do they hang?
 
@@ -368,7 +368,7 @@ Ben's containers spawn on the same Docker network as prime's containers. If prim
 
 ### SVC.01 — No `TimeoutStopSec` in systemd unit
 
-**File:** `~/.config/systemd/user/nanoclaw.service`
+**File:** `~/.config/systemd/user/halo.service`
 
 The unit has `Restart=always` and `RestartSec=5` but no `TimeoutStopSec`. Default is 90s. If the process takes >90s to clean up containers on SIGTERM, systemd force-kills it.
 

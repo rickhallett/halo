@@ -1,21 +1,21 @@
 ---
-title: "NanoClaw/halos Portfolio Showcase — Specification"
+title: "Halo/halos Portfolio Showcase — Specification"
 category: spec
 status: active
 created: 2026-03-17
 ---
 
-# NanoClaw/halos Portfolio Showcase — Specification
+# Halo/halos Portfolio Showcase — Specification
 
 ## Goal
 
-Transform the NanoClaw + halos codebase into an irresistible public portfolio piece that demonstrates every skill demanded by the "AI Automation Engineer / Internal AI Tools Specialist" role archetype.
+Transform the Halo + halos codebase into an irresistible public portfolio piece that demonstrates every skill demanded by the "AI Automation Engineer / Internal AI Tools Specialist" role archetype.
 
 ## Strategic Framing
 
 The hiring managers for these roles want to see one thing: **someone who has already built the thing they're hiring for**. Not tutorials, not certificates, not "I used ChatGPT" — production-grade AI automation infrastructure with real cross-system integration.
 
-NanoClaw + halos already demonstrates:
+Halo + halos already demonstrates:
 - AI agent orchestration (Claude Agent SDK, container isolation)
 - Multi-channel messaging (Telegram, WhatsApp, Slack, Discord)
 - Python CLI ecosystem (8 modules with structured data, YAML schemas, filesystem-first design)
@@ -29,7 +29,7 @@ What's missing is **explicit demonstration of business-facing automation pattern
 ## Scope
 
 ### In Scope
-- Extensions to existing halos/NanoClaw architecture
+- Extensions to existing halos/Halo architecture
 - Business automation demo modules
 - Architecture documentation and diagrams
 - Public README rewrite for portfolio context
@@ -37,7 +37,7 @@ What's missing is **explicit demonstration of business-facing automation pattern
 - Demo mode for running without live credentials
 
 ### Out of Scope
-- Rewriting NanoClaw core (it's upstream; we fork)
+- Rewriting Halo core (it's upstream; we fork)
 - Building a web frontend
 - Production deployment for others to use
 - Fake data that looks fake
@@ -128,10 +128,10 @@ A `patterns/` directory demonstrating common integration patterns as standalone,
 
 #### Public README Rewrite
 
-The current README is NanoClaw's upstream README (for general users). The portfolio fork needs a different framing:
+The current README is Halo's upstream README (for general users). The portfolio fork needs a different framing:
 
 ```
-# NanoClaw + halos — AI Automation Infrastructure
+# Halo + halos — AI Automation Infrastructure
 
 A personal AI assistant platform with a Python CLI ecosystem for automated
 briefings, memory governance, job scheduling, and business process automation.
@@ -163,7 +163,7 @@ Mermaid diagram covering the full system:
 ```
 Channels (Telegram/WhatsApp/Slack)
   ↓
-NanoClaw Orchestrator (Node.js)
+Halo Orchestrator (Node.js)
   ↓ message queue
 Container Agent (Claude SDK)
   ↓ IPC (filesystem JSON)
@@ -274,10 +274,10 @@ Create `memory/notes/.gitkeep` and `memory/reflections/SAMPLE.md` with a sanitiz
 
 1. **Should pipelinectl use a real CRM API (HubSpot free tier) or simulated data?** Real API is more impressive but adds setup complexity for reviewers.
 
-2. **How much of the NanoClaw upstream README should be preserved vs replaced?** The portfolio README needs to serve a different audience than the original.
+2. **How much of the Halo upstream README should be preserved vs replaced?** The portfolio README needs to serve a different audience than the original.
 
 3. **Should the repo be a fork or a standalone?** Fork preserves the provenance (392 commits). Standalone is cleaner but loses history.
 
 4. **Video walkthrough — Loom, YouTube, or embedded in README?** A 3-minute video showing the briefing system in action would be high-impact.
 
-5. **Should the halos modules be extracted into a separate repo?** The Python ecosystem is impressive enough to stand alone, but the integration with NanoClaw is part of the story.
+5. **Should the halos modules be extracted into a separate repo?** The Python ecosystem is impressive enough to stand alone, but the integration with Halo is part of the story.

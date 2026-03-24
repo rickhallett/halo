@@ -221,7 +221,7 @@ created: 2026-03-21
 
 ## Notification
 
-On completion, send a summary to the Operator via Telegram. Use the existing NanoClaw channel infrastructure:
+On completion, send a summary to the Operator via Telegram. Use the existing Halo channel infrastructure:
 
 ```bash
 # The IPC message mechanism — write a message file for the orchestrator to pick up

@@ -16,7 +16,7 @@ created: 2026-03-21
 
 ## Purpose
 
-Unified health check across all NanoClaw subsystems. Replaces the current pattern of manually running `halctl smoke` + `logctl` + `docker ps` + `systemctl status` to diagnose issues.
+Unified health check across all Halo subsystems. Replaces the current pattern of manually running `halctl smoke` + `logctl` + `docker ps` + `systemctl status` to diagnose issues.
 
 `statusctl check` returns exit 0 if everything's green, exit 1 with structured failure details.
 
@@ -32,7 +32,7 @@ statusctl report                         # one-liner for briefing integration
 ## Health Checks
 
 ### Service Layer
-- `systemctl --user is-active nanoclaw` — main process running?
+- `systemctl --user is-active halo` — main process running?
 - Credential proxy listening on port 3001? (`ss -tlnp | grep 3001`)
 - Docker daemon reachable? (`docker info`)
 
@@ -56,9 +56,9 @@ statusctl report                         # one-liner for briefing integration
 
 Terminal (default):
 ```
-NanoClaw Health — 2026-03-21 14:30 UTC
+Halo Health — 2026-03-21 14:30 UTC
 
-  Service     nanoclaw          ● running (uptime: 3d 12h)
+  Service     halo          ● running (uptime: 3d 12h)
   Service     credential-proxy  ● listening :3001
   Service     docker            ● running
 

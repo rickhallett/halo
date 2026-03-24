@@ -166,7 +166,7 @@ The original taxonomy's category numbering and section ordering are preserved ex
 **Taxonomy verdict:** FULLY_REDUCIBLE
 **Halos status:** N/A (out of scope)
 
-The agent already operates this way — bash + text editor + compiler + LSP. NanoClaw's container agents read files, make edits, run tests. This is the canonical example from the taxonomy, and halos doesn't need a module for it because the agent runtime IS the IDE.
+The agent already operates this way — bash + text editor + compiler + LSP. Halo's container agents read files, make edits, run tests. This is the canonical example from the taxonomy, and halos doesn't need a module for it because the agent runtime IS the IDE.
 
 ---
 
@@ -204,7 +204,7 @@ Container agents use `curl`/`httpie` directly. No module needed.
 
 **Existing coverage:** `halctl smoke` runs infrastructure + agent capability checks. `logctl` aggregates logs. But there's no unified "pipeline health" view that shows: last build status, test results, deploy state, service health.
 
-**Proposed module:** `statusctl` — system health dashboard for the NanoClaw fleet.
+**Proposed module:** `statusctl` — system health dashboard for the Halo fleet.
 
 **What it would do:** `statusctl` queries: container build status (Docker), service uptime (systemd), recent errors (logctl), agent session health (agentctl), cron job outcomes (cronctl). `statusctl check` returns exit 0 if all green, exit 1 with structured failure details. `statusctl report` generates a health summary for briefing integration.
 
@@ -252,7 +252,7 @@ Container agents use `curl`/`httpie` directly. No module needed.
 **Taxonomy verdict:** TASTE_REQUIRED
 **Halos status:** GAP (but adjacent to voice transcription)
 
-**Existing coverage:** Voice transcription (Whisper) is a NanoClaw skill for WhatsApp voice notes. Technical audio processing (`sox`, `ffmpeg`) is available in containers.
+**Existing coverage:** Voice transcription (Whisper) is a Halo skill for WhatsApp voice notes. Technical audio processing (`sox`, `ffmpeg`) is available in containers.
 
 **Proposed:** No dedicated module. Audio is taste-territory. The existing transcription pipeline covers the agent-relevant slice.
 
@@ -313,7 +313,7 @@ The core activity is humans talking to humans. Agent facilitation around the edg
 **Taxonomy verdict:** MOSTLY_REDUCIBLE
 **Halos status:** COVERED
 
-**Existing coverage:** NanoClaw's channel system is exactly this. Telegram, Slack, Discord, Gmail — all self-registering channels that process messages as structured data via APIs. The agent participates in team communication via API, not GUI.
+**Existing coverage:** Halo's channel system is exactly this. Telegram, Slack, Discord, Gmail — all self-registering channels that process messages as structured data via APIs. The agent participates in team communication via API, not GUI.
 
 ---
 
@@ -322,7 +322,7 @@ The core activity is humans talking to humans. Agent facilitation around the edg
 **Taxonomy verdict:** MOSTLY_REDUCIBLE
 **Halos status:** PARTIAL
 
-**Existing coverage:** X/Twitter integration exists as a NanoClaw skill (post, like, reply, retweet, quote). But there's no scheduling, analytics, or content calendar.
+**Existing coverage:** X/Twitter integration exists as a Halo skill (post, like, reply, retweet, quote). But there's no scheduling, analytics, or content calendar.
 
 **Proposed module:** `socialctl` — social media operations.
 
@@ -572,7 +572,7 @@ Enterprise scope. Not relevant to a personal assistant system.
 **Taxonomy verdict:** FULLY_REDUCIBLE
 **Halos status:** COVERED (implicitly)
 
-PDF reading is a NanoClaw skill (`add-pdf-reader`). Container agents extract text via `pdftotext`, process attachments from WhatsApp/Telegram. No GUI needed.
+PDF reading is a Halo skill (`add-pdf-reader`). Container agents extract text via `pdftotext`, process attachments from WhatsApp/Telegram. No GUI needed.
 
 ---
 
@@ -698,6 +698,6 @@ The tiered roadmap above gives noopit a concrete example of how the taxonomy tra
 
 This document cross-references two codebases:
 - **Taxonomy source:** `noopit/docs/research/agent-native-software-taxonomy.md` (2026-03-09)
-- **Halos source:** `nanoclaw/halos/` modules as of 2026-03-21
+- **Halos source:** `halo/halos/` modules as of 2026-03-21
 
 Category numbering preserves the taxonomy's ordering for grep-mapping. Tier estimates use the convention from CLAUDE.md: agent-minutes of generation, not wall-clock time.

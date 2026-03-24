@@ -12,8 +12,8 @@ from jobctl.db import get_conn, init_db
 from jobctl.generator import generate_cover_letter
 from jobctl.commands.show import find_listing
 
-CV_PATH = Path.home() / "code/nanoclaw/docs/job-applications/thinking-machines-devprod/cv.md"
-APPS_DIR = Path.home() / "code/nanoclaw/store/applications"
+CV_PATH = Path.home() / "code/halo/docs/job-applications/thinking-machines-devprod/cv.md"
+APPS_DIR = Path.home() / "code/halo/store/applications"
 
 console = Console()
 

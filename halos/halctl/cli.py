@@ -248,7 +248,7 @@ def cmd_reset(args):
     # 1. Kill any running containers for this instance
     try:
         result = subprocess.run(
-            ["docker", "ps", "--filter", "name=nanoclaw-telegram-main", "-q"],
+            ["docker", "ps", "--filter", "name=halo-telegram-main", "-q"],
             capture_output=True,
             text=True,
             timeout=5,

@@ -89,7 +89,7 @@ def _create_open_dirs(path: Path, items: list[str]) -> None:
 def _register_operator_chat(deploy_path: Path, group_name: str) -> None:
     """Initialize the instance DB and register the operator's chat as main group.
 
-    Creates the schema matching nanoclaw's db.ts so the instance starts with
+    Creates the schema matching halo's db.ts so the instance starts with
     the operator already registered — no manual post-provision step needed.
     """
     store_dir = deploy_path / "store"
@@ -223,7 +223,7 @@ def create_instance(
 
     # Determine deployment path
     base_dir = fleet_base or fleet_dir()
-    deploy_path = base_dir / f"microhal-{name}" / "nanoclaw"
+    deploy_path = base_dir / f"microhal-{name}" / "halo"
 
     if deploy_path.exists():
         raise FileExistsError(f"instance already exists: {deploy_path}")

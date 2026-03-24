@@ -3,8 +3,8 @@
 import os
 from pathlib import Path
 
-CV_PATH = Path.home() / "code/nanoclaw/docs/job-applications/thinking-machines-devprod/cv.md"
-CL_TEMPLATE_PATH = Path.home() / "code/nanoclaw/docs/job-applications/thinking-machines-devprod/cover-letter.md"
+CV_PATH = Path.home() / "code/halo/docs/job-applications/thinking-machines-devprod/cv.md"
+CL_TEMPLATE_PATH = Path.home() / "code/halo/docs/job-applications/thinking-machines-devprod/cover-letter.md"
 
 SYSTEM_PROMPT = (
     "You are a professional cover letter writer. Given a canonical CV and a cover letter "

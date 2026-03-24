@@ -49,7 +49,7 @@ DONE_TODOCTL_ITEM = {
     "status": "done",
     "priority": 3,
     "tags": ["halos", "architecture"],
-    "context": "Brainstorm nanoclaw capabilities.",
+    "context": "Brainstorm halo capabilities.",
     "created": "2026-03-16T03:09:21Z",
     "due": None,
     "blocked_by": None,

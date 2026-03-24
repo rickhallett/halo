@@ -214,7 +214,7 @@ All fields optional except `date`, `title`, and `summary`. Refs exist so you can
     Overnight session. 23 commits. The fleet went from concept to live
     deployment in one arc: provisioned Dad (@HALCaptain_bot), Mum
     (@HALMum_bot), and two test instances (gains, money). Each instance
-    is an independent nanoclaw deployment with its own bot token,
+    is an independent halo deployment with its own bot token,
     personality profile, memory, and sandboxed filesystem.
 
     The provisioning pipeline hit every class of integration bug:

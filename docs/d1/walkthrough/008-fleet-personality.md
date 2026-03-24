@@ -15,7 +15,7 @@ Compositional personality system where base governance + dimension profiles + us
 
 ## Fleet Concept
 
-A fleet is a collection of independent nanoclaw deployments:
+A fleet is a collection of independent halo deployments:
 
 | Instance | User | Bot | Personality |
 |----------|------|-----|-------------|

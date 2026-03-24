@@ -61,7 +61,7 @@ Wrap Rich's exported HTML in a minimal page:
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>NanoClaw Dashboard — {timestamp}</title>
+  <title>Halo Dashboard — {timestamp}</title>
   <style>
     body { background: #1a1a2e; margin: 2rem auto; max-width: 900px; }
     pre { font-family: 'Geist Mono', 'JetBrains Mono', monospace; }

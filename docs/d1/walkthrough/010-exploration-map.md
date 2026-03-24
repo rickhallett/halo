@@ -201,7 +201,7 @@ Route A + add:
   → N7 cronctl (35min)                   → 009-halos-ecosystem.md
 ```
 
-**What you gain:** You'll understand how [Telegram messages enter](006-channels.md), how [security boundaries](007-security.md) work, and — critically — the two scheduling systems (crontab vs nanoclaw tasks) that caused the briefing confusion.
+**What you gain:** You'll understand how [Telegram messages enter](006-channels.md), how [security boundaries](007-security.md) work, and — critically — the two scheduling systems (crontab vs halo tasks) that caused the briefing confusion.
 
 ### Route C: "Full Cartography" (~18 hours)
 

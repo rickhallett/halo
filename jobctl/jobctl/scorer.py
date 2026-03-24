@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-CV_PATH = Path.home() / "code/nanoclaw/docs/job-applications/thinking-machines-devprod/cv.md"
+CV_PATH = Path.home() / "code/halo/docs/job-applications/thinking-machines-devprod/cv.md"
 
 _cv_content: str | None = None
 

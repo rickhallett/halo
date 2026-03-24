@@ -4,7 +4,7 @@ title: "CRITICAL: Non-main groups can rm -rf shared memory \u2014 mount is rw no
 kind: task
 status: cancelled
 tags:
-- nanoclaw
+- halo
 - security
 entities: []
 context: "Cross-model review finding 2. groups/global/CLAUDE.md claims read-only for\

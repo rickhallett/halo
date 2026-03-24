@@ -1,11 +1,11 @@
 ---
-title: "NanoClaw Security Model"
+title: "Halo Security Model"
 category: reference
 status: active
 created: 2026-03-15
 ---
 
-# NanoClaw Security Model
+# Halo Security Model
 
 ## Trust Model
 
@@ -30,7 +30,7 @@ This is the primary security boundary. Rather than relying on application-level 
 
 ### 2. Mount Security
 
-**External Allowlist** - Mount permissions stored at `~/.config/nanoclaw/mount-allowlist.json`, which is:
+**External Allowlist** - Mount permissions stored at `~/.config/halo/mount-allowlist.json`, which is:
 - Outside project root
 - Never mounted into containers
 - Cannot be modified by agents

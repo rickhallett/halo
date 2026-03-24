@@ -785,14 +785,14 @@ def run_assessment(
 
     for scenario_name in to_run:
         # Full state reset between scenarios — equivalent to afterEach(resetSession)
-        # The nanoclaw process caches session IDs in memory, so DB-only
+        # The halo process caches session IDs in memory, so DB-only
         # cleanup is insufficient. Must restart pm2 to flush the cache.
         try:
             import subprocess
             import shutil
             # Kill active containers
             for cid in subprocess.run(
-                ["docker", "ps", "--filter", "name=nanoclaw-telegram-main", "-q"],
+                ["docker", "ps", "--filter", "name=halo-telegram-main", "-q"],
                 capture_output=True, text=True, timeout=5,
             ).stdout.strip().split("\n"):
                 if cid:

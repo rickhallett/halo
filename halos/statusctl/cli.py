@@ -73,7 +73,7 @@ def cmd_default(args) -> None:
     content.append(f"NanoClaw Health — {now}\n\n", style="bold")
 
     # Service checks
-    service_names = {"nanoclaw", "credential-proxy", "docker"}
+    service_names = {"halo", "credential-proxy", "docker"}
     for c in checks:
         if c["name"] in service_names:
             icon = _status_icon(c["status"])

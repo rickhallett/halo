@@ -1,5 +1,5 @@
 id: 20260317-102759-948
-title: 'Port function: clone nanoclaw for non-technical n>1 users'
+title: 'Port function: clone halo for non-technical n>1 users'
 status: open
 priority: 3
 tags:
@@ -14,5 +14,5 @@ created: '2026-03-17T10:27:59Z'
 due: null
 blocked_by: null
 entities:
-- nanoclaw
+- halo
 - telegram

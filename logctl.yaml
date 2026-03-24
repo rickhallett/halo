@@ -1,7 +1,7 @@
 log_dir: ./logs
 sources:
-  nanoclaw: ./logs/nanoclaw.log
-  nanoclaw_error: ./logs/nanoclaw.error.log
+  halo: ./logs/halo.log
+  halo_error: ./logs/halo.error.log
   halos: ./logs/halos.log
   supervisor: ./logs/supervisor.log
 format: pino

@@ -12,12 +12,12 @@ class TestConfigDefaults:
         assert cfg.log_dir == "./logs"
         assert cfg.format == "pino"
         assert cfg.tail_lines == 50
-        assert "nanoclaw" in cfg.sources
+        assert "halo" in cfg.sources
 
     def test_default_sources(self):
         cfg = Config()
-        assert cfg.sources["nanoclaw"] == "./logs/nanoclaw.log"
-        assert cfg.sources["nanoclaw_error"] == "./logs/nanoclaw.error.log"
+        assert cfg.sources["halo"] == "./logs/halo.log"
+        assert cfg.sources["halo_error"] == "./logs/halo.error.log"
 
 
 class TestConfigLoad:

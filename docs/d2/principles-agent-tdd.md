@@ -7,7 +7,7 @@ created: 2026-03-21
 
 # Agent-Era Development Principles
 
-Notes distilled from Simon Willison's talk on coding agent workflows (Statig, June 2026). These form core operating principles for NanoClaw development going forward.
+Notes distilled from Simon Willison's talk on coding agent workflows (Statig, June 2026). These form core operating principles for Halo development going forward.
 
 Source: Simon Willison (Django co-creator, Datasette maintainer) — interview with Eric (Statig infrastructure/security lead).
 
@@ -37,7 +37,7 @@ Passing tests !== working software. Always:
 2. Use `curl` (or equivalent) to exercise the API/interface
 3. This catches integration gaps that unit tests miss
 
-**Applied to NanoClaw:** After any container-runner or orchestrator change, the verification loop should include actually spawning a container and sending a message through the full pipeline, not just running `npm test`.
+**Applied to Halo:** After any container-runner or orchestrator change, the verification loop should include actually spawning a container and sending a message through the full pipeline, not just running `npm test`.
 
 ---
 
@@ -55,7 +55,7 @@ Simon describes stages of AI adoption for developers:
 
 **Stage 5 requires:** The agent must *prove* the code works. Tests, manual exercise, conformance suites. Without proof, stage 5 is "wildly irresponsible."
 
-**Where NanoClaw sits:** Stage 3-4 for most work. Stage 5 is aspirational but requires the gate infrastructure to support it (see: Makefile gate, `npm run gate`).
+**Where Halo sits:** Stage 3-4 for most work. Stage 5 is aspirational but requires the gate infrastructure to support it (see: Makefile gate, `npm run gate`).
 
 ---
 
@@ -69,7 +69,7 @@ When a language-agnostic test suite or specification exists, use it as the oracl
 
 **Example:** Simon built multipart file upload tests that passed against Go, Node.js, Django, and Starlette, then used those tests to drive a Datasette implementation.
 
-**Applied to NanoClaw:** For IPC protocol, container output markers, or any cross-boundary contract — write conformance tests that validate the protocol, not just one side of it.
+**Applied to Halo:** For IPC protocol, container output markers, or any cross-boundary contract — write conformance tests that validate the protocol, not just one side of it.
 
 ---
 
@@ -99,7 +99,7 @@ Agents are "incredibly consistent" — they follow existing codebase patterns al
 
 > "If you're the first person to use Redis at your company you have to do it perfectly because the next person will copy and paste what you did. It's exactly the same with agents."
 
-**Applied to NanoClaw:** The patterns in `src/index.ts`, `src/container-runner.ts`, and `src/db.ts` are the templates agents will propagate. Any pattern improvement there compounds across all future agent-written code.
+**Applied to Halo:** The patterns in `src/index.ts`, `src/container-runner.ts`, and `src/db.ts` are the templates agents will propagate. Any pattern improvement there compounds across all future agent-written code.
 
 ---
 
@@ -123,7 +123,7 @@ Three conditions that, combined, create catastrophic risk:
 - **Docker / Apple Containers:** Good local isolation. Friction still too high for default adoption.
 - **`--dangerously-skip-permissions` on local machine:** Simon does this despite being "the world's foremost expert on why you shouldn't." Convenience wins. Mitigate by not pointing agents at untrusted repos.
 
-**Applied to NanoClaw:** Agents already run in Docker containers — this is architecturally sound. The host orchestrator running without sandboxing is the weaker link. The credential proxy (`SEC.L2`) is the compensating control.
+**Applied to Halo:** Agents already run in Docker containers — this is architecturally sound. The host orchestrator running without sandboxing is the weaker link. The credential proxy (`SEC.L2`) is the compensating control.
 
 ---
 
@@ -138,7 +138,7 @@ Three conditions that, combined, create catastrophic risk:
 - The exhaustion is what prevents 1 engineer × 1000 projects
 - Agent-minutes are cheap; human-minutes of oversight are the scarce resource
 
-**This validates the NanoClaw scope estimation rule:** Always express as `agent-minutes × human-minutes`, never wall-clock time.
+**This validates the Halo scope estimation rule:** Always express as `agent-minutes × human-minutes`, never wall-clock time.
 
 ---
 
@@ -176,12 +176,12 @@ Three conditions that, combined, create catastrophic risk:
 
 ---
 
-## Actionable Principles for NanoClaw
+## Actionable Principles for Halo
 
 1. **Every agent session starts with TDD.** Include test runner instructions in CLAUDE.md or agent prompts.
 2. **Manual exercise is mandatory.** After tests pass, exercise the actual system (spawn container, send message, verify delivery).
 3. **Conformance suites for cross-boundary contracts.** IPC protocol, output markers, session lifecycle — test both sides.
 4. **First patterns compound.** Any refactoring of core files (`index.ts`, `container-runner.ts`, `db.ts`) improves all future agent output.
 5. **Proof over trust.** Don't review code line-by-line; verify through automated evidence (test results, curl output, log inspection).
-6. **Sandboxing is non-negotiable for untrusted input.** NanoClaw's container architecture already provides this; maintain it.
+6. **Sandboxing is non-negotiable for untrusted input.** Halo's container architecture already provides this; maintain it.
 7. **Exhaustion is real.** Multi-agent sessions drain cognitive bandwidth fast. Plan for it in scope estimates.

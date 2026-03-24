@@ -14,7 +14,7 @@ from .checks import (
 
 
 # Checks whose failure means DOWN (not just DEGRADED)
-_CRITICAL_CHECKS = {"nanoclaw", "docker", "disk"}
+_CRITICAL_CHECKS = {"halo", "docker", "disk"}
 
 
 def run_all_checks() -> list[CheckResult]:

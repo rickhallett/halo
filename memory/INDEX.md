@@ -53,8 +53,8 @@ Use --link-to <id> if the new note references an existing one.
 
 ## MEMORY_INDEX
 ```yaml
-generated: '2026-03-21T10:09:23Z'
-note_count: 111
+generated: '2026-03-23T02:06:17Z'
+note_count: 113
 entities:
 - kai
 - oceanheart-ai
@@ -79,6 +79,15 @@ entities:
 - halos
 - Simon Willison
 - claude-md
+- karpathy
+- lilianweng
+- swyx
+- langchain
+- cursor
+- devin
+- twscrape
+- x-cli
+- memctl
 tag_vocabulary:
 - anti-pattern
 - architecture
@@ -1920,5 +1929,65 @@ notes:
   hash: d16992c1b3bd9024f7a3da5e4c947780ddb198bed35db6c5857c997f38b3d542
   backlink_count: 0
   modified: '2026-03-21T10:09:23Z'
+  expires: null
+- id: 20260322-150915-430
+  file: memory/notes/20260322-150915-430-hermes-x-mac-mini-agent-possibilities-and-hardware-decision.md
+  title: Hermes x Mac Mini Agent possibilities and hardware decision brainstorm
+  type: decision
+  tags:
+  - mac
+  - agents
+  - hardware
+  - career
+  - mac-mini-agent
+  - strategy
+  summary: '# Hermes x Mac Mini Agent + Hardware Decision Brainstorm
+
+    Date: 2026-03-22
+
+
+    ## Context
+
+    Rick is setting up mac-mini-agent ...'
+  hash: 28e2b99cd7b45eb4a3b68d99af7e9649a527819ff475feef25abcb46e4998b8a
+  backlink_count: 0
+  modified: '2026-03-22T15:09:15Z'
+  expires: null
+- id: 20260323-020617-615
+  file: memory/notes/20260323-020617-615-agentic-ai-twitter-monitoring-system-research-report.md
+  title: Agentic AI Twitter Monitoring System — Research Report
+  type: reference
+  tags:
+  - xitter
+  - agentic-ai
+  - monitoring
+  - system-design
+  - x-api
+  - twitter
+  - agents
+  entities:
+  - karpathy
+  - lilianweng
+  - swyx
+  - langchain
+  - cursor
+  - devin
+  - twscrape
+  - x-cli
+  - memctl
+  - nightctl
+  summary: '# X/Twitter Agentic AI Monitoring System — Research Report
+
+
+    Generated: 2026-03-23
+
+
+    ## 1. Key Accounts to Monitor
+
+
+    Starti...'
+  hash: 1090522b066b86908c2ad955780c9236433b755141e35190f38e08caf1abddbc
+  backlink_count: 0
+  modified: '2026-03-23T02:06:17Z'
   expires: null
 ```

@@ -58,7 +58,7 @@ def parse_pino_pretty(line: str) -> Optional[LogEntry]:
     return LogEntry(
         timestamp=timestamp,
         level=level.lower(),
-        source="nanoclaw",
+        source="halo",
         message=message.strip(),
         data={"pid": int(pid)},
     )
@@ -97,7 +97,7 @@ def parse_pino_json(line: str) -> Optional[LogEntry]:
     return LogEntry(
         timestamp=timestamp,
         level=level,
-        source=obj.get("name", "nanoclaw"),
+        source=obj.get("name", "halo"),
         message=obj.get("msg", ""),
         data=data,
     )
@@ -200,7 +200,7 @@ def format_entry(entry: LogEntry, show_instance: bool = False) -> str:
 # ---------------------------------------------------------------------------
 
 def parse_container_log(filepath: str, instance: str = "") -> list[LogEntry]:
-    """Parse a nanoclaw container log file (=== section format).
+    """Parse a halo container log file (=== section format).
 
     Extracts agent-runner stderr lines and NANOCLAW_OUTPUT results.
     """
@@ -274,7 +274,7 @@ def read_sqlite_messages(
     limit: int = 50,
     since: str = "",
 ) -> list[LogEntry]:
-    """Read messages from a nanoclaw SQLite database as LogEntries."""
+    """Read messages from a halo SQLite database as LogEntries."""
     import sqlite3
     from pathlib import Path
 

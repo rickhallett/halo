@@ -26,13 +26,13 @@
 | 010 — Exploration Map | walkthrough/010-exploration-map.md | guide | active | 2026-03-20 |
 | 011 — Complexity Assessment | walkthrough/011-complexity-assessment.md | guide | active | 2026-03-20 |
 | Apple Container Networking Setup (macOS 26) | APPLE-CONTAINER-NETWORKING.md | guide | active | 2026-03-15 |
-| Running NanoClaw in Docker Sandboxes (Manual Setup) | docker-sandboxes.md | guide | active | 2026-03-15 |
+| Running Halo in Docker Sandboxes (Manual Setup) | docker-sandboxes.md | guide | active | 2026-03-15 |
 | System Walkthrough | walkthrough/index.md | guide | active | 2026-03-20 |
 | Development Logbook | development-logbook.md | journal | active | 2026-03-15 |
 | Patterns and Lessons — 2026-03-18 Session | session-patterns-2026-03-18.md | journal | active | 2026-03-18 |
 | Eval Baseline — 2026-03-18 | eval-baseline-2026-03-18.md | reference | active | 2026-03-18 |
-| NanoClaw Security Model | SECURITY.md | reference | active | 2026-03-15 |
+| Halo Security Model | SECURITY.md | reference | active | 2026-03-15 |
 | halos Module Registry | halos-modules.md | reference | active | 2026-03-15 |
-| NanoClaw Debug Checklist | DEBUG_CHECKLIST.md | runbook | active | 2026-03-15 |
+| Halo Debug Checklist | DEBUG_CHECKLIST.md | runbook | active | 2026-03-15 |
 | memctl Operations Guide | memctl-operations.md | runbook | active | 2026-03-15 |
 | microHAL Operations Guide | microhal-operations.md | runbook | active | 2026-03-17 |

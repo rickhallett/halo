@@ -7,7 +7,7 @@ created: 2026-03-20
 
 # System Walkthrough
 
-Structured exploration of the NanoClaw + halos codebase. Each entry is a waypoint — a piece of the system understood well enough to navigate from.
+Structured exploration of the Halo + halos codebase. Each entry is a waypoint — a piece of the system understood well enough to navigate from.
 
 Start with the [Exploration Map](010-exploration-map.md) for recommended routes and time estimates.
 

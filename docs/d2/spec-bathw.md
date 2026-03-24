@@ -13,7 +13,7 @@ Technical Publication — Specification v0.1
 OVERVIEW
 --------
 BATHW is an interactive technical publication backed by live
-operational telemetry from the NanoClaw agent system. It combines
+operational telemetry from the Halo agent system. It combines
 engineering case studies, live-queried data visualisations, and a
 structured failure library documenting what actually happens when
 you run an agent system for months.
@@ -126,7 +126,7 @@ Table: agent_sessions
   started_at        DateTime64(3) -- session start
   ended_at          DateTime64(3) -- session end (nullable)
   duration_ms       UInt64        -- wall clock
-  group_name        String        -- nanoclaw group context
+  group_name        String        -- halo group context
   channel           String        -- whatsapp|telegram|slack|cron|ipc
   trigger_type      String        -- user_message|scheduled|ipc_task
   model             String        -- claude-sonnet-4-6 etc
@@ -513,7 +513,7 @@ Q1: ClickHouse vs TimescaleDB?
   column-oriented. TimescaleDB: Postgres-compatible, simpler
   if you already run Postgres. Leaning ClickHouse for the
   signal it sends (serious about time-series) and because
-  nanoclaw already uses SQLite, not Postgres.
+  halo already uses SQLite, not Postgres.
 
 Q2: Evaluation frequency?
   Every session? Sampled? LLM-as-judge has its own cost.

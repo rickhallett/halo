@@ -3,7 +3,7 @@ title: Fix IDLE_TIMEOUT == CONTAINER_TIMEOUT race condition
 kind: task
 status: cancelled
 tags:
-- nanoclaw
+- halo
 - architecture
 entities: []
 context: Cross-model review finding. Both set to 30min. Graceful shutdown races hard

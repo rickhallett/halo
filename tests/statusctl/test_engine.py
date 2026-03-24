@@ -14,7 +14,7 @@ from halos.statusctl.engine import (
 class TestComputeGrade:
     def test_all_ok_is_healthy(self):
         results = [
-            CheckResult(name="nanoclaw", status="ok", message="running"),
+            CheckResult(name="halo", status="ok", message="running"),
             CheckResult(name="docker", status="ok", message="running"),
             CheckResult(name="cpu", status="ok", message="5%"),
         ]
@@ -22,7 +22,7 @@ class TestComputeGrade:
 
     def test_non_critical_warn_is_degraded(self):
         results = [
-            CheckResult(name="nanoclaw", status="ok", message="running"),
+            CheckResult(name="halo", status="ok", message="running"),
             CheckResult(name="sessions", status="warn", message="high errors"),
             CheckResult(name="cpu", status="ok", message="5%"),
         ]
@@ -30,7 +30,7 @@ class TestComputeGrade:
 
     def test_non_critical_fail_is_degraded(self):
         results = [
-            CheckResult(name="nanoclaw", status="ok", message="running"),
+            CheckResult(name="halo", status="ok", message="running"),
             CheckResult(name="credential-proxy", status="fail", message="not listening"),
             CheckResult(name="cpu", status="ok", message="5%"),
         ]
@@ -38,14 +38,14 @@ class TestComputeGrade:
 
     def test_critical_fail_is_down(self):
         results = [
-            CheckResult(name="nanoclaw", status="fail", message="not running"),
+            CheckResult(name="halo", status="fail", message="not running"),
             CheckResult(name="docker", status="ok", message="running"),
         ]
         assert compute_grade(results) == "DOWN"
 
     def test_docker_fail_is_down(self):
         results = [
-            CheckResult(name="nanoclaw", status="ok", message="running"),
+            CheckResult(name="halo", status="ok", message="running"),
             CheckResult(name="docker", status="fail", message="unreachable"),
         ]
         assert compute_grade(results) == "DOWN"
@@ -61,7 +61,7 @@ class TestComputeGrade:
 
     def test_mixed_results(self):
         results = [
-            CheckResult(name="nanoclaw", status="ok", message="running"),
+            CheckResult(name="halo", status="ok", message="running"),
             CheckResult(name="sessions", status="warn", message="timeout"),
             CheckResult(name="disk", status="ok", message="45%"),
             CheckResult(name="errors", status="ok", message="2 errors"),

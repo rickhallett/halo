@@ -3,7 +3,7 @@ title: 'CRITICAL: executor shell=True enables command injection from nightctl jo
 kind: task
 status: cancelled
 tags:
-- nanoclaw
+- halo
 - security
 entities: []
 context: 'Cross-model review finding 5. subprocess.run(job.command, shell=True) in

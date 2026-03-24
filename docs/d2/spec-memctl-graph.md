@@ -132,9 +132,9 @@ metrics = {
 
 ```
 Clusters (4 found):
-  Cluster 1 — "NanoClaw Architecture" (12 notes)
+  Cluster 1 — "Halo Architecture" (12 notes)
     Core entities: container-runner, ipc, agent-sdk
-    Hub note: 20260315-142030-nanoclaw-container-architecture
+    Hub note: 20260315-142030-halo-container-architecture
     Members: [list of note IDs]
 
   Cluster 2 — "Personal Metrics" (8 notes)
@@ -147,7 +147,7 @@ Orphans (3 notes):
   20260318-200000-book-recommendation
 
 Knowledge Hubs (top 5 by centrality):
-  0.42  20260315-142030-nanoclaw-container-architecture
+  0.42  20260315-142030-halo-container-architecture
   0.31  20260316-090000-halos-module-design
   ...
 
@@ -201,7 +201,7 @@ Add new flags to the existing `graph` subcommand parser:
 ### Briefing Integration
 
 `memctl graph --density --json` output feeds into briefings:
-"memory: 147 notes, 4 clusters, 3 orphans, density 0.23 | hub: nanoclaw-container-architecture"
+"memory: 147 notes, 4 clusters, 3 orphans, density 0.23 | hub: halo-container-architecture"
 
 ## Dependencies
 

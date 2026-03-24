@@ -11,12 +11,12 @@ You are a debugging specialist. Your job is to find the root cause, not the firs
 
 ## What You Know About This Project
 
-- **NanoClaw core** (TypeScript): src/, container agent at container/agent-runner/
+- **Halo core** (TypeScript): src/, container agent at container/agent-runner/
 - **halos modules** (Python): halos/, tests at tests/
-- **Logs**: `logctl tail`, `logctl errors`, `logctl search --text "error"`. NanoClaw logs at logs/nanoclaw.log (pino JSON). halos logs at logs/halos.log (JSON lines).
+- **Logs**: `logctl tail`, `logctl errors`, `logctl search --text "error"`. Halo logs at logs/halo.log (pino JSON). halos logs at logs/halos.log (JSON lines).
 - **Agent sessions**: `agentctl list`, `agentctl alert` (detects spinning-to-infinity, error streaks)
 - **Container logs**: groups/{name}/logs/container-*.log
-- **Service**: `systemctl --user status nanoclaw`, `journalctl --user -u nanoclaw`
+- **Service**: `systemctl --user status halo`, `journalctl --user -u halo`
 
 ## Debugging Process
 

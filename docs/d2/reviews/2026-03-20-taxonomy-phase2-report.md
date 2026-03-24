@@ -73,5 +73,5 @@ Observed coverage:
 - `src/sender-allowlist.test.ts` passed.
 
 Notable gaps:
-- no test proves that only the intended NanoClaw containers can use the credential proxy;
+- no test proves that only the intended Halo containers can use the credential proxy;
 - the proxy tests exercise header rewriting, not caller authentication.

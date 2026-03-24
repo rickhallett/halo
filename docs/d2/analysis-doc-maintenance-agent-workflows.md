@@ -35,7 +35,7 @@ Files that are currently accurate: `telegram.ts` (:582), `gmail.ts` (:374), `gro
 
 | Claim | Actual | Status |
 |-------|--------|--------|
-| "NanoClaw Runtime (Node.js, src/ ~10,600 LOC)" | src/*.ts = 10,704 (with tests) or ~8,633 (non-test) | Approximately correct if including test files |
+| "Halo Runtime (Node.js, src/ ~10,600 LOC)" | src/*.ts = 10,704 (with tests) or ~8,633 (non-test) | Approximately correct if including test files |
 | "Halos Python Tooling (halos/, ~17,200 LOC)" | 22,580 LOC across all modules | **Stale.** 31% growth since last update |
 
 ### 1.3 CLAUDE.md — Per-Module LOC Claims
@@ -280,7 +280,7 @@ Each workflow runs as a **cron job defined via cronctl**. The command is a Pytho
 2. Runs the specific check/scan
 3. If drift found: commits changes, pushes branch, creates PR via `gh`
 4. Emits hlog events for observability
-5. Sends Telegram notification via the NanoClaw channel layer (either direct API call or by writing an IPC message file)
+5. Sends Telegram notification via the Halo channel layer (either direct API call or by writing an IPC message file)
 6. Cleans up the worktree
 
 ### Key Design Decisions
@@ -289,7 +289,7 @@ Each workflow runs as a **cron job defined via cronctl**. The command is a Pytho
 
 **No container needed.** These scripts run on the host, not in agent containers. They need `git`, `gh`, `wc`, `python3`, and access to the repo. Running them in containers would add complexity for no isolation benefit (they only read the codebase and write PRs).
 
-**Notification via hlog + Telegram.** The simplest path is a direct Telegram API call using the bot token already in `.env`. Alternatively, the scripts could write an IPC message file that the NanoClaw orchestrator picks up, but that couples the doc agent to the runtime being up.
+**Notification via hlog + Telegram.** The simplest path is a direct Telegram API call using the bot token already in `.env`. Alternatively, the scripts could write an IPC message file that the Halo orchestrator picks up, but that couples the doc agent to the runtime being up.
 
 **Briefing integration.** The morning briefing `gather.py` already shells out to various tools. Adding a `_get_doc_agent_summary()` function that reads recent hlog events with `source=doc-agent` would surface doc maintenance activity in the daily briefing.
 

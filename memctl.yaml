@@ -28,7 +28,7 @@ note:
     - infra
     - job-search
     - layer-model
-    - nanoclaw
+    - halo
     - person
     - postgres
     - practice
@@ -67,7 +67,7 @@ enrich:
   noise_tags:
     - decision
     - person
-    - nanoclaw
+    - halo
     - the-pit
     - identity
     - standing-order

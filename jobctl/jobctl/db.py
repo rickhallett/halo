@@ -2,7 +2,7 @@ import sqlite3
 import os
 from pathlib import Path
 
-DB_PATH = Path(os.environ.get("JOBCTL_DB", Path.home() / "code/nanoclaw/store/jobs.db"))
+DB_PATH = Path(os.environ.get("JOBCTL_DB", Path.home() / "code/halo/store/jobs.db"))
 
 
 def get_conn() -> sqlite3.Connection:

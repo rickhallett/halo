@@ -8,7 +8,7 @@ tags:
 - accountability
 - cluster-6
 entities: []
-context: 'Three stat lines on trackctl: nanoclaw-source-reading, neetcode-ds-algos,
+context: 'Three stat lines on trackctl: halo-source-reading, neetcode-ds-algos,
   codecrafters. Each targets 1hr/day. Streak logic same as zazen. Track: date, domain,
   duration_mins, notes.'
 due: null

@@ -80,7 +80,7 @@ Kind regards,
 recipient: "Jane Smith"
 subject: "Project Update"
 body: |
-  Here is the weekly update on the NanoClaw project.
+  Here is the weekly update on the Halo project.
 
   Key developments:
   - calctl unified schedule view completed

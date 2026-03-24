@@ -100,7 +100,7 @@ reviewer: Claude Opus 4.6 (adversarial-reviewer subagent)
 ### M3. statusctl counts clean container exits as errors
 
 - **File:** `halos/statusctl/checks.py` (container exit counting)
-- **Problem:** `docker ps -a --filter status=exited` counts ALL exited containers, including those that exited cleanly (exit code 0). One-shot containers (common in NanoClaw for agent tasks) always show as exited after completion.
+- **Problem:** `docker ps -a --filter status=exited` counts ALL exited containers, including those that exited cleanly (exit code 0). One-shot containers (common in Halo for agent tasks) always show as exited after completion.
 - **Impact:** Noisy health reports. Normal agent task completions inflate the "exited-error" count.
 - **Fix:** Filter by non-zero exit code: `--filter "exited!=0"` or parse exit codes from output.
 

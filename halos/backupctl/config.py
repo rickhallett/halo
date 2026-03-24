@@ -75,7 +75,7 @@ def _default_targets() -> dict[str, BackupTarget]:
 
 def _default_repository() -> Path:
     """Default backup repository path."""
-    return Path.home() / "backups" / "nanoclaw"
+    return Path.home() / "backups" / "halo"
 
 
 def _parse_retention(raw: dict) -> RetentionPolicy:

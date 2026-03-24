@@ -30,7 +30,7 @@ When things are weird and you need a fresh start:
 
 ```bash
 # 1. Kill everything
-docker kill $(docker ps --filter "name=nanoclaw-telegram-main" -q) 2>/dev/null
+docker kill $(docker ps --filter "name=halo-telegram-main" -q) 2>/dev/null
 npx pm2 delete microhal-ben
 
 # 2. Clear ALL state
@@ -53,7 +53,7 @@ All three steps are required. Missing any one leaves stale state:
 halfleet/
   microhal-ben/
     ecosystem.config.cjs          # pm2 config (env vars, startup command)
-    nanoclaw/
+    halo/
       CLAUDE.md                   # ROOT — read by humans, NOT by agent
       groups/telegram_main/
         CLAUDE.md                 # GROUP — THIS is what the agent reads
@@ -70,7 +70,7 @@ halfleet/
 **The agent's CWD is `/workspace/group`, not `/workspace/project`.**
 
 Claude Code reads CLAUDE.md from the current working directory. The container mounts:
-- `/workspace/project` → the nanoclaw repo root (read-only)
+- `/workspace/project` → the halo repo root (read-only)
 - `/workspace/group` → the group folder (read-write)
 
 The agent runs from `/workspace/group`. So CLAUDE.md MUST be in `groups/telegram_main/CLAUDE.md`. The root CLAUDE.md is only read if the agent explicitly traverses up, which it doesn't reliably do.

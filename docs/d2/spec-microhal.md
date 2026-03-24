@@ -12,7 +12,7 @@ created: 2026-03-17
 
 ## Goal
 
-HAL-prime spawns and maintains fully independent HAL instances for non-technical users, delivered via Telegram. Each microHAL is a separate nanoclaw deployment with its own repo clone, bot token, and process — completely unable to touch prime soil. Fleet management and code updates flow one-way from HAL-prime. Research instrumentation from day one.
+HAL-prime spawns and maintains fully independent HAL instances for non-technical users, delivered via Telegram. Each microHAL is a separate halo deployment with its own repo clone, bot token, and process — completely unable to touch prime soil. Fleet management and code updates flow one-way from HAL-prime. Research instrumentation from day one.
 
 ## Architecture Decision
 
@@ -20,16 +20,16 @@ HAL-prime spawns and maintains fully independent HAL instances for non-technical
 
 ```
 /home/mrkai/code/
-  nanoclaw/                          # HAL-prime (this repo)
+  halo/                          # HAL-prime (this repo)
   halfleet/
     microhal-ben/
-      nanoclaw/                      # Full repo clone
+      halo/                      # Full repo clone
         CLAUDE.md                    # Modified, read-only governance
         groups/telegram_main/        # Ben's main (and only) group
         memory/                      # Ben's memory, isolated
         halos/                       # Subset of halos tools
     microhal-mum/
-      nanoclaw/                      # Separate clone
+      halo/                      # Separate clone
         ...
 ```
 
@@ -57,13 +57,13 @@ HAL-prime spawns and maintains fully independent HAL instances for non-technical
 ## Isolation Model
 
 ```
-HAL-prime (~/code/nanoclaw/)
+HAL-prime (~/code/halo/)
   ├── Can read: ~/code/halfleet/microhal-*/
   ├── Can write: push code updates to microHAL deployments
   ├── Can kill: halctl kill <microhal-id>
   └── Cannot: be reached from any microHAL
 
-microHAL-ben (~/code/halfleet/microhal-ben/nanoclaw/)
+microHAL-ben (~/code/halfleet/microhal-ben/halo/)
   ├── LOCKED (read-only, owned by rick):
   │     CLAUDE.md, .claude/, halos/, src/, container/
   │     — governance BIOS, immutable at runtime
@@ -71,7 +71,7 @@ microHAL-ben (~/code/halfleet/microhal-ben/nanoclaw/)
   │     workspace/, projects/, groups/, memory/
   │     — user's playground, unrestricted
   ├── Can access: gh, vercel, neonctl (shared services via credential proxy)
-  ├── Cannot: see ~/code/nanoclaw/ (prime)
+  ├── Cannot: see ~/code/halo/ (prime)
   └── Cannot: see other microHAL instances
 ```
 
@@ -79,12 +79,12 @@ microHAL-ben (~/code/halfleet/microhal-ben/nanoclaw/)
 
 ## Provisioning Model
 
-**Scripted file copy from prime's working tree, driven by config manifest.** Not a git clone — nanoclaw source is infrastructure fossil record, not active development for microHAL users. No setup scripts, no origin tracking. Direct provisioning.
+**Scripted file copy from prime's working tree, driven by config manifest.** Not a git clone — halo source is infrastructure fossil record, not active development for microHAL users. No setup scripts, no origin tracking. Direct provisioning.
 
 ```yaml
 # halfleet/fleet-config.yaml
 base:
-  source: ~/code/nanoclaw
+  source: ~/code/halo
   exclude:
     - memory/              # prime's memory
     - .claude/projects/    # prime's project memory
@@ -92,7 +92,7 @@ base:
     - queue/               # prime's work queue
     - backlog/             # legacy
     - docs/d2/             # internal specs
-    - nanoclaw.db          # prime's database
+    - halo.db          # prime's database
     - groups/              # prime's groups
     - .env*                # prime's secrets
   lock:                    # read-only after copy (chmod 444/555, owned by rick)
@@ -228,7 +228,7 @@ halctl create --name ben --personality discovering-ben
 
 Steps:
 1. Read `halfleet/fleet-config.yaml` for profile and base config
-2. Copy prime working tree to `~/code/halfleet/microhal-ben/nanoclaw/`, excluding items in `base.exclude`
+2. Copy prime working tree to `~/code/halfleet/microhal-ben/halo/`, excluding items in `base.exclude`
 3. Apply personality template to CLAUDE.md (compose from base + personality + user layers)
 4. Create `workspace/`, `projects/`, `groups/telegram_main/`, `memory/` directories
 5. Lock governance layer: chown rick + chmod 444/555 on items in `base.lock`
@@ -288,7 +288,7 @@ Run discovering-ben detectors on existing 255 conversations. Document baseline. 
 | A5 | Governance lockdown | Filesystem permissions (chmod 444/555, owned by rick) | Surgical: governance BIOS locked, workspace open. |
 | A6 | Onboarding state | memctl notes (type=state) | Allows memories to build on top. Risk: users less skilled than memctl creator. Accepted — we measure this. |
 | A7 | Kill switch | Three modes: freeze (stop), fold (stop+archive), fry (stop+wipe) | All three needed for different situations. Fry requires --confirm. |
-| A8 | Shared services | All-access per profile config, no runtime ACL | Monitoring outweighs control at this stage. We don't know the control case yet. OOTB nanoclaw IS the baseline — alignment-as-a-service needs real data on what happens without it. Bug-laden ACL is worse than no ACL as first point of friction. |
+| A8 | Shared services | All-access per profile config, no runtime ACL | Monitoring outweighs control at this stage. We don't know the control case yet. OOTB halo IS the baseline — alignment-as-a-service needs real data on what happens without it. Bug-laden ACL is worse than no ACL as first point of friction. |
 
 ## Provenance
 

@@ -7,7 +7,7 @@ created: 2026-03-20
 
 # 011 — Complexity Assessment
 
-Where NanoClaw sits on the difficulty spectrum, calibrated against common software archetypes.
+Where Halo sits on the difficulty spectrum, calibrated against common software archetypes.
 
 ## Rating: 58–65 / 100
 
@@ -43,20 +43,20 @@ An engineer with 80%+ understanding of how everything fits together would be sol
 
 ## Felt-Sense Comparisons
 
-| System Type | Complexity | How NanoClaw Compares |
+| System Type | Complexity | How Halo Compares |
 |---|---|---|
 | **CRUD web app** (Rails/Django + Postgres) | ~20–30 | Meaningfully harder. CRUD apps have well-trodden patterns, no container orchestration, no IPC. |
-| **Slack/Discord bot** (single-service) | ~25–35 | Similar domain but NanoClaw adds container isolation, fleet management, multi-channel routing, and a governance layer most bots don't have. |
-| **CI/CD pipeline** (Jenkins/GitHub Actions runner) | ~50–60 | **Closest analogue.** Job scheduling, container spawning, output parsing, concurrency limits, timeout management. NanoClaw is roughly here. |
-| **Kubernetes operator** (custom controller) | ~65–75 | NanoClaw approaches this but lacks the reconciliation loops, CRD schemas, and distributed state that push operators higher. |
-| **Message broker** (RabbitMQ/Kafka deployment) | ~70–80 | Much harder. Durability guarantees, consumer groups, partition rebalancing, backpressure — none of which NanoClaw needs. |
+| **Slack/Discord bot** (single-service) | ~25–35 | Similar domain but Halo adds container isolation, fleet management, multi-channel routing, and a governance layer most bots don't have. |
+| **CI/CD pipeline** (Jenkins/GitHub Actions runner) | ~50–60 | **Closest analogue.** Job scheduling, container spawning, output parsing, concurrency limits, timeout management. Halo is roughly here. |
+| **Kubernetes operator** (custom controller) | ~65–75 | Halo approaches this but lacks the reconciliation loops, CRD schemas, and distributed state that push operators higher. |
+| **Message broker** (RabbitMQ/Kafka deployment) | ~70–80 | Much harder. Durability guarantees, consumer groups, partition rebalancing, backpressure — none of which Halo needs. |
 | **Database engine internals** | ~85–95 | Different universe. WAL, MVCC, query planning, buffer management. |
 
 ---
 
 ## Summary
 
-NanoClaw's complexity is **architectural, not algorithmic**. There are no clever algorithms — the difficulty is in understanding how ~17 moving parts coordinate across two languages, a container boundary, and file-based IPC, with security constraints at every seam. Reading any single file is straightforward; tracing a message end-to-end through all ten steps of the flow requires holding a lot of context simultaneously.
+Halo's complexity is **architectural, not algorithmic**. There are no clever algorithms — the difficulty is in understanding how ~17 moving parts coordinate across two languages, a container boundary, and file-based IPC, with security constraints at every seam. Reading any single file is straightforward; tracing a message end-to-end through all ten steps of the flow requires holding a lot of context simultaneously.
 
 The closest industrial analogue is a **CI runner** (think a simplified BuildKite agent or GitHub Actions runner): spawn containers, feed them work, parse their output, manage concurrency, handle timeouts, persist state. The fleet/personality layer is the genuinely novel part — there's no off-the-shelf comparison for "spawn an AI agent with a composed personality profile and onboarding assessment protocol."
 

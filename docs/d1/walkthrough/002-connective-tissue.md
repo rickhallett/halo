@@ -326,7 +326,7 @@ A push-based async iterable that keeps the SDK's `isSingleUserTurn` false. This 
 ### SDK configuration
 
 - `permissionMode: 'bypassPermissions'` — no user approval needed inside container
-- `allowedTools`: Bash, Read/Write/Edit, Glob/Grep, WebSearch/WebFetch, Task management, MCP tools (`mcp__nanoclaw__*`, `mcp__gmail__*`)
+- `allowedTools`: Bash, Read/Write/Edit, Glob/Grep, WebSearch/WebFetch, Task management, MCP tools (`mcp__halo__*`, `mcp__gmail__*`)
 - `cwd: '/workspace/group'` — each group gets its own workspace
 - `PreCompact` hook archives transcripts to `conversations/` directory before compaction
 
@@ -355,7 +355,7 @@ Each tool writes a JSON file to `/workspace/ipc/messages/` or `/workspace/ipc/ta
 
 ### The briefing gap
 
-`list_tasks` reads from `current_tasks.json` — a snapshot of nanoclaw's internal scheduled tasks written by the host before container launch. It has **no knowledge of crontab, cronctl, or any external scheduling system**. The tool description says "List all scheduled tasks" without scoping this to "nanoclaw-internal tasks only." This is exactly why the agent answered the briefing question incorrectly. See [009-halos-ecosystem.md](009-halos-ecosystem.md) for the external scheduling layer (`cronctl`).
+`list_tasks` reads from `current_tasks.json` — a snapshot of halo's internal scheduled tasks written by the host before container launch. It has **no knowledge of crontab, cronctl, or any external scheduling system**. The tool description says "List all scheduled tasks" without scoping this to "halo-internal tasks only." This is exactly why the agent answered the briefing question incorrectly. See [009-halos-ecosystem.md](009-halos-ecosystem.md) for the external scheduling layer (`cronctl`).
 
 **Connections:** Started by `agent-runner/src/index.ts` as a child process. Writes files consumed by host-side `ipc.ts`. Context injected via environment variables (`NANOCLAW_CHAT_JID`, `NANOCLAW_GROUP_FOLDER`, `NANOCLAW_IS_MAIN`).
 

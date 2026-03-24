@@ -14,7 +14,7 @@ created: 2026-03-21
 
 Ben's microhal instance (microhal-ben) has been active since 2026-03-17. He is the first and most active fleet user. The question is: what quantified metrics can we track to understand how his usage evolves, and what data already exists to support them?
 
-Ben's instance runs as a separate NanoClaw process (pm2: microhal-ben) with its own SQLite database at `/home/mrkai/code/halfleet/microhal-ben/nanoclaw/store/messages.db`. He interacts via Telegram through `@HALBen_bot`. Two senders are present: Ben (sender_id `8660755707`) and Rick (sender_id `5967394003`).
+Ben's instance runs as a separate Halo process (pm2: microhal-ben) with its own SQLite database at `/home/mrkai/code/halfleet/microhal-ben/halo/store/messages.db`. He interacts via Telegram through `@HALBen_bot`. Two senders are present: Ben (sender_id `8660755707`) and Rick (sender_id `5967394003`).
 
 ### Current data state (snapshot as of 2026-03-21)
 
@@ -232,7 +232,7 @@ grep '"event":"session_clear"' "$HALOS_LOG_FILE" | \
 #### C4. Response latency (message-to-container-start)
 
 - **Source:** Correlation between message timestamps and container log timestamps
-- **Capturable now:** Partially. The NanoClaw polling interval determines the baseline delay. Container start time minus the triggering message's timestamp gives perceived latency.
+- **Capturable now:** Partially. The Halo polling interval determines the baseline delay. Container start time minus the triggering message's timestamp gives perceived latency.
 - **New instrumentation needed:** The current data model does not link a specific container run to a specific triggering message. This mapping would require either:
   1. Adding `triggering_message_id` to container logs, or
   2. Inferring the link by finding the last user message before each container start timestamp.

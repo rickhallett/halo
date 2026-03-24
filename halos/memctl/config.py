@@ -24,7 +24,7 @@ class IndexConfig:
 @dataclass
 class EnrichConfig:
     noise_tags: list[str] = field(default_factory=lambda: [
-        "decision", "person", "nanoclaw", "the-pit", "identity", "standing-order",
+        "decision", "person", "halo", "the-pit", "identity", "standing-order",
     ])
     noise_entities: list[str] = field(default_factory=lambda: [
         "kai", "the-pit",

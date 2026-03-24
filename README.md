@@ -6,7 +6,7 @@ A personal operating system layer, built for agents.
 
 ## What This Is
 
-NanoClaw is a suite of composable CLI modules that form a personal operating system — not in the kernel sense, but in the "everything you need to manage a life and its projects" sense. Each module is a focused tool that does one thing. Together, they create an expressive runtime layer where an agent can manage work, track habits, monitor infrastructure, process email, produce reports, and maintain memory — all without a single GUI application.
+Halo is a suite of composable CLI modules that form a personal operating system — not in the kernel sense, but in the "everything you need to manage a life and its projects" sense. Each module is a focused tool that does one thing. Together, they create an expressive runtime layer where an agent can manage work, track habits, monitor infrastructure, process email, produce reports, and maintain memory — all without a single GUI application.
 
 A single Node.js process connects messaging channels (Telegram, Slack, Discord, Gmail) to Claude agents running in isolated Docker containers. Each agent has its own filesystem, memory, and conversation history. The **halos** Python toolchain wraps everything in structured CLI modules that compose through text, files, and SQLite.
 
@@ -57,8 +57,8 @@ The architectural thesis: if 75% of software is GUI chrome over simple data oper
 ## Quick Start
 
 ```bash
-gh repo fork rickhallett/nanoclaw --clone
-cd nanoclaw
+gh repo fork rickhallett/halo --clone
+cd halo
 npm install
 cp .env.example .env  # add your ANTHROPIC_API_KEY and TELEGRAM_BOT_TOKEN
 npm run build
@@ -224,7 +224,7 @@ logs/               Structured event stream (hlog → JSONL)
 ## Fleet Management
 
 ```
-~/code/nanoclaw/          HAL-prime (this repo)
+~/code/halo/          HAL-prime (this repo)
 ~/code/halfleet/
   microhal-ben/           Independent instance (personality: discovering-ben)
   microhal-dad/           Independent instance (personality: The Captain)
@@ -267,4 +267,4 @@ MIT
 
 ## Provenance
 
-Forked from [qwibitai/nanoclaw](https://github.com/qwibitai/nanoclaw). Diverged significantly — fleet management, structured memory, halos toolchain, and the full ecosystem described above are original work.
+Forked from [qwibitai/halo](https://github.com/qwibitai/halo). Diverged significantly — fleet management, structured memory, halos toolchain, and the full ecosystem described above are original work.

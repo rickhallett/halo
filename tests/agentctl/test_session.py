@@ -5,7 +5,7 @@ from halos.agentctl.session import Session, marshal, parse, filename
 
 def _make_session(**overrides) -> Session:
     defaults = dict(
-        id="nanoclaw-telegram-main-1773610015731",
+        id="halo-telegram-main-1773610015731",
         group="telegram_main",
         started="2026-03-16T09:00:00+00:00",
         finished="2026-03-16T09:05:33+00:00",
@@ -22,7 +22,7 @@ def _make_session(**overrides) -> Session:
 
 def test_create_session():
     s = _make_session()
-    assert s.id == "nanoclaw-telegram-main-1773610015731"
+    assert s.id == "halo-telegram-main-1773610015731"
     assert s.group == "telegram_main"
     assert s.duration_secs == 333
     assert s.status == "success"
@@ -91,4 +91,4 @@ def test_parse_invalid_yaml():
 
 def test_filename_generation():
     s = _make_session()
-    assert filename(s) == "nanoclaw-telegram-main-1773610015731.yaml"
+    assert filename(s) == "halo-telegram-main-1773610015731.yaml"

@@ -190,7 +190,7 @@ mailctl summary                             # "mailctl: 12 unread (3 from ben) |
 
 ---
 
-#### Channels (NanoClaw core, not halos)
+#### Channels (Halo core, not halos)
 
 Telegram, Gmail, Slack, Discord — self-registering at startup. Messages route through the orchestrator to container agents. Channels are the human interface; halos modules are the computation layer beneath.
 
@@ -425,7 +425,7 @@ logctl reads these events. agentctl detects anomalies in them. briefings synthes
 
 ```
 store/
-  messages.db          # NanoClaw core: messages, sessions, groups
+  messages.db          # Halo core: messages, sessions, groups
   mail.db              # mailctl: filters, audit log
   track_zazen.db       # trackctl: zazen entries
   track_movement.db    # trackctl: movement entries

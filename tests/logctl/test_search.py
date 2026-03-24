@@ -179,14 +179,14 @@ class TestReadLogTail:
 class TestComputeStats:
     def test_basic_stats(self):
         entries = [
-            LogEntry(level="info", source="nanoclaw", message="a"),
-            LogEntry(level="info", source="nanoclaw", message="b"),
+            LogEntry(level="info", source="halo", message="a"),
+            LogEntry(level="info", source="halo", message="b"),
             LogEntry(level="error", source="memctl", message="c"),
             LogEntry(level="warn", source="memctl", message="d"),
         ]
         stats = compute_stats(entries)
         assert stats["total"] == 4
-        assert stats["by_source"]["nanoclaw"] == 2
+        assert stats["by_source"]["halo"] == 2
         assert stats["by_source"]["memctl"] == 2
         assert stats["by_level"]["info"] == 2
         assert stats["error_count"] == 1

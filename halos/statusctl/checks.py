@@ -42,23 +42,23 @@ class ServiceCheck:
 
     def run(self) -> list[CheckResult]:
         results = []
-        results.append(self._check_nanoclaw())
+        results.append(self._check_halo())
         results.append(self._check_credential_proxy())
         results.append(self._check_docker())
         return results
 
-    def _check_nanoclaw(self) -> CheckResult:
-        rc, stdout, stderr = _run(["systemctl", "--user", "is-active", "nanoclaw"])
+    def _check_halo(self) -> CheckResult:
+        rc, stdout, stderr = _run(["systemctl", "--user", "is-active", "halo"])
         if rc == -1:
             return CheckResult(
-                name="nanoclaw",
+                name="halo",
                 status="warn",
                 message="systemctl not available",
             )
         state = stdout.strip()
         if state == "active":
-            return CheckResult(name="nanoclaw", status="ok", message="running")
-        return CheckResult(name="nanoclaw", status="fail", message=f"not running ({state})")
+            return CheckResult(name="halo", status="ok", message="running")
+        return CheckResult(name="halo", status="fail", message=f"not running ({state})")
 
     def _check_credential_proxy(self) -> CheckResult:
         rc, stdout, stderr = _run(["ss", "-tlnp"])

@@ -55,7 +55,7 @@ Fallback: if restic isn't installed, use `sqlite3 .backup` for databases + `tar`
 
 `backupctl.yaml`:
 ```yaml
-repository: /home/mrkai/backups/nanoclaw  # restic repo path
+repository: /home/mrkai/backups/halo  # restic repo path
 password_file: /home/mrkai/.backupctl-password
 
 targets:

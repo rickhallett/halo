@@ -33,7 +33,7 @@ def _restic_env(cfg: BackupConfig) -> dict[str, str]:
         env["RESTIC_PASSWORD_FILE"] = str(cfg.password_file)
     elif not env.get("RESTIC_PASSWORD"):
         # Use a default password for local-only repos without explicit config
-        env["RESTIC_PASSWORD"] = "nanoclaw-local-backup"
+        env["RESTIC_PASSWORD"] = "halo-local-backup"
     return env
 
 

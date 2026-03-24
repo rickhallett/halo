@@ -48,7 +48,7 @@ class TestDefaultConfig:
         fake_yaml = tmp_path / "backupctl.yaml"
         cfg = load_config(config_path=fake_yaml)
         assert "backups" in str(cfg.repository)
-        assert "nanoclaw" in str(cfg.repository)
+        assert "halo" in str(cfg.repository)
 
     def test_default_retention_daily(self, tmp_path):
         fake_yaml = tmp_path / "backupctl.yaml"

@@ -77,7 +77,7 @@ def _add_backlink_edges(G, idx: idxmod.Index):
 
 def _add_entity_edges(G, idx: idxmod.Index, noise_entities: set[str] | None = None):
     """Add dashed edges between notes sharing non-trivial entities."""
-    NOISE = noise_entities or {"kai", "the-pit", "nanoclaw"}
+    NOISE = noise_entities or {"kai", "the-pit", "halo"}
 
     entity_to_ids: dict[str, list[str]] = {}
     for n in idx.notes:

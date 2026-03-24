@@ -58,16 +58,16 @@ The four modules share a clean design language. The Python `halos` package with 
 
 What's missing across all of them: **tests**. There are no test files in `halos/`. For CLIs that enforce schema validation, pruning thresholds, and hash verification, this is a liability. The "defensive coding mandate" standing order (SD in memory) explicitly states LLMs are probabilistic and unhappy paths are inevitable. The modules should practice what they preach.
 
-## 2. What NanoClaw Already Provides
+## 2. What Halo Already Provides
 
-halos modules do not operate in a vacuum. NanoClaw's infrastructure handles several things that a naive module design would try to rebuild:
+halos modules do not operate in a vacuum. Halo's infrastructure handles several things that a naive module design would try to rebuild:
 
 ### Messaging (src/router.ts, src/channels/)
 Multi-channel outbound messaging. WhatsApp, Telegram, Slack, Discord, Gmail. nightctl already uses this for failure notifications via the halos messaging layer. Any new module that needs to notify the operator can use the same path.
 
 ### Scheduling (src/task-scheduler.ts, src/db.ts)
-NanoClaw has a full task scheduler with cron expressions, interval-based scheduling, and one-shot tasks. Tasks run in containers with group isolation. This is the *runtime* scheduler. cronctl is the *definition* layer (YAML files that generate crontab). nightctl is the *batch* layer (deferred jobs with dependency chains). These three layers are complementary, not overlapping:
-- NanoClaw scheduler: "run this prompt in this container at this time"
+Halo has a full task scheduler with cron expressions, interval-based scheduling, and one-shot tasks. Tasks run in containers with group isolation. This is the *runtime* scheduler. cronctl is the *definition* layer (YAML files that generate crontab). nightctl is the *batch* layer (deferred jobs with dependency chains). These three layers are complementary, not overlapping:
+- Halo scheduler: "run this prompt in this container at this time"
 - cronctl: "these system commands should run on this cron schedule"
 - nightctl: "these jobs are queued for the overnight window"
 
@@ -78,13 +78,13 @@ File-based IPC with per-group namespaces. Containers write JSON files to `data/i
 Containers get volume mounts (read-only project root for main, read-write group folder), credential proxy access, and IPC directories. The halos tools are installed inside the container via `uv sync`. Modules run inside the container as CLI commands the agent invokes.
 
 ### SQLite (src/db.ts)
-NanoClaw uses SQLite for task state, run logs, and group metadata. halos modules deliberately avoid this — they're filesystem-first. This is a design choice, not an oversight. The filesystem approach means the agent's tools are auditable with `cat` and `ls`, diffable with git, and don't require a database client to inspect. But it means halos modules cannot leverage NanoClaw's existing task/run tables. This is the correct tradeoff.
+Halo uses SQLite for task state, run logs, and group metadata. halos modules deliberately avoid this — they're filesystem-first. This is a design choice, not an oversight. The filesystem approach means the agent's tools are auditable with `cat` and `ls`, diffable with git, and don't require a database client to inspect. But it means halos modules cannot leverage Halo's existing task/run tables. This is the correct tradeoff.
 
 ### What this means for new modules
 
 A new halos module gets for free:
 - Outbound messaging to any channel (via IPC message files)
-- Scheduled execution (via NanoClaw tasks or cronctl definitions)
+- Scheduled execution (via Halo tasks or cronctl definitions)
 - Container sandboxing with filesystem isolation
 - The `halos` Python package structure and `uv sync` installation
 
@@ -147,7 +147,7 @@ Storage: `logs/halos/` directory with one YAML file per operation (following the
 #### vaultctl
 **One-line:** Secret reference management — pointers to secrets, never the secrets themselves.
 
-**Why:** NanoClaw has a credential proxy that injects secrets into containers. But there's no halos-layer tracking of *which* secrets exist, *which* modules need them, *when* they were last rotated, or *when* they expire. The agent can't answer "which API keys are about to expire?" because that information isn't in the knowledge graph.
+**Why:** Halo has a credential proxy that injects secrets into containers. But there's no halos-layer tracking of *which* secrets exist, *which* modules need them, *when* they were last rotated, or *when* they expire. The agent can't answer "which API keys are about to expire?" because that information isn't in the knowledge graph.
 
 **What it looks like:**
 ```
@@ -159,7 +159,7 @@ vaultctl rotate --name anthropic-api   # triggers rotation workflow, does NOT ha
 
 Storage: `vault/` directory with YAML files. Each file contains metadata about a secret (name, provider, tags, expiry, last rotated) but NEVER the secret value. The actual secrets stay in the credential proxy / environment variables / wherever they already live.
 
-**Priority: Soon.** Kai has API keys, OAuth tokens, and service credentials scattered across NanoClaw channels. Tracking rotation and expiry is the kind of thing that bites you at 2am.
+**Priority: Soon.** Kai has API keys, OAuth tokens, and service credentials scattered across Halo channels. Tracking rotation and expiry is the kind of thing that bites you at 2am.
 
 **Dependencies:** None, but should integrate with memctl (expiring secrets could generate memory notes) and nightctl (rotation checks as overnight jobs).
 
@@ -213,7 +213,7 @@ Storage: `watches/` directory. Each watch is a YAML file. Check results stored a
 #### syncctl
 **One-line:** Bidirectional sync definitions between local state and external services.
 
-**Why:** Kai's workflow spans NanoClaw (messaging), GitHub (code), job boards (applications), and various web services. Keeping state synchronized between these is manual and error-prone. syncctl would define sync pairs and run them on schedule.
+**Why:** Kai's workflow spans Halo (messaging), GitHub (code), job boards (applications), and various web services. Keeping state synchronized between these is manual and error-prone. syncctl would define sync pairs and run them on schedule.
 
 **What it looks like:**
 ```
@@ -234,11 +234,11 @@ syncctl status --name github-issues
 #### agentctl
 **One-line:** Agent session metadata and performance tracking.
 
-**Why:** Each container invocation is an agent session. How long did it take? How many tokens did it use? What was the outcome? NanoClaw logs some of this but not in a halos-accessible way.
+**Why:** Each container invocation is an agent session. How long did it take? How many tokens did it use? What was the outcome? Halo logs some of this but not in a halos-accessible way.
 
 **What it looks like:** Session records as YAML files. Query by group, date, outcome. Token usage tracking over time.
 
-**Priority: Speculative.** NanoClaw's SQLite already tracks task runs. Duplicating this in the filesystem would violate the "don't rebuild what NanoClaw provides" principle. Only makes sense if there's agent-side metadata (self-assessment, difficulty rating, tool usage patterns) that doesn't belong in the host's SQLite.
+**Priority: Speculative.** Halo's SQLite already tracks task runs. Duplicating this in the filesystem would violate the "don't rebuild what Halo provides" principle. Only makes sense if there's agent-side metadata (self-assessment, difficulty rating, tool usage patterns) that doesn't belong in the host's SQLite.
 
 **Dependencies:** Would need container-side instrumentation to write session metadata.
 
@@ -290,7 +290,7 @@ nightctl already sends failure notifications. reportctl would send digests. watc
 The YAML schemas will evolve. The temptation will be to build migration tooling. But the schemas are simple flat YAML. A migration is a `for f in *.yaml; do ...` loop. If you need Alembic for YAML files, your YAML files are too complex.
 
 ### Any module that requires a running daemon
-halos modules are CLIs. They run, do their thing, exit. nightctl's executor is the closest thing to a daemon and it's invoked by cron, not self-hosting. If a module needs to run continuously, it belongs in NanoClaw's Node.js process, not halos.
+halos modules are CLIs. They run, do their thing, exit. nightctl's executor is the closest thing to a daemon and it's invoked by cron, not self-hosting. If a module needs to run continuously, it belongs in Halo's Node.js process, not halos.
 
 ## 5. The Naming Question: "halos"
 
@@ -303,7 +303,7 @@ halos modules are CLIs. They run, do their thing, exit. nightctl's executor is t
 ### Arguments against
 - **Grandiosity.** Calling four Python CLIs an "operating system" is semantic inflation. It's a toolkit. Kai's own memory notes flag governance recursion and the gap between papers-about-systems and working-systems. halos risks being the former.
 - **Scope creep magnet.** An "OS" invites people to think "what else does an OS need?" Networking? Process management? A filesystem abstraction? The name creates expectations the project shouldn't fulfill.
-- **Confusion with NanoClaw.** NanoClaw is the actual runtime. halos is the tooling layer. But "OS" implies halos is the runtime, which it's not.
+- **Confusion with Halo.** Halo is the actual runtime. halos is the tooling layer. But "OS" implies halos is the runtime, which it's not.
 
 ### Alternatives
 - **hal-tools** — Accurate but generic. Doesn't convey the design discipline.

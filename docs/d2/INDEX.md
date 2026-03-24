@@ -7,7 +7,7 @@
 |-------|------|----------|--------|---------|
 | Analysis: Automated Documentation Maintenance Agent Workflows | analysis-doc-maintenance-agent-workflows.md | analysis | active | 2026-03-15 |
 | Analysis: Ben Usage Metrics | analysis-ben-usage-metrics.md | analysis | active | 2026-03-21 |
-| Analysis: Google Calendar + Drive Integration for NanoClaw | analysis-google-workspace-integration.md | analysis | active | 2026-03-21 |
+| Analysis: Google Calendar + Drive Integration for Halo | analysis-google-workspace-integration.md | analysis | active | 2026-03-21 |
 | Behavioural Pattern Tracking: Schema & Lookup Design | analysis-behavioural-pattern-tracking.md | analysis | active | 2026-03-21 |
 | CLI/TUI Email Clients for Arch Linux with Gmail | analysis-cli-email-clients.md | analysis | active | 2026-03-21 |
 | Competitive Landscape: LLM Agent Operational Telemetry | analysis-agent-telemetry-landscape.md | analysis | active | 2026-03-17 |
@@ -21,7 +21,7 @@
 | Adversarial Code Review — 2026-03-16 | reviews/adversarial-review-2026-03-16.md | reference | active | 2026-03-16 |
 | Agent-Era Development Principles | principles-agent-tdd.md | reference | active | 2026-03-21 |
 | Architecture Diagrams | architecture-diagrams.md | reference | active | 2026-03-18 |
-| NanoClaw/halos Architecture — Deep Trace | architecture-deep-trace.md | reference | active | 2026-03-17 |
+| Halo/halos Architecture — Deep Trace | architecture-deep-trace.md | reference | active | 2026-03-17 |
 | memctl — Architecture Overview | memctl-architecture-overview.md | reference | active | 2026-03-15 |
 | Code Review Taxonomy | review-taxonomy.md | review | active | 2026-03-20 |
 | Combinatorial Risk Pass | review-combinatorial-pass.md | review | active | 2026-03-20 |
@@ -39,10 +39,10 @@
 | Taxonomy Review Phase 5 | reviews/2026-03-20-taxonomy-phase5-report.md | review | active | 2026-03-20 |
 | Taxonomy Review Phase 6 | reviews/2026-03-20-taxonomy-phase6-report.md | review | active | 2026-03-20 |
 | BATHW — Building Agents the Hard Way | spec-bathw.md | spec | active | 2026-03-17 |
-| MEMCTL — NanoClaw Memory Governance System | memctl-spec.md | spec | active | 2026-03-15 |
-| NanoClaw Requirements | REQUIREMENTS.md | spec | active | 2026-01-31 |
-| NanoClaw Specification | SPEC.md | spec | active | 2026-01-31 |
-| NanoClaw/halos Portfolio Showcase — Specification | spec-portfolio-showcase.md | spec | active | 2026-03-17 |
+| MEMCTL — Halo Memory Governance System | memctl-spec.md | spec | active | 2026-03-15 |
+| Halo Requirements | REQUIREMENTS.md | spec | active | 2026-01-31 |
+| Halo Specification | SPEC.md | spec | active | 2026-01-31 |
+| Halo/halos Portfolio Showcase — Specification | spec-portfolio-showcase.md | spec | active | 2026-03-17 |
 | Plan: Parameterised Personality Configuration for microHAL Fleet | personality-config-plan.md | spec | active | 2026-03-17 |
 | Skills as Branches | skills-as-branches.md | spec | active | 2026-03-10 |
 | backupctl — Structured Backup Policy | spec-backupctl.md | spec | active | 2026-03-21 |

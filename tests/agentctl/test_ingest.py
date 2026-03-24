@@ -32,7 +32,7 @@ TIMEOUT_LOG = """\
 === Container Run Log (TIMEOUT) ===
 Timestamp: 2026-03-16T10:00:00.000Z
 Group: Test Group
-Container: nanoclaw-test-group-999
+Container: halo-test-group-999
 Duration: 900000ms
 Exit Code: 137
 Had Streaming Output: false
@@ -75,7 +75,7 @@ def test_parse_timeout_log(tmp_workspace):
 
     session = parse_log(str(log_file))
     assert session is not None
-    assert session.id == "nanoclaw-test-group-999"
+    assert session.id == "halo-test-group-999"
     assert session.status == "timeout"
     assert session.duration_secs == 900
     assert session.exit_code == 137

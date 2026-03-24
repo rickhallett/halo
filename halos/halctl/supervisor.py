@@ -28,7 +28,7 @@ from .config import load_fleet_manifest, fleet_dir
 # Logging — dedicated stream for logctl
 # ---------------------------------------------------------------------------
 
-LOG_DIR = Path.home() / "code" / "nanoclaw" / "logs"
+LOG_DIR = Path.home() / "code" / "halo" / "logs"
 
 def _supervisor_log(instance: str, level: str, event: str, data: dict = None):
     """Write structured log line to supervisor log file + hlog."""
@@ -306,7 +306,7 @@ def _get_chat_jid(db_path: Path) -> str:
 # ---------------------------------------------------------------------------
 
 def _state_path(instance: str) -> Path:
-    return Path.home() / "code" / "nanoclaw" / "data" / "supervisor" / f"{instance}.json"
+    return Path.home() / "code" / "halo" / "data" / "supervisor" / f"{instance}.json"
 
 
 def _load_state(instance: str) -> dict:

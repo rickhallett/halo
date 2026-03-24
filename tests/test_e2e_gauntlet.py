@@ -1133,7 +1133,7 @@ class TestScenario14ProvisioningDryRun:
         (prime / "container").mkdir()
         (prime / "container" / "build.sh").write_text("#!/bin/bash")
         # Files that should be excluded
-        (prime / "nanoclaw.db").write_text("db")
+        (prime / "halo.db").write_text("db")
         (prime / "memory").mkdir()
         (prime / "memory" / "notes.md").write_text("prime notes")
 
@@ -1141,7 +1141,7 @@ class TestScenario14ProvisioningDryRun:
         config = {
             "base": {
                 "source": str(prime),
-                "exclude": ["memory/", "nanoclaw.db", ".env*"],
+                "exclude": ["memory/", "halo.db", ".env*"],
                 "lock": ["CLAUDE.md", "src", "halos", "container"],
                 "open": ["workspace/", "projects/", "groups/", "memory/"],
             },
@@ -1166,8 +1166,8 @@ class TestScenario14ProvisioningDryRun:
         assert deploy.exists(), "Deployment directory should exist"
 
         # Excluded files should be absent
-        assert not (deploy / "nanoclaw.db").exists(), (
-            "Excluded file nanoclaw.db should not be in deployment"
+        assert not (deploy / "halo.db").exists(), (
+            "Excluded file halo.db should not be in deployment"
         )
         assert not (deploy / "memory" / "notes.md").exists(), (
             "Prime's memory notes should not be copied to microHAL"

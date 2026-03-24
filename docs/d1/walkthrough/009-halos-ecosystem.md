@@ -17,7 +17,7 @@ Nine CLI tools providing fleet management, work tracking, structured memory, bri
 
 ```
 ┌──────────────────────────────────────────────┐
-│ NanoClaw (Node.js runtime)                   │
+│ Halo (Node.js runtime)                   │
 │  ├─ IPC (briefings deliver here)             │
 │  └─ PM2 (halctl manages instances)           │
 └──────────────────────────────────────────────┘
@@ -44,7 +44,7 @@ Nine CLI tools providing fleet management, work tracking, structured memory, bri
 
 ```mermaid
 flowchart TD
-    runtime["NanoClaw<br/>(Node.js runtime)"]
+    runtime["Halo<br/>(Node.js runtime)"]
 
     halctl["halctl<br/>Fleet Management<br/>4,321 LOC"]
     briefings["briefings<br/>Daily Digests<br/>818 LOC"]
@@ -101,7 +101,7 @@ pie title Lines of Code by Module (~17,200 total)
 **Commands:** create, list, status, freeze, fold, fry, reset, assess, smoke, behavioral-smoke, supervise, push, ps, logs, health, messages, restart, session list/clear/clear-all
 
 **Key concepts:**
-- Provisions independent nanoclaw instances with locked governance
+- Provisions independent halo instances with locked governance
 - Supervisor detects behavioral triggers via phrase matching (e.g., "agent backed down")
 - Health checks catch zombies via log activity + pm2 stats
 - Session management via SQLite, logged through hlog
@@ -181,7 +181,7 @@ Memory governance is configured in `memctl.yaml` at the repo root. The lookup pr
 **Key concepts:**
 - Data gathered from reportctl collectors + subprocess calls to logctl/agentctl
 - Three synthesis strategies: claude CLI → Anthropic SDK → raw fallback
-- Delivery via NanoClaw IPC (JSON files → Telegram)
+- Delivery via Halo IPC (JSON files → Telegram)
 - Diary writes autonomous reflections to `memory/reflections/`
 
 ```mermaid
@@ -285,8 +285,8 @@ Producer        Consumer        Mechanism              Direction
 briefings       reportctl       Python import          pull
 briefings       logctl          subprocess call        pull
 briefings       agentctl        subprocess call        pull
-briefings       NanoClaw        IPC (JSON file drop)   push
-halctl          NanoClaw        PM2 CLI                push
+briefings       Halo        IPC (JSON file drop)   push
+halctl          Halo        PM2 CLI                push
 halctl          nightctl        shared YAML files      read
 halctl          memctl          shared memory dir       read
 logctl          reportctl       Python import          pull

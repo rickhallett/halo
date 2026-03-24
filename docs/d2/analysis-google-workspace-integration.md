@@ -1,11 +1,11 @@
 ---
-title: "Analysis: Google Calendar + Drive Integration for NanoClaw"
+title: "Analysis: Google Calendar + Drive Integration for Halo"
 category: analysis
 status: active
 created: 2026-03-21
 ---
 
-# Analysis: Google Calendar + Drive Integration for NanoClaw
+# Analysis: Google Calendar + Drive Integration for Halo
 
 **Date:** 2026-03-21
 **Status:** Recommendation ready
@@ -15,7 +15,7 @@ created: 2026-03-21
 
 ## 1. Context
 
-NanoClaw needs read/write access to Google Calendar (events CRUD) and Google Drive (list, search, read files). The system already integrates with Gmail via an MCP server (`@gongrzhe/server-gmail-autoauth-mcp`) running inside agent containers. This precedent is important: the integration pattern is established and working.
+Halo needs read/write access to Google Calendar (events CRUD) and Google Drive (list, search, read files). The system already integrates with Gmail via an MCP server (`@gongrzhe/server-gmail-autoauth-mcp`) running inside agent containers. This precedent is important: the integration pattern is established and working.
 
 **Existing architecture constraints:**
 
@@ -57,7 +57,7 @@ NanoClaw needs read/write access to Google Calendar (events CRUD) and Google Dri
 
 **What it prevents:** Quick iteration. Every Google API change requires your maintenance. The agent can already compose multi-step workflows from simple MCP tools — building composite operations in code is premature optimization.
 
-### Option C: NanoClaw Skill (Node.js, in-process)
+### Option C: Halo Skill (Node.js, in-process)
 
 **What it looks like:** A new skill directory under `container/skills/` (like `agent-browser`), providing Bash-callable commands: `gcal list`, `gcal create`, `gdrive search`, etc.
 

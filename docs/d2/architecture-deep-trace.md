@@ -1,15 +1,15 @@
 ---
-title: "NanoClaw/halos Architecture — Deep Trace"
+title: "Halo/halos Architecture — Deep Trace"
 category: reference
 status: active
 created: 2026-03-17
 ---
 
-# NanoClaw/halos Architecture — Deep Trace
+# Halo/halos Architecture — Deep Trace
 
 > Phase 6 architectural review, 2026-03-17. These diagrams trace the physical and logical boundaries where data is transformed, mounted, or proxied.
 
-## The halos/NanoClaw "Deep Trace"
+## The halos/Halo "Deep Trace"
 
 This diagram traces a single "thought-to-action" cycle.
 
@@ -91,7 +91,7 @@ This diagram traces a single "thought-to-action" cycle.
 #### 1. The "Ghost in the Machine" (Mounts)
 When the container spawns, it doesn't "see" your computer. It sees a **carefully curated hallucination** of your filesystem.
 *   It thinks `/workspace/group` is its entire universe.
-*   It has no idea that when it writes a file there, it is actually punching through the hypervisor wall into your `~/nanoclaw/groups/` folder.
+*   It has no idea that when it writes a file there, it is actually punching through the hypervisor wall into your `~/halo/groups/` folder.
 *   **The Sensation:** Working in a room with "One-Way Glass." The agent can see the data you give it, but it can't see the hand that holds the glass.
 
 #### 2. The "Secret Siphon" (Credential Proxy)

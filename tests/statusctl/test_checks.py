@@ -38,7 +38,7 @@ def mock_run_factory(responses: dict):
 class TestServiceCheck:
     def test_all_running(self):
         responses = {
-            ("systemctl", "--user", "is-active", "nanoclaw"): (0, "active\n", ""),
+            ("systemctl", "--user", "is-active", "halo"): (0, "active\n", ""),
             ("ss",): (0, "LISTEN  0  128  *:3001  *:*\n", ""),
             ("docker", "info"): (0, "ok\n", ""),
         }
@@ -47,32 +47,32 @@ class TestServiceCheck:
         assert len(results) == 3
         assert all(r.status == "ok" for r in results)
 
-    def test_nanoclaw_stopped(self):
+    def test_halo_stopped(self):
         responses = {
-            ("systemctl", "--user", "is-active", "nanoclaw"): (3, "inactive\n", ""),
+            ("systemctl", "--user", "is-active", "halo"): (3, "inactive\n", ""),
             ("ss",): (0, "LISTEN  0  128  *:3001  *:*\n", ""),
             ("docker", "info"): (0, "ok\n", ""),
         }
         with patch("halos.statusctl.checks._run", side_effect=mock_run_factory(responses)):
             results = ServiceCheck().run()
-        nc = [r for r in results if r.name == "nanoclaw"][0]
+        nc = [r for r in results if r.name == "halo"][0]
         assert nc.status == "fail"
         assert "not running" in nc.message
 
     def test_systemctl_not_installed(self):
         responses = {
-            ("systemctl", "--user", "is-active", "nanoclaw"): (-1, "", "command not found: systemctl"),
+            ("systemctl", "--user", "is-active", "halo"): (-1, "", "command not found: systemctl"),
             ("ss",): (-1, "", "command not found: ss"),
             ("docker", "info"): (-1, "", "command not found: docker"),
         }
         with patch("halos.statusctl.checks._run", side_effect=mock_run_factory(responses)):
             results = ServiceCheck().run()
-        nc = [r for r in results if r.name == "nanoclaw"][0]
+        nc = [r for r in results if r.name == "halo"][0]
         assert nc.status == "warn"
 
     def test_proxy_not_listening(self):
         responses = {
-            ("systemctl", "--user", "is-active", "nanoclaw"): (0, "active\n", ""),
+            ("systemctl", "--user", "is-active", "halo"): (0, "active\n", ""),
             ("ss",): (0, "LISTEN  0  128  *:8080  *:*\n", ""),
             ("docker", "info"): (0, "ok\n", ""),
         }
@@ -83,7 +83,7 @@ class TestServiceCheck:
 
     def test_docker_error(self):
         responses = {
-            ("systemctl", "--user", "is-active", "nanoclaw"): (0, "active\n", ""),
+            ("systemctl", "--user", "is-active", "halo"): (0, "active\n", ""),
             ("ss",): (0, "LISTEN  0  128  *:3001  *:*\n", ""),
             ("docker", "info"): (1, "", "Cannot connect to Docker daemon"),
         }

@@ -7,7 +7,7 @@ created: 2026-03-20
 
 # Code Review Taxonomy
 
-Hierarchical labelling system for exhaustive code review of NanoClaw. Each finding is labelled on two axes:
+Hierarchical labelling system for exhaustive code review of Halo. Each finding is labelled on two axes:
 
 1. **Structural label** — `{DOMAIN}.{DIMENSION}.{##}` — where in the system
 2. **Error class tag** — `[TC##]` — what kind of weakness (from testing-concrete.md)

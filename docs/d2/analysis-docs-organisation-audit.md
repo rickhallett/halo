@@ -57,7 +57,7 @@ created: 2026-03-15
 | halos-capability-map.md | 331 | 21,426 | 2026-03-17 | No | Architecture map |
 | halos-ecosystem-digest.md | 489 | 21,901 | 2026-03-21 | No | Architecture overview |
 | memctl-spec.md | 573 | 19,039 | 2026-03-15 | No | Specification |
-| nanoclaw-architecture-final.md | 1,062 | 43,689 | 2026-03-15 | No | Architecture doc (superseded?) |
+| halo-architecture-final.md | 1,062 | 43,689 | 2026-03-15 | No | Architecture doc (superseded?) |
 | nightctl-spec.md | 406 | 13,071 | 2026-03-17 | No | Specification |
 | personality-config-plan.md | 220 | 10,146 | 2026-03-17 | No | Design plan |
 | principles-agent-tdd.md | 180 | 9,051 | 2026-03-21 | No | Principles doc |
@@ -182,7 +182,7 @@ This is the closest thing to a standard. Six files follow it (`spec-backupctl.md
 | `d1/development-logbook.md` | d1 | d1 (OK) | Operational journal, correctly placed |
 | `d1/session-patterns-2026-03-18.md` | d1 | d1 (OK) | Lessons learned, operational |
 | `d1/eval-baseline-2026-03-18.md` | d1 | d1 (OK) | Eval results, operational data |
-| `d2/nanoclaw-architecture-final.md` | d2 | d3 | 1,062 lines, title says "final" but predates all current architecture docs. Likely superseded. |
+| `d2/halo-architecture-final.md` | d2 | d3 | 1,062 lines, title says "final" but predates all current architecture docs. Likely superseded. |
 | `d2/skills-as-branches.md` | d2 | d3 | 662 lines, describes a previous architecture (manifest-based skills system). The archive version (`d3/archive/nanorepo-architecture.md`) covers related superseded content. |
 | `d3/APPLE-CONTAINER-NETWORKING.md` | d3 | d1 | Operational setup guide for macOS networking |
 | `d3/docker-sandboxes.md` | d3 | d1 | Setup/operational guide for Docker sandboxes |
@@ -322,7 +322,7 @@ Move files to correct tiers per Section 3.1. Update all cross-references. This r
 - `d1/memctl-architecture-overview.md` -> `d2/`
 - `d1/halos-in-brief.md` -> `d2/`
 - `d1/adversarial-review-2026-03-16.md` -> `d2/reviews/`
-- `d2/nanoclaw-architecture-final.md` -> `d3/archive/` (with `status: superseded`)
+- `d2/halo-architecture-final.md` -> `d3/archive/` (with `status: superseded`)
 - `d3/APPLE-CONTAINER-NETWORKING.md` -> `d1/`
 - `d3/docker-sandboxes.md` -> `d1/`
 
@@ -399,6 +399,6 @@ These compose with the existing rendering commands in `spec-docctl.md`.
 
 4. **Review output retention.** The `d2/reviews/` directory will grow with each review cycle. Same retention question as briefings.
 
-5. **The `nanoclaw-architecture-final.md` question.** At 1,062 lines, this is the largest doc. Its title implies finality but it's from the earliest commit (2026-03-15). Is it the canonical architecture doc, or has it been superseded by the CLAUDE.md schematic + walkthrough? If superseded, it should move to d3 with `status: superseded, superseded_by: CLAUDE.md`.
+5. **The `halo-architecture-final.md` question.** At 1,062 lines, this is the largest doc. Its title implies finality but it's from the earliest commit (2026-03-15). Is it the canonical architecture doc, or has it been superseded by the CLAUDE.md schematic + walkthrough? If superseded, it should move to d3 with `status: superseded, superseded_by: CLAUDE.md`.
 
 6. **`skills-as-branches.md` status.** This 662-line doc describes the skills-as-git-branches architecture. The `d3/archive/nanorepo-architecture.md` covers a related superseded design. Is the current skills-as-branches spec still active, or has the architecture moved on? If active, it stays in d2. If superseded, d3.

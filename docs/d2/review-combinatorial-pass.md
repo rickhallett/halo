@@ -72,7 +72,7 @@ Findings where a weakness spans the host/container boundary, the TypeScript/Pyth
 
 **Where to look:**
 - `CTR.PARSE.02` × `AGR.LOOP.01` — host-side parseBuffer has no bounds check; container-side MessageStream keeps isSingleUserTurn false indefinitely. A spinning agent that emits partial markers without completing them grows the buffer without limit.
-- `MCP.GAP.01` × `HALO.CRON.01` — agent's list_tasks sees only nanoclaw-internal tasks; cronctl manages external cron jobs. Agent confidently answers "no tasks scheduled" while cron jobs exist. This is a known gap but the combinatorial question is: does any other finding make it worse? (e.g., if briefings also query list_tasks instead of cronctl)
+- `MCP.GAP.01` × `HALO.CRON.01` — agent's list_tasks sees only halo-internal tasks; cronctl manages external cron jobs. Agent confidently answers "no tasks scheduled" while cron jobs exist. This is a known gap but the combinatorial question is: does any other finding make it worse? (e.g., if briefings also query list_tasks instead of cronctl)
 - `CHL.TG.03` × `FLT.TOPO.01` — bot pool assigns personas per group:sender pair, fleet topology isolates instances. If a fleet instance somehow shares a bot pool slot with prime (misconfigured TELEGRAM_BOT_POOL), persona identity leaks across the isolation boundary.
 - `IPC.TRANSPORT.03` × `SCHED.RUN.03` — IPC files deleted after read, task run logged to DB. If the IPC file is read and deleted but the task_run_logs write fails, the execution happened but left no audit trail.
 

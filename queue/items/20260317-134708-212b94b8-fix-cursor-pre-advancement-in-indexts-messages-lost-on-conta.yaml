@@ -3,7 +3,7 @@ title: "Fix cursor pre-advancement in index.ts \u2014 messages lost on container
 kind: task
 status: cancelled
 tags:
-- nanoclaw
+- halo
 - architecture
 entities: []
 context: Cross-model review finding. lastAgentTimestamp advanced and saveState called

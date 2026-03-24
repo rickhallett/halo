@@ -70,7 +70,7 @@ sequenceDiagram
 
 ## Layer 3: Mount Security (`src/mount-security.ts`, 419 LOC)
 
-**Allowlist:** `~/.config/nanoclaw/mount-allowlist.json` (outside project root — containers can't modify it)
+**Allowlist:** `~/.config/halo/mount-allowlist.json` (outside project root — containers can't modify it)
 
 **Validation pipeline:**
 1. Path expansion (`~` → home, symlink resolution via `realpathSync`)
@@ -135,7 +135,7 @@ isMain Privilege Matrix
 
 ## Layer 5: Sender Allowlist (`src/sender-allowlist.ts`, 146 LOC)
 
-**Config:** `~/.config/nanoclaw/sender-allowlist.json`
+**Config:** `~/.config/halo/sender-allowlist.json`
 
 Per-chat control over who can trigger the agent:
 - `allow: "*"` — any sender
