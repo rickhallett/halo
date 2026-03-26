@@ -10,6 +10,8 @@ requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.84.0",
     "feedparser>=6.0",
+    "httpx>=0.27.0",
+    "jinja2>=3.0",
     "pyyaml>=6.0",
     "requests>=2.32.5",
     "rich>=14.3.3",
@@ -38,6 +40,7 @@ backupctl = "halos.backupctl.cli:main"
 blogctl = "halos.blogctl.cli:main"
 ledgerctl = "halos.ledgerctl.cli:main"
 carnivorectl = "halos.carnivorectl.cli:main"
+docctl = "halos.docctl.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
