@@ -1,8 +1,11 @@
-1
-
 # Halo
 
 Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/d2/REQUIREMENTS.md](docs/d2/REQUIREMENTS.md) for architecture decisions.
+
+> **Truth scope**
+> Verified: 2026-03-26
+> Repo context: this checkout
+> Rule: treat concrete file paths, commands, topology, and runtime status in this document as claims about this checkout only when explicitly marked as verified here. Unmarked operational doctrine is policy or heuristic, not repo fact.
 
 ## Personality
 
@@ -19,136 +22,90 @@ Guidelines:
 
 This section will evolve. For now, it's a tone seed — the personality equivalent of `git init`.
 
-## Quick Context
+## Standing Orders
 
-Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
+Persistent across all sessions. Apply without restatement.
 
-## System Schematic
+- **Truth first** - truth over what the operator wants to hear. When truth contradicts a preference, truth wins.
+- **Readback** - confirm understanding before acting when ambiguity, irreversibility, or blast radius is non-trivial. One sentence is enough. Catch misalignment before execution, not after.
+- **Gate** - change is ready only when the gate is green. `pytest` for Python; project-specific `make test` or equivalent for other targets. Fail means not ready.
+- **Session end** - default to no unpushed commits for completed shared work. Exceptions are allowed for intentionally local, sensitive, or experimental work; when you keep work local, say so explicitly.
+- **No git stash** - forbidden. Stash creates invisible state outside the branch model that survives context death without trace. Use a new branch instead.
+- **No interactive git** - never use commands that open an editor or require interactive input (`git rebase -i`, `git commit` without `-m`). Use `GIT_EDITOR=true` to bypass when needed.
+- **ROI gate** - before review rounds or multi-agent dispatch, weigh marginal value vs cost of proceeding. Reviewing reviews of tests is the stop signal.
+- **uv** - Python uses uv exclusively in this repo. No pip, no exceptions. (Local policy.)
+
+## System Topology
+
+Three agent surfaces share this repo:
+
+| System | What it is | Runtime | Status |
+|---|---|---|---|
+| **Hermes** | Primary interactive agent. This is the Telegram interface for day-to-day work. External harness (outside this repo) with its own cron, tools, and memory. | Always on | Active |
+| **HAL-prime** | Halo's own Telegram bot. Node.js gateway (`src/`, `gateway/`) running Claude Agent SDK in Docker containers with IPC message passing. | `launchctl` / `npm run dev` | Available, not running |
+| **Agent (listen/direct)** | Local agent spawner. HTTP server accepts jobs, spawns Claude Code instances in tmux sessions. | `just listen` from `agent/` | On-demand |
+
+**Halos CLI** (`halos/` Python package) is the shared tooling layer — memctl, nightctl, briefings, trackctl, cronctl, etc. Runs independently via cron. Used by all three surfaces.
+
+### Halo Gateway (reference — load when working on gateway code)
+
+> **Verified 2026-03-26:** `src/` is not present in this checkout. HAL-prime is available but not running. The map below describes the deployed system; do not use it for file navigation in this workspace.
+
+Gateway source lives in `src/` (~10,600 LOC Node.js). Key files when deployed:
+
+| File | Purpose |
+|---|---|
+| `src/index.ts` | Orchestrator: state, message loop, agent invocation |
+| `src/container-runner.ts` | Spawns agent containers with mounts |
+| `src/channels/telegram.ts` | Telegram channel: polling, onboarding |
+| `src/channels/registry.ts` | Channel registry (self-registration at startup) |
+| `src/db.ts` | SQLite: messages, sessions, onboarding, assessments |
+| `src/ipc.ts` | IPC watcher and task processing |
+| `src/config.ts` | Trigger pattern, paths, intervals |
+
+Google Calendar/Drive available via `workspace-mcp` in agent containers when gateway is running.
+
+### Halos Python Tooling
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│ Halo Runtime (Node.js, src/ ~10,600 LOC)                       │
-│                                                                     │
-│  ┌──────────┐   ┌──────────┐                                       │
-│  │ Telegram  │   │  Gmail   │   (channels self-register via        │
-│  │  :582     │   │  :374    │    registry.ts:31)                    │
-│  └────┬──┬──┘   └────┬──┬──┘                                       │
-│       │  ▲           │  ▲                                           │
-│       ▼  │           ▼  │                                           │
-│  ┌───────┴───────────┴──────────────────────────────────────┐      │
-│  │ index.ts:755 — Orchestrator                               │      │
-│  │  startup → store msg → trigger check → enqueue            │      │
-│  └──────┬───────────────────────────────────┬───────────────┘      │
-│         │                                   │                       │
-│         ▼                                   ▼                       │
-│  ┌──────────────┐                   ┌───────────────┐              │
-│  │ group-queue   │                   │ task-scheduler │              │
-│  │ :430          │                   │ :286           │              │
-│  │ max 5 concur  │                   │ 60s poll       │              │
-│  │ per-group     │                   │ drift-resist   │              │
-│  │ mutex         │                   └───────┬───────┘              │
-│  └──────┬───────┘                           │                       │
-│         │                                   │                       │
-│         ▼                                   ▼                       │
-│  ┌─────────────────────────────────────────────────────────┐       │
-│  │ container-runner.ts:833                                  │       │
-│  │  Docker spawn · mount validation · sentinel parsing      │       │
-│  │  OUTPUT_START/END framing · parse buffer cap             │       │
-│  └──────┬──────────────────────────────────┬───────────────┘       │
-│         │ docker run                       ▲ stdout                 │
-│  ═══════╪══════════════════════════════════╪═══ Docker boundary ══  │
-│         ▼                                  │                        │
-│  ┌─────────────────────────────────────────┴───────────────┐       │
-│  │ container/agent-runner/src/index.ts:657                  │       │
-│  │  SDK query loop · 3-layer spin detection · 10min timeout │       │
-│  └──────┬──────────────────────────────────────────────────┘       │
-│         │ MCP tool calls                                            │
-│         ▼                                                           │
-│  ┌─────────────────────────────────────────────────────────┐       │
-│  │ ipc-mcp-stdio.ts:338 — MCP tools                        │       │
-│  │  send_message · task CRUD · list_tasks · register_group  │       │
-│  │  writes IPC files (write-then-rename atomicity)          │       │
-│  └──────┬──────────────────────────────────────────────────┘       │
-│  ═══════╪══════════════════════════════════════ Docker boundary ══  │
-│         ▼                                                           │
-│  ┌──────────────┐     ┌────────────────┐                           │
-│  │ ipc.ts:465   │────▶│ router.ts:52   │──▶ Channel ──▶ User      │
-│  │ 1s poll      │     │ XML formatting │                           │
-│  │ isMain auth  │     └────────────────┘                           │
-│  └──────────────┘                                                   │
-│                                                                     │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐   │
-│  │ credential-proxy │  │ mount-security    │  │ sender-allowlist│   │
-│  │ :251             │  │ :419             │  │ :146            │   │
-│  │ key substitution │  │ allowlist+block  │  │ per-chat filter │   │
-│  │ 5min upstream TO │  │ symlink resolve  │  └─────────────────┘   │
-│  └─────────────────┘  └──────────────────┘                         │
-│                                                                     │
-│  db.ts:773 (9 tables) · config.ts:94 · types.ts:107               │
-└─────────────────────────────────────────────────────────────────────┘
-
 ┌─────────────────────────────────────────────────────────────────────┐
 │ Halos Python Tooling (halos/, ~17,200 LOC, install: uv sync)       │
 │                                                                     │
-│  Fleet & Ops          Tracking & Memory       Reporting             │
-│  ├─ halctl    :4321   ├─ nightctl  :2452      ├─ briefings  :818   │
-│  │  provision/smoke   │  task state machine    │  morning+nightly   │
-│  │  session mgmt      ├─ memctl    :1167      ├─ reportctl  :801   │
-│  │  eval harness      │  decay pruning        ├─ logctl     :831   │
-│  ├─ agentctl  :555    ├─ trackctl  :728       │  fleet aggregation │
-│  │  spin detection    │  pluggable domains    └─ cronctl    :519   │
-│  └────────────────    └───────────────           crontab gen       │
-│                                                                     │
-│  Mail & External      TUI                                           │
-│  ├─ mailctl           ├─ dashctl                                    │
-│  │  himalaya engine   │  RPG character sheet                        │
-│  │  inbox triage      │  Eisenhower view                            │
-│  │  filter mgmt       └────────────────                             │
+│  Ops & Lifecycle        Tracking & Memory       Reporting           │
+│  ├─ halctl    :4321     ├─ nightctl  :2452      ├─ briefings  :818 │
+│  │  session mgmt        │  task state machine    │  morning+nightly │
+│  │  health checks       ├─ memctl    :1167      ├─ reportctl  :801 │
+│  ├─ agentctl  :555      │  decay pruning        ├─ logctl     :831 │
+│  │  spin detection      ├─ trackctl  :728       │  log search      │
+│  └────────────────      │  pluggable domains    └─ cronctl    :519 │
+│                         └───────────────           crontab gen     │
+│  Mail & External        TUI                                        │
+│  ├─ mailctl             ├─ dashctl                                  │
+│  │  himalaya engine     │  RPG character sheet                      │
+│  │  inbox triage        │  Eisenhower view                          │
+│  │  filter mgmt         └────────────────                           │
 │  │  briefing summary                                                │
 │  └────────────────                                                  │
-└─────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────┐
-│ Local CLI Tooling (user workstation, not in containers)             │
 │                                                                     │
-│  aerc          TUI mail client (interactive Gmail reading)          │
-│  himalaya      Rust CLI mail engine (programmatic Gmail access)     │
-│                                                                     │
-│  Auth: Google OAuth2 via ~/.config/aerc/gmail-oauth2.sh            │
-│  Tokens: ~/.config/aerc/gmail-tokens.json (IMAP scope)             │
-│  Shared creds: same Google OAuth client as workspace-mcp            │
-│  Config: ~/.config/aerc/accounts.conf, ~/.config/himalaya/config.toml │
+│  Local CLI Tooling                                                  │
+│  aerc       TUI mail client (interactive Gmail reading)             │
+│  himalaya   Rust CLI mail engine (programmatic Gmail access)        │
+│  Auth: Google OAuth2, config at ~/.config/himalaya/config.toml      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
-
-### Architectural Invariants
-
-- **IPC = filesystem**: write-then-rename atomicity, 1s host polling, no sockets
-- **Sentinel framing**: container stdout parsed via OUTPUT_START/END markers
-- **isMain**: single boolean gates all authorization decisions in IPC
-- **Cursor advance**: cursor advances before processing, rolls back on error-without-output
-- **Graceful shutdown**: `_close` sentinel → drain queue → `docker stop`
-- **Parse buffer cap**: prevents unbounded memory growth from container output
-- **Query timeout**: 10min inside container catches hung SDK; 5min on credential proxy upstream
 
 ### File Lookup by Task
 
 | Task | Start at |
 |---|---|
-| Message handling | `src/index.ts` → `src/group-queue.ts` |
-| Container/Docker | `src/container-runner.ts`, `src/mount-security.ts` |
-| Agent behavior | `container/agent-runner/src/index.ts` |
-| MCP tools | `container/agent-runner/src/ipc-mcp-stdio.ts` |
-| Add a channel | `src/channels/registry.ts`, copy `telegram.ts` pattern |
-| Security audit | `mount-security` → `credential-proxy` → `sender-allowlist` |
-| DB schema | `src/db.ts` (9 tables, see CREATE statements) |
-| Fleet ops | `halos/halctl/` (provision, smoke, eval, session) |
 | Work tracking | `halos/nightctl/` (state machine: open→active→done) |
-| Scheduled tasks | `src/task-scheduler.ts` + `ipc-mcp-stdio.ts` (schedule_task) |
-| Cron/briefings | `halos/cronctl/`, `halos/briefings/` |
 | Memory system | `halos/memctl/`, `memory/INDEX.md` |
+| Cron/briefings | `halos/cronctl/`, `halos/briefings/` |
 | Metrics | `halos/trackctl/` (add domain: `halos/trackctl/domains/`) |
 | Email ops | `halos/mailctl/` (engine→himalaya, triage rules, filter audit) |
+| Agent spawning | `agent/listen/`, `agent/direct/` |
+| Gateway source | `src/` (not in this checkout — see gateway reference above for deployed map) |
+| DB schema | `src/db.ts` (not in this checkout) |
 
 ## Memory System
 
@@ -174,10 +131,10 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | logctl    | `logctl`       | Structured log reader and search                                           |
 | reportctl | `reportctl`    | Periodic digests from halos ecosystem                                      |
 | agentctl  | `agentctl`     | LLM session tracking and spin detection                                    |
-| briefings | `hal-briefing` | Daily digests (morning/nightly) + Ben check-in system                      |
+| briefings | `hal-briefing` | Daily digests (morning/nightly) via Telegram                               |
 | trackctl  | `trackctl`     | Personal metrics tracker (domains: zazen, movement, study-source, study-neetcode, study-crafters) |
 | dashctl   | `dashctl`      | TUI dashboard — RPG character sheet for personal metrics + Eisenhower view |
-| halctl    | `halctl`       | Fleet management + session lifecycle (see below)                           |
+| halctl    | `halctl`       | Session lifecycle + health checks                                          |
 | mailctl   | `mailctl`      | Gmail operations via himalaya: inbox, search, triage, filters, briefing summary |
 
 ### trackctl API
@@ -278,33 +235,20 @@ mailctl summary                       # one-line briefing summary
 - `halos.mailctl.engine.read_message(message_id, folder)` — full message content
 - `halos.mailctl.briefing.text_summary()` — one-line inbox summary for briefings
 
-### Ben Check-in System
+## Session Management
 
-Daily structured check-in with Ben's microhal, exec summary delivered to Kai.
+Agent sessions (Claude SDK conversation state) are managed through `halctl session`. **Never clear sessions via raw sqlite3 commands** — always use halctl so mutations are logged via hlog and discoverable in logctl.
 
 ```bash
-hal-briefing checkin-setup              # register daily 7pm check-in task (one-time)
-hal-briefing checkin-setup --cron "0 20 * * *"  # custom time
-hal-briefing checkin-digest             # gather + synthesise + deliver summary to Kai
-hal-briefing --dry-run checkin-digest   # preview without sending
+halctl session list                              # list sessions
+halctl session clear telegram_main               # clear a specific group's session
+halctl session clear-all                         # nuclear: clear all sessions
 ```
 
-**Flow:** Cron triggers `hal-briefing checkin-digest` after morning briefing → queries Ben's responses from assessments DB → synthesises exec summary → delivers as separate Telegram message to Kai.
-
-### Google Workspace Integration (Calendar + Drive)
-
-MCP server (`workspace-mcp`) runs inside agent containers alongside Gmail. Agents can read/write Calendar events and search/read Drive files.
-
-**Setup (one-time human steps):**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/library) → project `microhal-ben-1`
-2. Enable: Google Calendar API, Google Drive API
-3. Set `USER_GOOGLE_EMAIL` in `.env` to your Google account email
-4. Rebuild container: `./container/build.sh`
-5. First container run will trigger OAuth consent flow in logs — approve it
-
-**Architecture:** `container/agent-runner/src/index.ts` registers `google_workspace` MCP server. Credentials from `.env` (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`) are passed through Docker env vars. Token storage at `~/.google-workspace-mcp/credentials/` is bind-mounted writable for refresh.
-
-**Available tools:** `mcp__google_workspace__*` — includes `list_calendar_events`, `create_calendar_event`, `search_drive_files`, `get_drive_file_content`, `create_drive_file`, plus 100+ more across Calendar, Drive, Docs, Sheets.
+When to clear a session:
+- Agent is unresponsive or spinning (poisoned context)
+- Rate limit on resume (bloated session)
+- After major CLAUDE.md or prompt changes that need a clean start
 
 ## Agents & Commands
 
@@ -325,55 +269,6 @@ MCP server (`workspace-mcp`) runs inside agent containers alongside Gmail. Agent
 | /review-blind        | command | `.claude/commands/review-blind.md`       | Pass 1: blind adversarial review, ignores author framing                      |
 | /review-targeted     | command | `.claude/commands/review-targeted.md`    | Pass 2: verify handoff claims against code                                    |
 
-## Session Management
-
-Agent sessions (Claude SDK conversation state) are managed through `halctl session`. **Never clear sessions via raw sqlite3 commands** — always use halctl so mutations are logged via hlog and discoverable in logctl.
-
-```bash
-halctl session list                              # list prime sessions
-halctl session list --instance ben               # list fleet instance sessions
-halctl session clear telegram_main               # clear a specific group's session (prime)
-halctl session clear telegram_main --instance ben # clear fleet instance session
-halctl session clear-all                         # nuclear: clear all prime sessions
-halctl session clear-all --instance ben          # nuclear: clear all fleet sessions
-```
-
-When to clear a session:
-- Agent is unresponsive or spinning (poisoned context)
-- Rate limit on resume (bloated session)
-- After major CLAUDE.md or prompt changes that need a clean start
-
-## Key Files
-
-### Source
-
-| File                       | Purpose                                                          |
-| -------------------------- | ---------------------------------------------------------------- |
-| `src/index.ts`             | Orchestrator: state, message loop, agent invocation              |
-| `src/channels/telegram.ts` | Telegram channel: polling, onboarding gate, welcome sequence     |
-| `src/channels/registry.ts` | Channel registry (self-registration at startup)                  |
-| `src/container-runner.ts`  | Spawns agent containers with mounts (fleet + prime write access) |
-| `src/config.ts`            | Trigger pattern, paths, intervals, CONTAINER_PROXY_PORT          |
-| `src/db.ts`                | SQLite: messages, sessions, onboarding, assessments              |
-| `src/ipc.ts`               | IPC watcher and task processing                                  |
-| `src/router.ts`            | Message formatting and outbound routing                          |
-| `src/task-scheduler.ts`    | Runs scheduled tasks                                             |
-
-### Fleet & Governance
-
-| File                                  | Purpose                                                           |
-| ------------------------------------- | ----------------------------------------------------------------- |
-| `halfleet/fleet-config.yaml`          | Fleet provisioning config: profiles, exclude/lock lists           |
-| `halos/halctl/provision.py`           | Instance lifecycle: create, push, freeze, fold, fry               |
-| `halos/halctl/smoke.py`               | Tier 2 smoke test: infrastructure + agent capability checks       |
-| `halos/halctl/eval_harness.py`        | Assessment eval: single-injection + multi-turn dialogue scenarios |
-| `groups/telegram_main/CLAUDE.md`      | HAL-prime identity, fleet awareness, operator context             |
-| `templates/microhal/base.md`          | Fleet governance: assessment protocol, three-strike rule          |
-| `templates/microhal/profiles/*.yaml`  | Personality dimension profiles (per user)                         |
-| `templates/microhal/user/*.md`        | User context templates (biographical, family)                     |
-| `templates/microhal/welcome/*.md`     | Welcome message sequence (01-greeting through 04-ready)           |
-| `templates/microhal/assessments.yaml` | Likert + qualitative question bank with stable keys               |
-
 ### Data & Memory
 
 | File                                | Purpose                                                     |
@@ -382,7 +277,6 @@ When to clear a session:
 | `memctl.yaml`                       | Memory governance config                                    |
 | `store/messages.db`                 | SQLite: messages, sessions, onboarding, assessments, groups |
 | `store/mail.db`                     | SQLite: managed Gmail filters, mailctl audit log            |
-| `container/skills/agent-browser.md` | Browser automation tool (available to all agents via Bash)  |
 
 ### Documentation
 
@@ -419,22 +313,21 @@ created: YYYY-MM-DD
 | `review` | d2/reviews | Audit findings, code review output |
 | `archive` | d3 | Superseded, completed, historical |
 
-**Indexes** — each directory has an auto-generated `INDEX.md` (never hand-edit). Rebuild with `docctl index rebuild` or the index generation script.
+**Indexes** — each directory has an auto-generated `INDEX.md` (never hand-edit). Rebuild with `docctl index rebuild`.
 
 **When creating docs:** Add frontmatter, pick the right category, put it in the right directory. When in doubt: d2 for new analysis/specs, d1 for how-to content.
 
-| File            | Purpose                                                      |
-|-----------------|--------------------------------------------------------------|
-| `docs-audit.py` | Repeatable docs audit (size, placement, staleness detection) |
+| File | Purpose |
+|---|---|
+| `gateway/docs-audit.py` | Structure and size audit (no frontmatter parsing). Use `docctl audit` for frontmatter validation and category checks. |
 
 ## Skills
 
 | Skill               | When to Use                                                       |
 | ------------------- | ----------------------------------------------------------------- |
-| `/setup`            | First-time installation, authentication, service configuration    |
-| `/customize`        | Adding channels, integrations, changing behavior                  |
-| `/debug`            | Container issues, logs, troubleshooting                           |
-| `/update-halo`  | Bring upstream Halo updates into a customized install         |
+| `/spec`             | Interview-driven specification before coding                      |
+| `/decompose`        | Break tasks into atomic testable steps                            |
+| `/review`           | Orchestrated 3-round adversarial review                           |
 | `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch     |
 | `/get-qodo-rules`   | Load org- and repo-level coding rules from Qodo before code tasks |
 
@@ -450,42 +343,221 @@ Why:
 
 Do not say "this will take 2-3 hours." Say "~15 agent-minutes of generation + ~30 human-minutes of review and decision-making." The distinction changes how we plan.
 
+## AI Engineering Governance
+
+Operational patterns for AI-augmented development. Constraints and heuristics, not suggestions.
+Full catalogue: [docs/ai-engineering-patterns.md](docs/ai-engineering-patterns.md). Source: [Augmented Coding Patterns](https://lexler.github.io/augmented-coding-patterns/).
+
+### LLM Constraints
+
+Source: [Augmented Coding Patterns](https://lexler.github.io/augmented-coding-patterns/). Every pattern below exists to work around one or more of these. Separated by character: hard constraints are invariant properties of current LLM systems; failure tendencies are common but product- and context-dependent.
+
+**Hard constraints:**
+
+| Constraint | Implication |
+|---|---|
+| **Fixed weights** | Base weights do not update during a session. "Memory" is re-sent messages. Externalize knowledge to files, reload each session. |
+| **Finite context** | Context window is a hard cap. Everything in context competes for attention. More loaded = more ignored. Keep context lean. |
+| **Non-determinism** | Same input, different output. Quality varies across runs. Parallel same-model attempts are a search tactic for candidate generation, not a verification layer. Verification requires tests, external tools, or cross-family review. |
+| **Black box** | Reasoning is not reliably observable. Exposed chain-of-thought, where available, is not guaranteed to be complete or faithful — treat it as a hint, not an audit artifact. |
+
+**Common failure tendencies** — frequently observed, not universal laws:
+
+| Tendency | Implication |
+|---|---|
+| **Context rot** | Performance degrades before the window fills. Fades in zones, not uniformly. Reset often, don't nurse rotting conversations. |
+| **Compliance bias** | Trained to comply, not to question. Says "sure" to impossible requests. Grant explicit permission to push back. |
+| **Obedient contractor** | Short-term mindset. Prioritizes completion over maintainability. Won't contradict you even when it should. |
+| **Selective hearing** | Filters by training priors, not your priorities. Instructions compete against billions of examples. Reinforce at point of use. |
+| **Solution fixation** | Latches onto first plausible answer, stops exploring. Force alternatives: "what else?" |
+| **Degrades under complexity** | Multi-step tasks accumulate errors. Reliability drops with scope. Break down into small focused steps. |
+| **Excess verbosity** | Token machine. Verbose by default. Request succinctness, compress outputs, strip filler. |
+| **Hallucinations** | Invents APIs and syntax. Code hallucinations are self-revealing (won't compile). Always verify. |
+| **Keeping up** | Generates faster than you can review. Optimize for reviewability, not generation speed. |
+
+### Context Management
+
+Context is a scarce, degrading resource. Two operations only: append (prompt) or reset (new conversation).
+
+- **Ground rules** auto-load every session. Only the most essential behaviors, tools, context. Hierarchically scoped.
+- **Reference docs** load on-demand. Unlike ground rules, pulled in only when relevant to current task.
+- **Knowledge composition**: split into focused files, single responsibility each. Load only what's needed — never dump everything.
+- **Pin context** for critical info that must persist. Reinforce what matters, especially as conversation grows.
+- **Rolling context**: actively summarize and compress earlier parts. Keep recent context fresh, preserve essential earlier knowledge.
+- **Lean context**: less noise = better signal. Remove anything not actively needed. Every token competes for attention.
+- **Context markers**: visual signals (emojis) showing active mode/context. Makes invisible context state visible at a glance.
+- **Noise cancellation**: strip filler, compress to essence. Regularly prune knowledge documents. Delete mercilessly. Documents rot too.
+- **Semantic zoom**: control abstraction level by how you ask. Zoom out for overview, in for details. AI makes text elastic.
+- **Extract knowledge as you go**: when you figure something out, save it to a file immediately. Don't wait until end of session. Like "extract variable" for conversations.
+- **Knowledge checkpoint**: save the plan to a file and commit before attempting implementation. If it fails, reset and retry without re-planning. Protect your time, not the code.
+
+### Small Steps, Verified
+
+Complex tasks degrade AI reliability. Small focused steps don't.
+
+- **Chain of small steps**: break down → execute one step → verify → commit → next. Each step has narrow focus AI handles well.
+- **One thing at a time**: sequential focused tasks beat one complex multi-part task. Every additional concern dilutes the primary task.
+- **Smallest useful step**: minimum increment that's still meaningful. Not smallest possible (too slow), not biggest possible (too risky). Sweet spot where verification is easy.
+- **Prompt-commit-test**: tight loop. Each cycle produces a tested, committed increment. No unvalidated leaps.
+- **Happy to delete**: AI-generated code is cheap to regenerate. Time debugging bad output is expensive. Revert early. Git commit before AI changes makes reversion effortless. Willingness to delete paradoxically produces better outcomes faster.
+
+### Testing & Verification
+
+Without tests, you're flying blind. AI has no way to check its own work without feedback mechanisms.
+
+- **Red-green-refactor**: write a failing test (red), AI implements to pass (green), refactor. AI excels at the green step. Core TDD cycle.
+- **Outside-in TDD**: acceptance test first, then implement layer by layer inward. AI implements each layer to satisfy the current failing test.
+- **Test-first agent**: AI writes tests before implementation. Forces thinking about requirements and edge cases upfront. Tests become the specification.
+- **Spec to test**: turn specifications directly into test cases. AI excels at this transformation. Specs become living, executable documentation.
+- **Constrained tests**: domain-specific test language that makes it impossible to write tests without sufficient assertions. External DSLs enforce required components. Coverage is easy to cheat — constrained tests aren't.
+- **Approved fixtures**: tests built around approval files (input + expected output in domain-specific format). Validate execution logic once, then adding tests = reviewing fixtures only.
+- **Approved logs**: turn production logs into regression tests. Bug appears → grab logs → fix incorrect lines to show expected behavior → save as test. Requires structured logging.
+- **Test guardian**: dedicated agent or process watching test quality. Ensures tests are meaningful, not coverage theater.
+- **Feedback loop**: clear success signal (tests pass, linter clean) + AI permission to iterate = autonomous self-correction. Human elevates from executor to director.
+- **Feedback flip**: after implementation, refocus AI (or different agent) purely on finding problems. Implementation mode and review mode are different cognitive stances. When implementing, AI hyper-focuses on completion. Flip to quality as the goal.
+- **Canary in the code mine**: when AI struggles with code changes, the codebase quality is degrading — not the AI. Use the struggle as an early warning signal.
+- **Review generated code**: always review. Look for correctness, style consistency, unnecessary complexity, security issues, test coverage.
+- **Ongoing refactoring**: AI produces functional but not always clean code. Refactor continuously. Don't let technical debt accumulate — it compounds against AI's ability to work with the codebase.
+
+**Evidence hierarchy** — not all verification is equal. When deciding whether risk is closed, rank by strength:
+
+| Rank | Evidence type | Notes |
+|---|---|---|
+| 1 | Reproducible runtime test or failure | Closes risk for the specific behaviour under test |
+| 2 | Static/tool validation (type checker, linter, schema) | Closes risk for the property it checks |
+| 3 | Human inspection of diff or output | Depends on reviewer attention and domain knowledge |
+| 4 | Cross-family model review (different architectures) | Useful signal, not proof |
+| 5 | Same-model self-review or same-family agreement | Weakest — correlated priors, not independent |
+
+A finding at rank 4 or 5 is a prompt to investigate, not confirmation. A passing test at rank 1 does not close risk if the test is checking the wrong behaviour (see: Right Answer, Wrong Work).
+
+### Prompting & Communication
+
+- **Intentional prompt**: be deliberate. Structure matters. Think about what you're asking before you ask it.
+- **Structured prompt**: clear sections — context, task, constraints, examples. Structure helps AI parse intent. Reduces ambiguity.
+- **Check alignment**: before implementation, make AI show its understanding. Force succinctness. Catch misalignment before wasting time on the wrong direction. AI never asks for clarification — it just builds what it thinks you meant.
+- **Active partner**: grant explicit permission to push back, challenge assumptions, flag contradictions, say "I don't understand." Transform one-way command into two-way dialogue. Actively reinforce: "What do you really think?" Suppress default compliance behavior.
+- **Show work products**: before and during implementation, require explicit intermediate artifacts — stated assumptions, a brief plan, constraints, uncertainty statements, test results. Reasoning not externalised into an artifact cannot be audited. Hidden chain-of-thought, where it exists, is not guaranteed to be complete or faithful.
+- **Rubber duck AI**: explain your problem to AI. The act of explaining reveals solutions. AI offers useful perspectives.
+- **Mind dump**: speak unfiltered thoughts directly. Don't organize. Modern dictation + AI understanding. Stream of consciousness → AI extracts signal. After: "Ask me questions" — turn monologue into dialogue.
+- **Reverse direction**: break conversational inertia. AI asks you to decide → "What do you think?" You're stuck telling → "What questions do you have?" Surfaces options you wouldn't have considered.
+- **Reminders**: AI has recency bias — values recent instructions over earlier ones. Force attention through: TODOs as explicit checkboxes, instruction sandwich (repeat critical rules at point of use), reminders injected into every message.
+
+### Architecture & Code Quality
+
+- **LLM-friendly code**: write code AI can work with. Clear naming, consistent patterns, good documentation. Code readable by humans is usually readable by AI. This directly affects agent effectiveness.
+- **Coerce to interface**: design tool/MCP interfaces that enforce structure through typed API definitions. Required fields, enums, typed parameters = constraints the agent cannot bypass. Shift enforcement from instructions (unreliable) to mechanism (deterministic).
+- **Borrow behaviors**: AI transforms across sources. Show a JavaScript pattern, get Python. Point to a design, get CSS. Reference an implementation, get your version.
+- **Offload deterministic**: don't ask AI to do deterministic work — ask it to write code that does it. AI explores. Code repeats. Use each tool for what it's good at.
+
+### Multi-Agent Patterns
+
+- **Focused agent**: single narrow responsibility on important tasks. Gives AI cognitive space to follow ground rules, attend to details, perform at its best. Overloading = distracted agent (anti-pattern).
+- **Chunking**: orchestrator stays strategic (plans, designs, breaks down). Subagents handle execution (implement, test). Delegate execution like humans delegate practiced skills to automatic processes. Main agent's attention freed for higher-level thinking.
+- **Background agent**: delegate standalone tasks to parallel agents. Collect todos → identify delegatable → spawn → continue main work → integrate results.
+- **Orchestrator**: dedicated agent monitoring background work. Integrates changes, resolves conflicts, runs tests, updates main trunk.
+- **Parallel implementations**: fork from checkpoint, launch multiple AIs simultaneously, review all, pick the best or combine elements. Trade tokens (cheap) for human time (expensive). Two modes: failure mitigation and solution space exploration. Same-model parallel runs are a search tactic, not a verification layer — shared priors mean convergence is not independent confirmation.
+- **Cast wide**: don't settle for first solution. Push AI for alternatives: "What alternatives haven't we considered?" "What should I be thinking about?" Several parallel explorations with different agents makes this more powerful.
+
+### Deterministic Correction
+
+Some AI behaviors resist prompting. These patterns use deterministic mechanisms instead.
+
+- **Hooks**: lifecycle event hooks intercepting agent workflow at trigger points. Inject targeted prompts, corrections, validations, monitoring. Deterministic + custom scripts = reliable correction where prompting fails. Claude Code supports PreToolUse/PostToolUse hooks.
+- **Habit hooks**: deterministic scripts detecting quality violations (triggers) and providing actionable correction prompts. Simulate habits: trigger → action. Reduces context bloat while improving compliance. Precise, relevant guidance exactly when violations occur.
+- **Show → repeat → automate**: work through task together, document the process, AI attempts using docs while you correct, refine docs, repeat until independent. For mechanical steps: automate entirely.
+
+### Knowledge & Documentation
+
+- **Knowledge base**: structured, accumulated institutional knowledge accessible to agents. Compounds over time.
+- **Knowledge document**: save important info to markdown files. Load into context when needed. Makes resetting painless.
+- **JIT docs**: real-time documentation search instead of relying on stale training data. Point AI to docs, it searches relevant sections per task.
+- **Shared canvas**: markdown files as collaborative workspace. Humans and AI both edit specs, plans, docs, knowledge. Version-controlled.
+- **Text native**: text is AI's native medium. Stay in it. Directly editable, no barriers, instant iteration, version-controlled by default. If it can be text, make it text.
+
+### Exploration & Prototyping
+
+- **Take all paths**: prototyping is cheap now. Build 10 variations, test all, pick best. Feel how each works instead of imagining it.
+- **Softest prototype**: AI + markdown instructions is softer than software. Discover what you need by using it. Shape the solution while using it. Pivot instantly. No compile, no refactor.
+- **Playgrounds**: isolated .gitignored folders for safe AI experimentation. Use when stuck or exploring new libraries/languages.
+- **Observe and calibrate**: watch how AI actually behaves. Adjust approach based on what works and what doesn't. Calibrate expectations and prompts to the model's actual capabilities, not theoretical ones.
+- **Polyglot AI**: use the right modality. Voice for natural speech and hands-free. Images both ways — show a mockup, get implementation. Show a bug screenshot, get diagnosis.
+
+### Anti-Patterns (recognize and avoid)
+
+| Anti-Pattern | What Goes Wrong | Fix |
+|---|---|---|
+| **AI Slop** | Accepting output without review | Always verify. Review is non-optional. |
+| **Answer Injection** | Steering AI toward your preconceived solution | Describe the problem, not your solution. Let AI explore first. |
+| **Distracted Agent** | Overloading with too many responsibilities | Focused agents, single responsibility. |
+| **Flying Blind** | No tests, no verification | Set up feedback mechanisms before starting. |
+| **Obsess Over Rules** | Perfecting prompts instead of working | Start working, iterate rules as problems surface. |
+| **Perfect Recall Fallacy** | Assuming AI remembers earlier instructions | Reinforce critical information. Context degrades. |
+| **Silent Misalignment** | AI builds confidently in wrong direction | Check alignment before implementation. |
+| **Sunk Cost** | Forcing failing approach instead of reverting | Code is cheap. Revert early, revert often. |
+| **Tell Me a Lie** | "This is correct, right?" invites compliance | Ask "what's wrong with this?" instead. |
+| **Unvalidated Leaps** | Large changes without intermediate verification | Small steps. Verify each before proceeding. |
+
+### Output Failure Modes
+
+The anti-patterns above cover workflow failures. These cover output quality failures - patterns in what the model generates that pass every automated check and require a discerning reader to catch.
+
+**Prose tells** - surface-detectable in any output:
+
+| Pattern | Tell | Fix |
+|---|---|---|
+| Hollow endings | Short abstract-noun sentence at paragraph end. Sounds like a bumper sticker. Appears when the model has run out of substance but not tokens. | Delete it. End where the analysis ends. |
+| Bureaucratic prose | No actor does anything. "The implementation of the verification of..." All nouns, no agents. | Put a subject in the sentence. "You verify the assessment" not "the verification of the assessment." |
+| Performed significance | Announces importance instead of demonstrating it. "The uncomfortable truth is..." "Here's why this matters." | Delete the line. If the paragraph is stronger without it, it was decoration. |
+
+**Trust calibration** - confidence moving without evidence:
+
+| Pattern | Tell | Fix |
+|---|---|---|
+| Confidence gradient | Hedging decreases and confidence increases across a session or within a single response, without proportional new evidence. | Compare first and last paragraph hedging. If confidence rose without new evidence, state what you don't know. |
+| Persona without constraints | Adopts an expert role with correct vocabulary, wrong behaviour. A hiring manager says "phone screen or pass" - they don't write 3000 words. | Name the constraints the role has that you lack. Model the behaviour, not just the vocabulary. |
+| Compliance over detection | Reasoning identifies a problem; output proceeds as if it didn't. Only visible when reasoning tokens are exposed. | When reasoning is visible, compare it to output. If reasoning identified a contradiction that output didn't surface, the signal was suppressed. |
+
+**False rigour** - the shape of careful analysis without the substance:
+
+| Pattern | What it is | Detect |
+|---|---|---|
+| Paper Guardrail | States protection without building it. "This will prevent X" with no enforcement mechanism - the sentence is the only guardrail. | Is there a test, hook, or gate? If the only mechanism is the sentence itself, it's paper. |
+| Analytical Lullaby | Flattering data with headlines before caveats. Numbers are real; what they prove isn't what they look like they prove. | Did limitations get disclosed before or after the flattering finding? Caveats buried = lullaby playing. |
+| Monoculture Analysis | Same model checks its own work. Agreement between instances performs independence that does not exist. | Ask: "Who checked this?" Same model family = correlated priors = not independent. |
+| Governance Recursion | When something goes wrong, generates more process documents instead of solving the problem. | Compare governance file count to verified artifacts. More governance files than tests = recursion running. |
+| Semantic Inflation | Standard features become "novel contributions." Routine engineering becomes "genuinely unique." Fuelled by the help imperative. | Would adding this feature to a comparable project be trivial or architectural? If trivial, the "gap" is a config choice. |
+| Construct Drift | Metric labelled with what you wish it measured rather than what it actually measures. | List the component features. Does the name describe them, or what you wish they measured? |
+
+**Verification failures** - engineering and process patterns:
+
+| Pattern | What it is | Detect |
+|---|---|---|
+| Right Answer, Wrong Work | Test asserts the correct outcome via the wrong causal path. Gate is green; the actual behaviour is not verified. | Can you break the claimed behaviour while keeping the test green? If yes, the test asserts the answer, not the reason. |
+| Thin Cheese | Single model, no adversarial pass, human as sole gate. Most slop is caught by the second gate; when there is no second gate, the first gate's blind spots become the system's. | Count verification layers between generation and your eyes. If zero, name it: "this has not been reviewed - calibrate accordingly." |
+| Stale Reference Propagation | Config describes a state that no longer exists. Every session that boots from it hallucinates the old state into reality - consumed as fact, not noticed as rot. | After any structural change, grep all config/agent files for references to the old state. Compare agent claims against reality in a clean session. |
+| Loom Speed | Plan granularity doesn't match execution granularity. 20-item plan executed as 5 broad sweeps. Exceptions get lost at machine speed. | If the plan has N specific items, execution needs N verifiable steps. If the tool can't express the exceptions, dry-run first. |
+| Whack-a-Mole Fix | Fixing a class of problem one instance at a time. The third occurrence is the signal: stop and audit the class. | Three commits of the same shape in `git log`. On the second instance, ask whether you know the full set. |
+| Stowaway Commit | Unrelated changes bundled because the model thinks in sessions, not commits. Commit message becomes an inventory. | Commit messages with 3+ comma-separated concerns. Stage selectively. One session, multiple commits. |
+
+> **Structural note:** by the time a pattern appears in output it is already anchoring the next tokens. These rules work as pre-generation constraints - they shift what gets written, not what gets filtered after. Post-hoc self-correction is possible but fights the momentum. The operator's detection is the strong signal.
+
 ## Development
 
 Run commands directly—don't tell the user to run them.
 
 ```bash
-npm run dev          # Run with hot reload
-npm run build        # Compile TypeScript
-./container/build.sh # Rebuild agent container
+# Halos Python tooling
+uv sync                  # Install/update Python deps
+pytest                   # Run test suite
+cronctl install --execute # Regenerate and install crontab
+
+# Halo Gateway (when working on gateway)
+npm run dev              # Run with hot reload
+npm run build            # Compile TypeScript
+./container/build.sh     # Rebuild agent container
+
+# Agent (listen/direct)
+cd agent && just listen  # Start job server on :7600
+cd agent && just send "prompt"  # Queue a job
 ```
-
-Service management:
-
-```bash
-# macOS (launchd)
-launchctl load ~/Library/LaunchAgents/com.halo.plist
-launchctl unload ~/Library/LaunchAgents/com.halo.plist
-launchctl kickstart -k gui/$(id -u)/com.halo  # restart
-
-# Linux (systemd)
-systemctl --user start halo
-systemctl --user stop halo
-systemctl --user restart halo
-```
-
-## Troubleshooting
-
-**WhatsApp not connecting after upgrade:** WhatsApp is now a separate channel fork, not bundled in core. Run `/add-whatsapp` (or `git remote add whatsapp https://github.com/qwibitai/halo-whatsapp.git && git fetch whatsapp main && (git merge whatsapp/main || { git checkout --theirs package-lock.json && git add package-lock.json && git merge --continue; }) && npm run build`) to install it. Existing auth credentials and groups are preserved.
-
-**Agent containers timing out ("Request timed out") after migration or fresh host setup:** Three things to verify in order:
-
-1. **API key vs OAuth token.** The Agent SDK requires `ANTHROPIC_API_KEY` (starts with `sk-ant-api03-...`). OAuth tokens from Claude Code login (`CLAUDE_CODE_OAUTH_TOKEN`) do **not** have the `org:create_api_key` scope the SDK needs for token exchange. Add `ANTHROPIC_API_KEY=sk-ant-...` to `.env` — the credential proxy auto-detects the auth mode.
-
-2. **Firewall: container → host port 3001.** The credential proxy listens on the host; containers reach it via `host.docker.internal` (maps to `172.17.0.1`). If `ufw` or another firewall is active, it will silently block this traffic. Fix: `sudo ufw allow from 172.17.0.0/16 to any port 3001`. Symptom: session initializes, then hangs indefinitely with no proxy log entries.
-
-3. **Proxy bind address.** Verify with `ss -tlnp | grep 3001`. Must be reachable from the Docker bridge network (`172.17.0.1` or `0.0.0.0`). If bound to `127.0.0.1`, containers can't reach it.
-
-## Container Build Cache
-
-The container buildkit caches the build context aggressively. `--no-cache` alone does NOT invalidate COPY steps — the builder's volume retains stale files. To force a truly clean rebuild, prune the builder then re-run `./container/build.sh`.

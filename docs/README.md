@@ -1,3 +1,10 @@
+---
+title: "docs/ hierarchy"
+category: reference
+status: active
+created: 2026-03-15
+---
+
 # docs/
 
 BFS-friendly documentation hierarchy. Depth correlates with lookup frequency.

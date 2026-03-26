@@ -1,7 +1,7 @@
 ---
 title: "Claude Agent SDK Deep Dive"
 category: reference
-status: active
+status: archived
 created: 2026-03-15
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "halos in brief"
-category: guide
+category: reference
 status: active
 created: 2026-03-15
 ---
