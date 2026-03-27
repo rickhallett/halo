@@ -1,0 +1,38 @@
+# watchctl — YouTube channel monitor configuration
+obsidian_vault: "~/Documents/vault/main"
+output_dir: "code/youtube-monitor"
+rubric: "./rubrics/watchctl-triage.yaml"
+db_path: "./store/watch.db"
+
+# LLM config
+model: "sonnet"
+max_transcript_chars: 80000
+
+# Delivery
+telegram_enabled: true
+
+# Channels
+channels:
+  - name: "Theo (t3.gg)"
+    youtube_id: "UCbRP3c757lWg9M-U7TyEkXA"
+    tags: ["engineering", "product"]
+
+  - name: "Fireship"
+    youtube_id: "UCsBjURrPoezykLs9EqgamOA"
+    tags: ["engineering", "news"]
+
+  - name: "Wes Roth"
+    youtube_id: "UCqcbQf6yw5KzRoDDcZ_wBSw"
+    tags: ["ai-news"]
+
+  - name: "CJ (Syntax)"
+    youtube_id: "UCyU5wkjgQYGRB0hIHMwm2Sg"
+    tags: ["engineering", "practical"]
+
+  - name: "CJ (Coding Garden)"
+    youtube_id: "UCLNgu_OupwoeESgtab33CCw"
+    tags: ["engineering", "practical"]
+
+  - name: "Relay.app"
+    youtube_id: "UCIENacxDzvxb7mWIXZRZtAQ"
+    tags: ["agents", "product"]

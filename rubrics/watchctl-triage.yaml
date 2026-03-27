@@ -1,0 +1,34 @@
+# watchctl triage rubric — engineering relevance
+name: "engineering-relevance"
+version: 1
+description: >
+  Evaluate YouTube video content for signal density, actionable
+  insights, and relevance to agentic engineering, software
+  development, and AI tooling.
+
+criteria:
+  signal_density:
+    weight: 3
+    description: "Ratio of novel/actionable information to filler, hype, and repetition"
+    scale: [1, 5]
+
+  actionability:
+    weight: 3
+    description: "Can specific techniques, tools, or patterns be extracted and applied to our work?"
+    scale: [1, 5]
+
+  technical_depth:
+    weight: 2
+    description: "Does it go beyond surface-level takes into implementation detail?"
+    scale: [1, 5]
+
+  relevance:
+    weight: 2
+    description: "How relevant to our domains: agentic engineering, dev tooling, AI workflows, career positioning"
+    scale: [1, 5]
+
+verdict_thresholds:
+  REQUIRED: 4.0
+  WATCH: 3.0
+  SKIM: 2.0
+  # Below 2.0 = SKIP

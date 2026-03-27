@@ -15,6 +15,7 @@ dependencies = [
     "pyyaml>=6.0",
     "requests>=2.32.5",
     "rich>=14.3.3",
+    "youtube-transcript-api>=1.2.4",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +42,7 @@ blogctl = "halos.blogctl.cli:main"
 ledgerctl = "halos.ledgerctl.cli:main"
 carnivorectl = "halos.carnivorectl.cli:main"
 docctl = "halos.docctl.cli:main"
+watchctl = "halos.watchctl.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -49,4 +51,14 @@ python_functions = "test_*"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "smoke: marks lightweight smoke tests",
+]
+
+[tool.uv.workspace]
+members = [
+    "data/finance/ark-accounting",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
 ]
