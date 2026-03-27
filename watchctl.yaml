@@ -36,3 +36,23 @@ channels:
   - name: "Relay.app"
     youtube_id: "UCIENacxDzvxb7mWIXZRZtAQ"
     tags: ["agents", "product"]
+
+  - name: "ThePrimeagen"
+    youtube_id: "UC8ENHE5xdFSwx71u3fDH5Xw"
+    tags: ["engineering", "practical"]
+
+  - name: "ThePrimeTime"
+    youtube_id: "UCUyeluBRhGPCW4rPe_UvBZQ"
+    tags: ["engineering", "commentary"]
+
+  - name: "IndyDevDan"
+    youtube_id: "UC_x36zCEGilGpB1m-V4gmjg"
+    tags: ["agents", "engineering"]
+
+  - name: "Dylan Curious"
+    youtube_id: "UCpdyFxSktWo3W6kMYfmk6lg"
+    tags: ["ai-news", "commentary"]
+
+  - name: "AI Explained"
+    youtube_id: "UCNJ1Ymd5yFuUPtn21xtRbbw"
+    tags: ["ai-research", "explainer"]
