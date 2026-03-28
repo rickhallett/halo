@@ -1,11 +1,19 @@
 """Synthesis layer — passes gathered data through Claude for HAL's voice.
 
-Uses the claude CLI for authentication (inherits existing OAuth/API key),
-falling back to the Anthropic Python SDK if ANTHROPIC_API_KEY is set.
+Auth strategy (in order):
+1. Claude CLI (inherits existing OAuth — works when token is fresh)
+2. OAuth token refresh via Anthropic console (reads ~/.claude/.credentials.json,
+   refreshes expired tokens, uses Bearer auth with Anthropic SDK)
+3. Anthropic SDK with ANTHROPIC_API_KEY from .env
+4. Raw data fallback
 """
 import json
 import os
 import subprocess
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
 
 from .config import Config
 from .gather import BriefingData
@@ -57,19 +65,26 @@ def synthesise(data: BriefingData, cfg: Config) -> str:
         f"Synthesise it into a concise Telegram briefing.\n\n{context}"
     )
 
-    # Strategy 1: claude CLI
+    # Strategy 1: claude CLI (fast path when OAuth token is fresh)
     result = _synthesise_via_cli(system, prompt, cfg)
     if result:
         return result
 
-    # Strategy 2: Anthropic SDK
+    # Strategy 2: OAuth token refresh + SDK with Bearer auth
+    oauth_token = _get_refreshed_oauth_token()
+    if oauth_token:
+        result = _synthesise_via_sdk_bearer(system, prompt, oauth_token, cfg)
+        if result:
+            return result
+
+    # Strategy 3: Anthropic SDK with API key
     api_key = os.environ.get("ANTHROPIC_API_KEY", "") or _read_env_key(cfg)
     if api_key:
         result = _synthesise_via_sdk(system, prompt, api_key, cfg)
         if result:
             return result
 
-    # Strategy 3: raw fallback
+    # Strategy 4: raw fallback
     return _fallback(data)
 
 
@@ -112,6 +127,122 @@ def _synthesise_via_sdk(system: str, prompt: str, api_key: str, cfg: Config) -> 
         return response.content[0].text
     except Exception as e:
         print(f"WARNING: SDK synthesis failed ({e})", flush=True)
+    return None
+
+
+# ---------------------------------------------------------------------------
+# OAuth token refresh (reads ~/.claude/.credentials.json, refreshes if needed)
+# ---------------------------------------------------------------------------
+
+CLAUDE_CODE_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+
+
+def _read_claude_credentials() -> dict | None:
+    """Read OAuth credentials from ~/.claude/.credentials.json."""
+    cred_path = Path.home() / ".claude" / ".credentials.json"
+    if not cred_path.exists():
+        return None
+    try:
+        data = json.loads(cred_path.read_text(encoding="utf-8"))
+        return data.get("claudeAiOauth")
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _refresh_oauth(refresh_token: str) -> dict | None:
+    """Refresh an expired Claude Code OAuth token. Returns new token dict or None."""
+    data = urllib.parse.urlencode({
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": CLAUDE_CODE_CLIENT_ID,
+    }).encode()
+
+    req = urllib.request.Request(
+        "https://console.anthropic.com/v1/oauth/token",
+        data=data,
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "hal-briefing/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            new_access = result.get("access_token", "")
+            new_refresh = result.get("refresh_token", refresh_token)
+            expires_in = result.get("expires_in", 3600)
+
+            if new_access:
+                # Write back to credentials file
+                new_expires_ms = int(time.time() * 1000) + (expires_in * 1000)
+                _write_claude_credentials(new_access, new_refresh, new_expires_ms)
+                return {"accessToken": new_access, "expiresAt": new_expires_ms}
+    except Exception as e:
+        print(f"WARNING: OAuth refresh failed ({e})", flush=True)
+    return None
+
+
+def _write_claude_credentials(access_token: str, refresh_token: str, expires_at_ms: int) -> None:
+    """Write refreshed credentials back to ~/.claude/.credentials.json."""
+    cred_path = Path.home() / ".claude" / ".credentials.json"
+    try:
+        existing = {}
+        if cred_path.exists():
+            existing = json.loads(cred_path.read_text(encoding="utf-8"))
+        existing["claudeAiOauth"] = {
+            "accessToken": access_token,
+            "refreshToken": refresh_token,
+            "expiresAt": expires_at_ms,
+        }
+        cred_path.parent.mkdir(parents=True, exist_ok=True)
+        cred_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        cred_path.chmod(0o600)
+    except (OSError, IOError) as e:
+        print(f"WARNING: Failed to write credentials ({e})", flush=True)
+
+
+def _get_refreshed_oauth_token() -> str | None:
+    """Get a valid OAuth access token, refreshing if expired."""
+    oauth = _read_claude_credentials()
+    if not oauth:
+        return None
+
+    access_token = oauth.get("accessToken", "")
+    expires_at = oauth.get("expiresAt", 0)
+    now_ms = int(time.time() * 1000)
+
+    # Token still valid (with 60s buffer)
+    if access_token and now_ms < (expires_at - 60_000):
+        return access_token
+
+    # Token expired — try refresh
+    refresh_token = oauth.get("refreshToken", "")
+    if not refresh_token:
+        print("WARNING: OAuth token expired, no refresh token available", flush=True)
+        return None
+
+    result = _refresh_oauth(refresh_token)
+    if result:
+        return result["accessToken"]
+    return None
+
+
+def _synthesise_via_sdk_bearer(system: str, prompt: str, token: str, cfg: Config) -> str | None:
+    """Use Anthropic SDK with Bearer auth (OAuth token)."""
+    try:
+        import anthropic
+        client = anthropic.Anthropic(auth_token=token)
+        response = client.messages.create(
+            model=cfg.model,
+            max_tokens=cfg.max_tokens,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text
+    except Exception as e:
+        print(f"WARNING: SDK Bearer synthesis failed ({e})", flush=True)
     return None
 
 

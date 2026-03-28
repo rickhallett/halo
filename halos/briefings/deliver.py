@@ -36,19 +36,36 @@ def _get_bot_token() -> str:
     return ""
 
 
+def _get_config_bot_token(cfg: Config) -> str:
+    """Read bot token from config-specified env var, falling back to TELEGRAM_BOT_TOKEN."""
+    if cfg.telegram_bot_token_env:
+        token = os.environ.get(cfg.telegram_bot_token_env, "")
+        if token:
+            return token
+        # Try .env in project root
+        env_path = cfg.project_root / ".env"
+        if env_path.exists():
+            for line in env_path.read_text().splitlines():
+                if line.startswith(f"{cfg.telegram_bot_token_env}="):
+                    return line.split("=", 1)[1].strip().strip('"')
+    return ""
+
+
 def deliver_message(cfg: Config, text: str) -> Path:
     """Deliver a message via Telegram bot API, falling back to IPC.
 
     Returns the path of the archive/IPC file written.
     """
-    if not cfg.chat_jid:
+    # Resolve chat_id: prefer explicit chat_id, fall back to chat_jid
+    chat_id = cfg.chat_id or cfg.chat_jid.replace("tg:", "")
+    if not chat_id:
         raise RuntimeError(
-            "No chat_jid configured — set it in briefings.yaml or ensure "
-            "a main group is registered in the database"
+            "No chat_id or chat_jid configured — set chat_id in briefings.yaml "
+            "or ensure a main group is registered in the database"
         )
 
-    chat_id = cfg.chat_jid.replace("tg:", "")
-    token = _get_bot_token()
+    # Resolve token: prefer config-level env var, fall back to TELEGRAM_BOT_TOKEN
+    token = _get_config_bot_token(cfg) or _get_bot_token()
 
     # Try direct Telegram delivery first
     if token and chat_id:

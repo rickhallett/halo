@@ -15,6 +15,8 @@ DEFAULTS = {
     "ipc_dir": "./data/ipc",
     "ipc_group": "telegram_main",
     "chat_jid": "",
+    "chat_id": "",
+    "telegram_bot_token_env": "",
     "db_path": "./store/messages.db",
     "model": "claude-sonnet-4-5-20250514",
     "max_tokens": 1024,
@@ -31,6 +33,8 @@ class Config:
     ipc_dir: Path
     ipc_group: str
     chat_jid: str
+    chat_id: str
+    telegram_bot_token_env: str
     db_path: Path
     model: str
     max_tokens: int
@@ -70,6 +74,9 @@ def load_config(config_path: str | None = None) -> Config:
     if not chat_jid:
         chat_jid = _resolve_main_jid(resolve(data["db_path"]))
 
+    # chat_id takes precedence over chat_jid for delivery
+    chat_id = data.get("chat_id", "")
+
     return Config(
         project_root=project_root,
         memctl_config=resolve(data["memctl_config"]),
@@ -79,6 +86,8 @@ def load_config(config_path: str | None = None) -> Config:
         ipc_dir=resolve(data["ipc_dir"]),
         ipc_group=data["ipc_group"],
         chat_jid=chat_jid,
+        chat_id=chat_id,
+        telegram_bot_token_env=data.get("telegram_bot_token_env", ""),
         db_path=resolve(data["db_path"]),
         model=data["model"],
         max_tokens=int(data["max_tokens"]),

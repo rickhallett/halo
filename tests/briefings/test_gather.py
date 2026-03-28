@@ -15,9 +15,11 @@ def make_config(tmp_path: Path) -> Config:
         ipc_dir=tmp_path / "data" / "ipc",
         ipc_group="telegram_main",
         chat_jid="tg:123",
+        chat_id="",
+        telegram_bot_token_env="",
         db_path=tmp_path / "store" / "messages.db",
         model="test-model",
-        max_tokens=256,
+        max_tokens=1024,
     )
 
 
