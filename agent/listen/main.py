@@ -21,6 +21,7 @@ ARCHIVED_DIR = JOBS_DIR / "archived"
 
 class JobRequest(BaseModel):
     prompt: str
+    mode: str = "print"  # "print" (headless -p) or "interactive" (visible in tmux)
 
 
 @app.post("/job")
@@ -32,6 +33,7 @@ def create_job(req: JobRequest):
         "id": job_id,
         "status": "running",
         "prompt": req.prompt,
+        "mode": req.mode,
         "created_at": now,
         "pid": 0,
         "updates": [],
@@ -46,7 +48,7 @@ def create_job(req: JobRequest):
     # Spawn the worker process
     worker_path = Path(__file__).parent / "worker.py"
     proc = subprocess.Popen(
-        [sys.executable, str(worker_path), job_id, req.prompt],
+        [sys.executable, str(worker_path), job_id, req.prompt, req.mode],
         cwd=str(Path(__file__).parent),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,

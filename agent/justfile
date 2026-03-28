@@ -10,39 +10,57 @@ default_url := if _sandbox_url == "" { "http://localhost:7600" } else { _sandbox
 default:
     @just --list
 
-# Start the listen server
+# Start the listen server (headed Terminal windows per job)
 listen:
-    cd apps/listen && uv run python main.py
+    cd listen && uv run python main.py
+
+# Start the listen server in headless mode for smoke tests (detached tmux, no Terminal windows)
+listen-headless:
+    cd listen && LISTEN_HEADED=0 uv run python main.py
 
 # Send a job to the listen server
 send prompt url=default_url:
-    cd apps/direct && uv run python main.py start {{url}} "{{prompt}}"
+    cd direct && uv run python main.py start {{url}} "{{prompt}}"
+
+# Send a job in interactive mode (visible in tmux)
+sendi prompt url=default_url:
+    cd direct && uv run python main.py start -i {{url}} "{{prompt}}"
 
 # Send a job from a local file
 sendf file url=default_url:
     #!/usr/bin/env bash
     prompt="$(cat '{{file}}')"
-    cd apps/direct && uv run python main.py start '{{url}}' "$prompt"
+    cd direct && uv run python main.py start '{{url}}' "$prompt"
+
+# Send a job from a local file in interactive mode
+sendfi file url=default_url:
+    #!/usr/bin/env bash
+    prompt="$(cat '{{file}}')"
+    cd direct && uv run python main.py start -i '{{url}}' "$prompt"
 
 # Get a job's status
 job id url=default_url:
-    cd apps/direct && uv run python main.py get {{url}} {{id}}
+    cd direct && uv run python main.py get {{url}} {{id}}
 
 # List all jobs (pass --archived to see archived)
 jobs *flags:
-    cd apps/direct && uv run python main.py list {{default_url}} {{flags}}
+    cd direct && uv run python main.py list {{default_url}} {{flags}}
 
 # Show full details of the latest N jobs (default: 1)
 latest n="1" url=default_url:
-    cd apps/direct && uv run python main.py latest {{url}} {{n}}
+    cd direct && uv run python main.py latest {{url}} {{n}}
 
 # Stop a running job
 stop id url=default_url:
-    cd apps/direct && uv run python main.py stop {{url}} {{id}}
+    cd direct && uv run python main.py stop {{url}} {{id}}
 
 # Archive all jobs
 clear url=default_url:
-    cd apps/direct && uv run python main.py clear {{url}}
+    cd direct && uv run python main.py clear {{url}}
+
+# Run telemetry on a Claude Code session
+telemetry session_id:
+    cd listen && python3 session_telemetry.py {{session_id}}
 
 # Prime Claude Code with codebase context
 prime:

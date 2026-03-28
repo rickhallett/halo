@@ -11,9 +11,11 @@ def cli():
 @cli.command()
 @click.argument("url")
 @click.argument("prompt")
-def start(url: str, prompt: str):
+@click.option("-i", "--interactive", is_flag=True, help="Run in interactive mode (visible in tmux).")
+def start(url: str, prompt: str, interactive: bool):
     """Start a new agent job."""
-    result = client.start_job(url, prompt)
+    mode = "interactive" if interactive else "print"
+    result = client.start_job(url, prompt, mode=mode)
     click.echo(result["job_id"])
 
 

@@ -1,9 +1,9 @@
 import httpx
 
 
-def start_job(url: str, prompt: str) -> dict:
+def start_job(url: str, prompt: str, mode: str = "print") -> dict:
     """POST to url/job with prompt, returns response dict."""
-    response = httpx.post(f"{url}/job", json={"prompt": prompt})
+    response = httpx.post(f"{url}/job", json={"prompt": prompt, "mode": mode})
     response.raise_for_status()
     return response.json()
 

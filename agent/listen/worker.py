@@ -47,6 +47,11 @@ def _open_terminal(session_name: str, cwd: str) -> None:
     raise RuntimeError(f"tmux session '{session_name}' did not appear within 5s")
 
 
+def _open_detached(session_name: str, cwd: str) -> None:
+    """Create a detached tmux session without opening Terminal.app."""
+    _tmux("new-session", "-d", "-s", session_name, "-c", cwd)
+
+
 def _send_keys(session: str, keys: str) -> None:
     """Send keys to tmux session then press Enter."""
     _tmux("send-keys", "-t", f"{session}:", keys)
@@ -71,13 +76,66 @@ def _wait_for_sentinel(session: str, token: str) -> int:
             return int(match.group(1))
 
 
+def _extract_telemetry(job_id: str, job_file: Path) -> None:
+    """Run session_telemetry.py against the Claude session and append to job YAML."""
+    try:
+        from session_telemetry import find_session_file, analyze
+
+        # Claude Code sessions are stored under the project dir
+        # The most recent session matching our timeframe is likely ours
+        projects_dir = Path.home() / ".claude" / "projects"
+        if not projects_dir.exists():
+            return
+
+        # Find the largest recent JSONL (our session will be the active one)
+        halo_dir = projects_dir / "-Users-mrkai-code-halo"
+        if not halo_dir.exists():
+            return
+
+        # Get sessions modified after job start
+        with open(job_file) as f:
+            data = yaml.safe_load(f)
+
+        candidates = sorted(
+            halo_dir.glob("*.jsonl"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+
+        if not candidates:
+            return
+
+        # The most recently modified JSONL is most likely our session
+        session_path = candidates[0]
+        telemetry = analyze(session_path)
+
+        # Append telemetry to job YAML
+        data["telemetry"] = {
+            "session_file": str(session_path),
+            "tokens": telemetry["tokens"],
+            "turns": telemetry["turns"],
+            "tool_calls_total": telemetry["tool_calls_total"],
+            "tool_calls": telemetry["tool_calls"],
+            "bash_categories": telemetry["bash_categories"],
+            "act_commands": telemetry["act_commands"],
+            "efficiency_pct": telemetry["efficiency"],
+        }
+
+        with open(job_file, "w") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+    except Exception as e:
+        print(f"Telemetry extraction failed: {e}", file=sys.stderr)
+
+
 def main():
     if len(sys.argv) < 3:
-        print("Usage: worker.py <job_id> <prompt>")
+        print("Usage: worker.py <job_id> <prompt> [mode]")
         sys.exit(1)
 
     job_id = sys.argv[1]
     prompt = sys.argv[2]
+    mode = sys.argv[3] if len(sys.argv) > 3 else "print"
 
     jobs_dir = Path(__file__).parent / "jobs"
     job_file = jobs_dir / f"{job_id}.yaml"
@@ -103,12 +161,22 @@ def main():
     session_name = f"job-{job_id}"
     token = uuid.uuid4().hex[:8]
 
-    # Build the claude command — read prompt from file to avoid truncation
-    claude_cmd = (
-        f"claude --dangerously-skip-permissions"
-        f' --append-system-prompt "$(cat {sys_prompt_tmp})"'
-        f' "$(cat {prompt_tmp})"'
-    )
+    # Build the claude command
+    if mode == "interactive":
+        # Interactive mode: visible in tmux, agent runs with full TUI
+        claude_cmd = (
+            f"claude --dangerously-skip-permissions"
+            f' --append-system-prompt "$(cat {sys_prompt_tmp})"'
+            f' "$(cat {prompt_tmp})"'
+        )
+    else:
+        # Print mode (default): non-interactive, exits on completion
+        claude_cmd = (
+            f"claude --dangerously-skip-permissions"
+            f" -p"
+            f' --append-system-prompt "$(cat {sys_prompt_tmp})"'
+            f' "$(cat {prompt_tmp})"'
+        )
 
     # Wrap with sentinel: <cmd> ; echo "__JOBDONE_<token>:$?"
     wrapped = f'{claude_cmd} ; echo "{SENTINEL_PREFIX}{token}:$?"'
@@ -121,8 +189,13 @@ def main():
     os.environ.update(env_clean)
 
     try:
-        # Open headed Terminal window with tmux session
-        _open_terminal(session_name, str(repo_root))
+        headed = os.environ.get("LISTEN_HEADED", "1").lower() not in {"0", "false", "no"}
+
+        # Open tmux either in a visible Terminal window or detached for smoke tests
+        if headed:
+            _open_terminal(session_name, str(repo_root))
+        else:
+            _open_detached(session_name, str(repo_root))
 
         # Send the wrapped command
         _send_keys(session_name, wrapped)
@@ -154,6 +227,9 @@ def main():
 
     with open(job_file, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+    # Extract session telemetry if available
+    _extract_telemetry(job_id, job_file)
 
     # Clean up
     sys_prompt_tmp.unlink(missing_ok=True)
