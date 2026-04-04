@@ -70,3 +70,5 @@ gateway/halfleet/
 .nanoclaw/
 .mcp.json
 agents-sdk-docs
+cookies.txt
+.env.halo-dev

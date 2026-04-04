@@ -23,7 +23,24 @@ fi
 # In K8s, ConfigMaps mount config.yaml/SOUL.md directly — these conditionals
 # never trigger. If a ConfigMap is missing, the pod fails at mount time before
 # this script runs. These exist for: docker run -v empty-vol:/opt/data
-[ ! -f "$HERMES_HOME/.env" ]        && cp /opt/defaults/.env.example "$HERMES_HOME/.env"
+#
+# .env: Hermes loads $HERMES_HOME/.env with override=True (dotenv), so this
+# file MUST contain real values, not empty placeholders. When running via
+# `docker run --env-file`, we generate .env from the live environment.
+# In K8s, the Secret mount provides the file directly.
+if [ ! -f "$HERMES_HOME/.env" ]; then
+    # Generate .env from environment variables passed via --env-file or -e
+    # Only write keys that are actually set and non-empty
+    {
+        [ -n "${TELEGRAM_BOT_TOKEN:-}" ]      && echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
+        [ -n "${ANTHROPIC_API_KEY:-}" ]      && echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+        [ -n "${TELEGRAM_ALLOWED_USERS:-}" ] && echo "TELEGRAM_ALLOWED_USERS=$TELEGRAM_ALLOWED_USERS"
+        [ -n "${COST_CEILING_USD:-}" ]       && echo "COST_CEILING_USD=$COST_CEILING_USD"
+        [ -n "${DEFAULT_MODEL:-}" ]          && echo "DEFAULT_MODEL=$DEFAULT_MODEL"
+        [ -n "${DEFAULT_PROVIDER:-}" ]       && echo "DEFAULT_PROVIDER=$DEFAULT_PROVIDER"
+    } > "$HERMES_HOME/.env"
+    echo "Generated .env from environment variables." >&2
+fi
 [ ! -f "$HERMES_HOME/config.yaml" ] && cp /opt/defaults/config.yaml "$HERMES_HOME/config.yaml"
 [ ! -f "$HERMES_HOME/SOUL.md" ]     && cp "$INSTALL_DIR/docker/SOUL.md" "$HERMES_HOME/SOUL.md"
 

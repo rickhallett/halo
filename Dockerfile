@@ -55,4 +55,4 @@ ENV HERMES_HOME=/opt/data
 VOLUME ["/opt/data"]
 USER hermes
 ENTRYPOINT ["/opt/entrypoint.sh"]
-CMD ["--gateway"]
+CMD ["gateway"]
