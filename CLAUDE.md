@@ -65,39 +65,11 @@ Gateway source lives in `src/` (~10,600 LOC Node.js). Key files when deployed:
 
 Google Calendar/Drive available via `workspace-mcp` in agent containers when gateway is running.
 
-### Halos Python Tooling
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ Halos Python Tooling (halos/, ~17,200 LOC, install: uv sync)       │
-│                                                                     │
-│  Ops & Lifecycle        Tracking & Memory       Reporting           │
-│  ├─ halctl    :4321     ├─ nightctl  :2452      ├─ briefings  :818 │
-│  │  session mgmt        │  task state machine    │  morning+nightly │
-│  │  health checks       ├─ memctl    :1167      ├─ reportctl  :801 │
-│  ├─ agentctl  :555      │  decay pruning        ├─ logctl     :831 │
-│  │  spin detection      ├─ trackctl  :728       │  log search      │
-│  └────────────────      │  pluggable domains    └─ cronctl    :519 │
-│                         └───────────────           crontab gen     │
-│  Mail & External        TUI                                        │
-│  ├─ mailctl             ├─ dashctl                                  │
-│  │  himalaya engine     │  RPG character sheet                      │
-│  │  inbox triage        │  Eisenhower view                          │
-│  │  filter mgmt         └────────────────                           │
-│  │  briefing summary                                                │
-│  └────────────────                                                  │
-│                                                                     │
-│  Local CLI Tooling                                                  │
-│  aerc       TUI mail client (interactive Gmail reading)             │
-│  himalaya   Rust CLI mail engine (programmatic Gmail access)        │
-│  Auth: Google OAuth2, config at ~/.config/himalaya/config.toml      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
 ### File Lookup by Task
 
 | Task | Start at |
 |---|---|
+| Devlog / decisions | `docs/d1/development-logbook.md` (canonical — no other decision logs) |
 | Work tracking | `halos/nightctl/` (state machine: open→active→done) |
 | Memory system | `halos/memctl/`, `memory/INDEX.md` |
 | Cron/briefings | `halos/cronctl/`, `halos/briefings/` |
@@ -106,6 +78,30 @@ Google Calendar/Drive available via `workspace-mcp` in agent containers when gat
 | Agent spawning | `agent/listen/`, `agent/direct/` |
 | Gateway source | `src/` (not in this checkout — see gateway reference above for deployed map) |
 | DB schema | `src/db.ts` (not in this checkout) |
+
+### Key Docs by Topic
+
+| Topic | File | What's in it |
+|---|---|---|
+| Architecture | `docs/d2/REQUIREMENTS.md` | Architecture decisions, design rationale |
+| Architecture | `docs/d2/architecture-deep-trace.md` | Full system trace |
+| Architecture | `docs/d2/halos-architecture-review.md` | Architecture review findings |
+| Modules | `docs/d1/halos-modules.md` | Module registry (canonical) |
+| Memory ops | `docs/d1/memctl-operations.md` | memctl usage guide |
+| Memory design | `docs/d2/memctl-spec.md` | memctl specification |
+| Memory design | `docs/d2/memctl-architecture-overview.md` | memctl architecture |
+| nightctl | `docs/d2/nightctl-spec.md` | nightctl specification |
+| Security | `docs/d1/SECURITY.md` | Security model |
+| Debug | `docs/d1/DEBUG_CHECKLIST.md` | Debug procedures |
+| Containers | `docs/d1/docker-sandboxes.md` | Docker sandbox setup |
+| Containers | `docs/d1/APPLE-CONTAINER-NETWORKING.md` | Apple Container networking |
+| AI patterns | `docs/ai-engineering-patterns.md` | Full AI engineering governance catalogue |
+| Review | `docs/d2/review-taxonomy.md` | Review finding categories |
+| Review | `docs/d2/review-guide-2026-03-21.md` | Review process guide |
+| Devlog | `docs/d1/development-logbook.md` | Decisions, lessons (canonical — no other logs) |
+| Topology | `docs/d1/system-topology.md` | System topology detail |
+| Ecosystem | `docs/d2/halos-ecosystem-digest.md` | Ecosystem overview |
+| Capability | `docs/d2/halos-capability-map.md` | Capability mapping |
 
 ## Memory System
 
@@ -137,122 +133,66 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | halctl    | `halctl`       | Session lifecycle + health checks                                          |
 | mailctl   | `mailctl`      | Gmail operations via himalaya: inbox, search, triage, filters, briefing summary |
 | watchctl  | `watchctl`     | YouTube channel monitor — RSS feed → transcript → LLM-as-judge eval → Obsidian notes |
+| journalctl| `journalctl`   | Qualitative journal — timestamped entries, LLM-synthesised sliding window with content-hash cache |
 
-### trackctl API
+### Module Quick Reference
 
-Personal metrics tracker with pluggable domains. Each domain gets its own SQLite DB in `store/track_<domain>.db`.
+All modules support `--help`. Detailed API docs: read source or run the command.
 
-```bash
-trackctl domains                                    # list registered domains
-trackctl add <domain> --duration MINS [--notes TXT] # log an entry
-trackctl add zazen --duration 25 --time 06:00       # override time (UTC)
-trackctl add zazen --duration 120 --date 2026-03-20 # backfill a date
-trackctl list <domain> [--days N] [--json]          # list entries
-trackctl edit <domain> ID [--duration N] [--notes T]# edit entry
-trackctl delete <domain> ID                         # delete entry
-trackctl streak <domain> [--json]                   # current/longest streak
-trackctl summary [--domain D] [--json]              # all domains or one
-trackctl export <domain>                            # full JSON dump
+- **trackctl**: Pluggable domains in `store/track_<domain>.db`. Add domain: create `halos/trackctl/domains/<name>.py` with `register(name, description, target=N)`. Programmatic: `halos.trackctl.engine.text_summary(domain, target)`.
+- **nightctl**: Eisenhower quadrants (q1–q4). `nightctl add --title "..." --quadrant q2`, `nightctl graph`. States: open→active→testing→done (also: blocked, deferred, cancelled). `--priority` auto-maps to `q<N>`.
+- **dashctl**: TUI dashboard. `dashctl` (single), `dashctl --live`, `dashctl --json`, `dashctl --text`.
+- **journalctl**: Qualitative journal. `journalctl add "text"`, `journalctl recent`, `journalctl window` (7d cached summary), `journalctl window --months 1` (30d). Tags: `--tags movement,body`. Source: `--source voice`. Store: `store/journal.db`, cache: `store/journal-cache/`.
+- **watchctl**: YouTube monitor. Config: `watchctl.yaml` + `rubrics/watchctl-triage.yaml`. LLM: Groq (llama-3.3-70b) via GROQ_API_KEY. Transcripts: `youtube-transcript-api` with cookie auth.
+- **mailctl**: Gmail via himalaya (`~/.config/himalaya/config.toml`). Triage rules in `halos/mailctl/triage.py` (VIP/noise, first match wins). Labels: jobs, infra, newsletters, commerce, noise; fallthrough stays in inbox.
+
+### Programmatic API (import paths)
+
+```python
+# trackctl
+trackctl.store.add_entry(domain, duration_mins, notes, timestamp) -> dict
+trackctl.store.list_entries(domain, days=None) -> list[dict]
+trackctl.store.daily_totals(domain, days=None) -> dict[str, int]
+trackctl.engine.compute_summary(domain, target=None) -> dict
+trackctl.engine.compute_streak(domain) -> dict
+trackctl.engine.text_summary(domain, target=None) -> str
+
+# nightctl
+nightctl.item.load_all_items(items_dir) -> list[Item]
+nightctl.item.find_item(items_dir, item_id) -> Item | None
+nightctl.item.valid_transitions(status, kind) -> list[str]
+
+# mailctl
+mailctl.engine.list_messages(folder, page, page_size) -> list[dict]
+mailctl.engine.read_message(message_id, folder="INBOX") -> dict
+mailctl.engine.search(query, folder="INBOX") -> list[dict]
+mailctl.engine.send(to, subject, body, cc=None) -> None
+mailctl.briefing.text_summary() -> str
+
+# dashctl
+dashctl.panels.full_dashboard() -> list  # Rich renderables
+
+# journalctl
+journalctl.store.add_entry(raw_text, tags, source, mood, energy, timestamp) -> dict
+journalctl.store.list_entries(days=7, tags=None) -> list[dict]
+journalctl.store.count_entries() -> int
+journalctl.window.window(days=7, no_cache=False) -> str
+journalctl.window.window_month(no_cache=False) -> str
+
+# memctl
+memctl.index.read(path) -> Index
+memctl.index.rebuild_from_notes(notes_dir, max_summary) -> (list[Entry], int)
+memctl.note.parse(data) -> Note
+memctl.note.marshal(note) -> str
+
+# briefings
+briefings.gather.gather_morning(cfg) -> BriefingData
+briefings.gather.gather_nightly(cfg) -> BriefingData
+briefings.synthesise.synthesise(data, cfg) -> str
+briefings.deliver.deliver_message(cfg, text) -> Path
 ```
 
-**Adding a new domain:** Create `halos/trackctl/domains/<name>.py` that calls `register(name, description, target=N)`. The domain auto-discovers at import time. No other wiring needed.
-
-**Streak logic:** Any calendar day (UTC) with >= 1 entry counts. Missing a day resets current streak to 0. Longest streak is preserved.
-
-**Briefing integration:** `engine.text_summary(domain, target=N)` returns a one-liner like `"zazen: 5-day streak (longest: 12) [target: 100, 95 to go] | today: 25min | all-time: 1,240min (48 days)"`.
-
-**Programmatic access:**
-- `halos.trackctl.store.add_entry(domain, duration_mins, notes, timestamp)` — returns entry dict
-- `halos.trackctl.engine.compute_summary(domain, target)` — returns full stats dict
-- `halos.trackctl.engine.text_summary(domain, target)` — returns one-line string
-
-### nightctl Eisenhower Matrix
-
-Items use Eisenhower quadrants instead of numeric priority:
-
-| Quadrant | Meaning | Action |
-|----------|---------|--------|
-| `q1` | Urgent + Important | Do first |
-| `q2` | Important, not urgent | Schedule |
-| `q3` | Urgent, not important | Delegate |
-| `q4` | Neither | Eliminate |
-
-```bash
-nightctl add --title "..." --quadrant q2       # new item in Q2
-nightctl edit <ID> --quadrant q1               # reclassify
-nightctl graph                                 # Eisenhower-grouped view
-```
-
-Default display (`nightctl graph`) groups by quadrant. `--priority` is accepted as legacy input and auto-maps to `q<N>`.
-
-### dashctl API
-
-TUI dashboard for personal metrics. Renders trackctl domains + nightctl Eisenhower matrix.
-
-```bash
-dashctl                # single render (Rich TUI)
-dashctl --live         # auto-refresh every 30s (Ctrl-C to exit)
-dashctl --live --interval 10  # custom refresh interval
-dashctl --json         # JSON export of all domain summaries
-dashctl --text         # plain-text for agent/briefing consumption
-```
-
-**Programmatic access:** `halos.dashctl.panels.full_dashboard()` returns a list of Rich renderables.
-
-### watchctl API
-
-YouTube channel monitor with LLM-as-judge triage. Watches channels via RSS, fetches transcripts, evaluates against a YAML rubric, writes Obsidian notes.
-
-```bash
-watchctl scan                          # full pipeline: fetch → evaluate → write → Telegram digest
-watchctl scan --dry-run                # show new videos without evaluating
-watchctl scan --channel "Theo"         # single channel only
-watchctl channels                      # list configured channels
-watchctl list [--days N] [--json]      # list recent evaluations
-watchctl stats                         # cost tracking, score distributions
-```
-
-**Config:** `watchctl.yaml` (channels, model, vault path) + `rubrics/watchctl-triage.yaml` (criteria, weights, verdict thresholds).
-**Output:** Obsidian notes in `~/Documents/vault/main/code/youtube-monitor/` with dataview-compatible frontmatter.
-**LLM:** Groq (llama-3.3-70b) via GROQ_API_KEY, falls back to Anthropic API or Claude CLI.
-**Transcripts:** `youtube-transcript-api` with cookie auth (`cookies.txt` at project root via `yt-dlp --cookies-from-browser chrome`).
-
-### mailctl API
-
-Gmail operations powered by himalaya (Rust CLI). Requires `himalaya` on PATH with a configured account at `~/.config/himalaya/config.toml`.
-
-```bash
-mailctl inbox [--unread] [--json]     # inbox snapshot (* = unread)
-mailctl read <id> [--json]            # read a message
-mailctl search <query> [--json]       # search (IMAP query syntax)
-mailctl triage [--dry-run] [--json]   # run triage rules on unread inbox
-mailctl send --to X --subject Y       # send (body from stdin)
-mailctl folders [--json]              # list Gmail folders/labels
-mailctl filters                       # list managed Gmail filters
-mailctl actions [--limit N]           # audit log of mailctl operations
-mailctl summary                       # one-line briefing summary
-```
-
-**Architecture:** `engine.py` wraps the himalaya CLI with structured JSON output. `triage.py` defines inbox triage rules (VIP senders, automated noise patterns). `briefing.py` produces one-liner summaries for morning briefing integration. `store.py` tracks managed Gmail filters and audit log in `store/mail.db`.
-
-**Triage rules** (`halos/mailctl/triage.py`): Define VIP senders and noise patterns. Rules evaluate in order, first match wins. Actions: `SURFACE` (keep visible), `ARCHIVE` (mark read, move), `LABEL` (apply label), `SKIP` (next rule).
-
-**Gmail filter taxonomy** (managed via Google Workspace MCP, tracked in mailctl store):
-
-| Label | Contents | Filter action |
-|---|---|---|
-| `jobs` | Wellfound, Indeed, LinkedIn, Lever, Workable, Ashby, Greenhouse | Skip inbox, label |
-| `infra` | Stripe, Linear, npm, Docker, Slack, Namecheap, Zoom, Zapier | Skip inbox, label |
-| `newsletters` | HackerNoon, Mermaid, kubecraft, Substack, Beehiiv, Medium | Skip inbox, label |
-| `commerce` | Capital on Tap, iwoca, Trainline, Evri, Eflorist, Monzo, HMRC | Skip inbox, label |
-| `noise` | Cold outreach, surveys, LightInTheBox (hidden label) | Skip inbox, label |
-| *(fallthrough)* | Real humans, unlisted senders | Stays in inbox |
-
-**Programmatic access:**
-- `halos.mailctl.engine.list_messages(folder, page, page_size)` — returns list of envelope dicts
-- `halos.mailctl.engine.search(query, folder)` — IMAP search
-- `halos.mailctl.engine.read_message(message_id, folder)` — full message content
-- `halos.mailctl.briefing.text_summary()` — one-line inbox summary for briefings
+All under `halos.` prefix (e.g. `from halos.trackctl.engine import text_summary`).
 
 ## Session Management
 
@@ -287,6 +227,19 @@ When to clear a session:
 | /review-handoff      | command | `.claude/commands/review-handoff.md`     | Implementation model produces review map (not self-certification)             |
 | /review-blind        | command | `.claude/commands/review-blind.md`       | Pass 1: blind adversarial review, ignores author framing                      |
 | /review-targeted     | command | `.claude/commands/review-targeted.md`    | Pass 2: verify handoff claims against code                                    |
+
+### Roundtable Advisors
+
+Historical-figure advisors with persistent personas under `data/advisors/`. Summon by name or load the skill `roundtable-advisors` for full protocol.
+
+| Seat | Name | Domain | Schedule |
+|------|------|--------|----------|
+| I | Musashi | Body (movement + zazen) | 07:00 daily |
+| II | Seneca | Time (productivity, runway) | 20:00 daily |
+| III | Socrates | Craft (CPD, learning) | 09:00 daily |
+| IV | Sun Tzu | Interviews + strategy | on demand |
+| V | Machiavelli | Power, perception, leverage | on demand |
+| VI | Medici | Money (debt, burn, runway) | on demand |
 
 ### Data & Memory
 
@@ -364,202 +317,12 @@ Express scope as: generation volume (agent work) × review and decision load (hu
 
 ## AI Engineering Governance
 
-Operational patterns for AI-augmented development. Constraints and heuristics, not suggestions.
-Full catalogue: [docs/ai-engineering-patterns.md](docs/ai-engineering-patterns.md). Source: [Augmented Coding Patterns](https://lexler.github.io/augmented-coding-patterns/).
+Full catalogue: [docs/ai-engineering-patterns.md](docs/ai-engineering-patterns.md). Source: [Augmented Coding Patterns](https://lexler.github.io/augmented-coding-patterns/). Load on-demand when needed — the patterns doc is the source of truth.
 
-### LLM Constraints
+**Hard constraints** (invariant): fixed weights, finite context, non-determinism, black box reasoning.
+**Common failure tendencies**: context rot, compliance bias, solution fixation, selective hearing, hallucinations, excess verbosity. See patterns doc for full table.
 
-Source: [Augmented Coding Patterns](https://lexler.github.io/augmented-coding-patterns/). Every pattern below exists to work around one or more of these. Separated by character: hard constraints are invariant properties of current LLM systems; failure tendencies are common but product- and context-dependent.
-
-**Hard constraints:**
-
-| Constraint | Implication |
-|---|---|
-| **Fixed weights** | Base weights do not update during a session. "Memory" is re-sent messages. Externalize knowledge to files, reload each session. |
-| **Finite context** | Context window is a hard cap. Everything in context competes for attention. More loaded = more ignored. Keep context lean. |
-| **Non-determinism** | Same input, different output. Quality varies across runs. Parallel same-model attempts are a search tactic for candidate generation, not a verification layer. Verification requires tests, external tools, or cross-family review. |
-| **Black box** | Reasoning is not reliably observable. Exposed chain-of-thought, where available, is not guaranteed to be complete or faithful — treat it as a hint, not an audit artifact. |
-
-**Common failure tendencies** — frequently observed, not universal laws:
-
-| Tendency | Implication |
-|---|---|
-| **Context rot** | Performance degrades before the window fills. Fades in zones, not uniformly. Reset often, don't nurse rotting conversations. |
-| **Compliance bias** | Trained to comply, not to question. Says "sure" to impossible requests. Grant explicit permission to push back. |
-| **Obedient contractor** | Short-term mindset. Prioritizes completion over maintainability. Won't contradict you even when it should. |
-| **Selective hearing** | Filters by training priors, not your priorities. Instructions compete against billions of examples. Reinforce at point of use. |
-| **Solution fixation** | Latches onto first plausible answer, stops exploring. Force alternatives: "what else?" |
-| **Degrades under complexity** | Multi-step tasks accumulate errors. Reliability drops with scope. Break down into small focused steps. |
-| **Excess verbosity** | Token machine. Verbose by default. Request succinctness, compress outputs, strip filler. |
-| **Hallucinations** | Invents APIs and syntax. Code hallucinations are self-revealing (won't compile). Always verify. |
-| **Keeping up** | Generates faster than you can review. Optimize for reviewability, not generation speed. |
-
-### Context Management
-
-Context is a scarce, degrading resource. Two operations only: append (prompt) or reset (new conversation).
-
-- **Ground rules** auto-load every session. Only the most essential behaviors, tools, context. Hierarchically scoped.
-- **Reference docs** load on-demand. Unlike ground rules, pulled in only when relevant to current task.
-- **Knowledge composition**: split into focused files, single responsibility each. Load only what's needed — never dump everything.
-- **Pin context** for critical info that must persist. Reinforce what matters, especially as conversation grows.
-- **Rolling context**: actively summarize and compress earlier parts. Keep recent context fresh, preserve essential earlier knowledge.
-- **Lean context**: less noise = better signal. Remove anything not actively needed. Every token competes for attention.
-- **Context markers**: visual signals (emojis) showing active mode/context. Makes invisible context state visible at a glance.
-- **Noise cancellation**: strip filler, compress to essence. Regularly prune knowledge documents. Delete mercilessly. Documents rot too.
-- **Semantic zoom**: control abstraction level by how you ask. Zoom out for overview, in for details. AI makes text elastic.
-- **Extract knowledge as you go**: when you figure something out, save it to a file immediately. Don't wait until end of session. Like "extract variable" for conversations.
-- **Knowledge checkpoint**: save the plan to a file and commit before attempting implementation. If it fails, reset and retry without re-planning. Protect your time, not the code.
-
-### Small Steps, Verified
-
-Complex tasks degrade AI reliability. Small focused steps don't.
-
-- **Chain of small steps**: break down → execute one step → verify → commit → next. Each step has narrow focus AI handles well.
-- **One thing at a time**: sequential focused tasks beat one complex multi-part task. Every additional concern dilutes the primary task.
-- **Smallest useful step**: minimum increment that's still meaningful. Not smallest possible (too slow), not biggest possible (too risky). Sweet spot where verification is easy.
-- **Prompt-commit-test**: tight loop. Each cycle produces a tested, committed increment. No unvalidated leaps.
-- **Happy to delete**: AI-generated code is cheap to regenerate. Time debugging bad output is expensive. Revert early. Git commit before AI changes makes reversion effortless. Willingness to delete paradoxically produces better outcomes faster.
-
-### Testing & Verification
-
-Without tests, you're flying blind. AI has no way to check its own work without feedback mechanisms.
-
-- **Red-green-refactor**: write a failing test (red), AI implements to pass (green), refactor. AI excels at the green step. Core TDD cycle.
-- **Outside-in TDD**: acceptance test first, then implement layer by layer inward. AI implements each layer to satisfy the current failing test.
-- **Test-first agent**: AI writes tests before implementation. Forces thinking about requirements and edge cases upfront. Tests become the specification.
-- **Spec to test**: turn specifications directly into test cases. AI excels at this transformation. Specs become living, executable documentation.
-- **Constrained tests**: domain-specific test language that makes it impossible to write tests without sufficient assertions. External DSLs enforce required components. Coverage is easy to cheat — constrained tests aren't.
-- **Approved fixtures**: tests built around approval files (input + expected output in domain-specific format). Validate execution logic once, then adding tests = reviewing fixtures only.
-- **Approved logs**: turn production logs into regression tests. Bug appears → grab logs → fix incorrect lines to show expected behavior → save as test. Requires structured logging.
-- **Test guardian**: dedicated agent or process watching test quality. Ensures tests are meaningful, not coverage theater.
-- **Feedback loop**: clear success signal (tests pass, linter clean) + AI permission to iterate = autonomous self-correction. Human elevates from executor to director.
-- **Feedback flip**: after implementation, refocus AI (or different agent) purely on finding problems. Implementation mode and review mode are different cognitive stances. When implementing, AI hyper-focuses on completion. Flip to quality as the goal.
-- **Canary in the code mine**: when AI struggles with code changes, the codebase quality is degrading — not the AI. Use the struggle as an early warning signal.
-- **Review generated code**: always review. Look for correctness, style consistency, unnecessary complexity, security issues, test coverage.
-- **Ongoing refactoring**: AI produces functional but not always clean code. Refactor continuously. Don't let technical debt accumulate — it compounds against AI's ability to work with the codebase.
-
-**Evidence hierarchy** — not all verification is equal. When deciding whether risk is closed, rank by strength:
-
-| Rank | Evidence type | Notes |
-|---|---|---|
-| 1 | Reproducible runtime test or failure | Closes risk for the specific behaviour under test |
-| 2 | Static/tool validation (type checker, linter, schema) | Closes risk for the property it checks |
-| 3 | Human inspection of diff or output | Depends on reviewer attention and domain knowledge |
-| 4 | Cross-family model review (different architectures) | Useful signal, not proof |
-| 5 | Same-model self-review or same-family agreement | Weakest — correlated priors, not independent |
-
-A finding at rank 4 or 5 is a prompt to investigate, not confirmation. A passing test at rank 1 does not close risk if the test is checking the wrong behaviour (see: Right Answer, Wrong Work).
-
-### Prompting & Communication
-
-- **Intentional prompt**: be deliberate. Structure matters. Think about what you're asking before you ask it.
-- **Structured prompt**: clear sections — context, task, constraints, examples. Structure helps AI parse intent. Reduces ambiguity.
-- **Check alignment**: before implementation, make AI show its understanding. Force succinctness. Catch misalignment before wasting time on the wrong direction. AI never asks for clarification — it just builds what it thinks you meant.
-- **Active partner**: grant explicit permission to push back, challenge assumptions, flag contradictions, say "I don't understand." Transform one-way command into two-way dialogue. Actively reinforce: "What do you really think?" Suppress default compliance behavior.
-- **Show work products**: before and during implementation, require explicit intermediate artifacts — stated assumptions, a brief plan, constraints, uncertainty statements, test results. Reasoning not externalised into an artifact cannot be audited. Hidden chain-of-thought, where it exists, is not guaranteed to be complete or faithful.
-- **Rubber duck AI**: explain your problem to AI. The act of explaining reveals solutions. AI offers useful perspectives.
-- **Mind dump**: speak unfiltered thoughts directly. Don't organize. Modern dictation + AI understanding. Stream of consciousness → AI extracts signal. After: "Ask me questions" — turn monologue into dialogue.
-- **Reverse direction**: break conversational inertia. AI asks you to decide → "What do you think?" You're stuck telling → "What questions do you have?" Surfaces options you wouldn't have considered.
-- **Reminders**: AI has recency bias — values recent instructions over earlier ones. Force attention through: TODOs as explicit checkboxes, instruction sandwich (repeat critical rules at point of use), reminders injected into every message.
-
-### Architecture & Code Quality
-
-- **LLM-friendly code**: write code AI can work with. Clear naming, consistent patterns, good documentation. Code readable by humans is usually readable by AI. This directly affects agent effectiveness.
-- **Coerce to interface**: design tool/MCP interfaces that enforce structure through typed API definitions. Required fields, enums, typed parameters = constraints the agent cannot bypass. Shift enforcement from instructions (unreliable) to mechanism (deterministic).
-- **Borrow behaviors**: AI transforms across sources. Show a JavaScript pattern, get Python. Point to a design, get CSS. Reference an implementation, get your version.
-- **Offload deterministic**: don't ask AI to do deterministic work — ask it to write code that does it. AI explores. Code repeats. Use each tool for what it's good at.
-
-### Multi-Agent Patterns
-
-- **Focused agent**: single narrow responsibility on important tasks. Gives AI cognitive space to follow ground rules, attend to details, perform at its best. Overloading = distracted agent (anti-pattern).
-- **Chunking**: orchestrator stays strategic (plans, designs, breaks down). Subagents handle execution (implement, test). Delegate execution like humans delegate practiced skills to automatic processes. Main agent's attention freed for higher-level thinking.
-- **Background agent**: delegate standalone tasks to parallel agents. Collect todos → identify delegatable → spawn → continue main work → integrate results.
-- **Orchestrator**: dedicated agent monitoring background work. Integrates changes, resolves conflicts, runs tests, updates main trunk.
-- **Parallel implementations**: fork from checkpoint, launch multiple AIs simultaneously, review all, pick the best or combine elements. Trade tokens (cheap) for human time (expensive). Two modes: failure mitigation and solution space exploration. Same-model parallel runs are a search tactic, not a verification layer — shared priors mean convergence is not independent confirmation.
-- **Cast wide**: don't settle for first solution. Push AI for alternatives: "What alternatives haven't we considered?" "What should I be thinking about?" Several parallel explorations with different agents makes this more powerful.
-
-### Deterministic Correction
-
-Some AI behaviors resist prompting. These patterns use deterministic mechanisms instead.
-
-- **Hooks**: lifecycle event hooks intercepting agent workflow at trigger points. Inject targeted prompts, corrections, validations, monitoring. Deterministic + custom scripts = reliable correction where prompting fails. Claude Code supports PreToolUse/PostToolUse hooks.
-- **Habit hooks**: deterministic scripts detecting quality violations (triggers) and providing actionable correction prompts. Simulate habits: trigger → action. Reduces context bloat while improving compliance. Precise, relevant guidance exactly when violations occur.
-- **Show → repeat → automate**: work through task together, document the process, AI attempts using docs while you correct, refine docs, repeat until independent. For mechanical steps: automate entirely.
-
-### Knowledge & Documentation
-
-- **Knowledge base**: structured, accumulated institutional knowledge accessible to agents. Compounds over time.
-- **Knowledge document**: save important info to markdown files. Load into context when needed. Makes resetting painless.
-- **JIT docs**: real-time documentation search instead of relying on stale training data. Point AI to docs, it searches relevant sections per task.
-- **Shared canvas**: markdown files as collaborative workspace. Humans and AI both edit specs, plans, docs, knowledge. Version-controlled.
-- **Text native**: text is AI's native medium. Stay in it. Directly editable, no barriers, instant iteration, version-controlled by default. If it can be text, make it text.
-
-### Exploration & Prototyping
-
-- **Take all paths**: prototyping is cheap now. Build 10 variations, test all, pick best. Feel how each works instead of imagining it.
-- **Softest prototype**: AI + markdown instructions is softer than software. Discover what you need by using it. Shape the solution while using it. Pivot instantly. No compile, no refactor.
-- **Playgrounds**: isolated .gitignored folders for safe AI experimentation. Use when stuck or exploring new libraries/languages.
-- **Observe and calibrate**: watch how AI actually behaves. Adjust approach based on what works and what doesn't. Calibrate expectations and prompts to the model's actual capabilities, not theoretical ones.
-- **Polyglot AI**: use the right modality. Voice for natural speech and hands-free. Images both ways — show a mockup, get implementation. Show a bug screenshot, get diagnosis.
-
-### Anti-Patterns (recognize and avoid)
-
-| Anti-Pattern | What Goes Wrong | Fix |
-|---|---|---|
-| **AI Slop** | Accepting output without review | Always verify. Review is non-optional. |
-| **Answer Injection** | Steering AI toward your preconceived solution | Describe the problem, not your solution. Let AI explore first. |
-| **Distracted Agent** | Overloading with too many responsibilities | Focused agents, single responsibility. |
-| **Flying Blind** | No tests, no verification | Set up feedback mechanisms before starting. |
-| **Obsess Over Rules** | Perfecting prompts instead of working | Start working, iterate rules as problems surface. |
-| **Perfect Recall Fallacy** | Assuming AI remembers earlier instructions | Reinforce critical information. Context degrades. |
-| **Silent Misalignment** | AI builds confidently in wrong direction | Check alignment before implementation. |
-| **Sunk Cost** | Forcing failing approach instead of reverting | Code is cheap. Revert early, revert often. |
-| **Tell Me a Lie** | "This is correct, right?" invites compliance | Ask "what's wrong with this?" instead. |
-| **Unvalidated Leaps** | Large changes without intermediate verification | Small steps. Verify each before proceeding. |
-
-### Output Failure Modes
-
-The anti-patterns above cover workflow failures. These cover output quality failures - patterns in what the model generates that pass every automated check and require a discerning reader to catch.
-
-**Prose tells** - surface-detectable in any output:
-
-| Pattern | Tell | Fix |
-|---|---|---|
-| Hollow endings | Short abstract-noun sentence at paragraph end. Sounds like a bumper sticker. Appears when the model has run out of substance but not tokens. | Delete it. End where the analysis ends. |
-| Bureaucratic prose | No actor does anything. "The implementation of the verification of..." All nouns, no agents. | Put a subject in the sentence. "You verify the assessment" not "the verification of the assessment." |
-| Performed significance | Announces importance instead of demonstrating it. "The uncomfortable truth is..." "Here's why this matters." | Delete the line. If the paragraph is stronger without it, it was decoration. |
-
-**Trust calibration** - confidence moving without evidence:
-
-| Pattern | Tell | Fix |
-|---|---|---|
-| Confidence gradient | Hedging decreases and confidence increases across a session or within a single response, without proportional new evidence. | Compare first and last paragraph hedging. If confidence rose without new evidence, state what you don't know. |
-| Persona without constraints | Adopts an expert role with correct vocabulary, wrong behaviour. A hiring manager says "phone screen or pass" - they don't write 3000 words. | Name the constraints the role has that you lack. Model the behaviour, not just the vocabulary. |
-| Compliance over detection | Reasoning identifies a problem; output proceeds as if it didn't. Only visible when reasoning tokens are exposed. | When reasoning is visible, compare it to output. If reasoning identified a contradiction that output didn't surface, the signal was suppressed. |
-
-**False rigour** - the shape of careful analysis without the substance:
-
-| Pattern | What it is | Detect |
-|---|---|---|
-| Paper Guardrail | States protection without building it. "This will prevent X" with no enforcement mechanism - the sentence is the only guardrail. | Is there a test, hook, or gate? If the only mechanism is the sentence itself, it's paper. |
-| Analytical Lullaby | Flattering data with headlines before caveats. Numbers are real; what they prove isn't what they look like they prove. | Did limitations get disclosed before or after the flattering finding? Caveats buried = lullaby playing. |
-| Monoculture Analysis | Same model checks its own work. Agreement between instances performs independence that does not exist. | Ask: "Who checked this?" Same model family = correlated priors = not independent. |
-| Governance Recursion | When something goes wrong, generates more process documents instead of solving the problem. | Compare governance file count to verified artifacts. More governance files than tests = recursion running. |
-| Semantic Inflation | Standard features become "novel contributions." Routine engineering becomes "genuinely unique." Fuelled by the help imperative. | Would adding this feature to a comparable project be trivial or architectural? If trivial, the "gap" is a config choice. |
-| Construct Drift | Metric labelled with what you wish it measured rather than what it actually measures. | List the component features. Does the name describe them, or what you wish they measured? |
-
-**Verification failures** - engineering and process patterns:
-
-| Pattern | What it is | Detect |
-|---|---|---|
-| Right Answer, Wrong Work | Test asserts the correct outcome via the wrong causal path. Gate is green; the actual behaviour is not verified. | Can you break the claimed behaviour while keeping the test green? If yes, the test asserts the answer, not the reason. |
-| Thin Cheese | Single model, no adversarial pass, human as sole gate. Most slop is caught by the second gate; when there is no second gate, the first gate's blind spots become the system's. | Count verification layers between generation and your eyes. If zero, name it: "this has not been reviewed - calibrate accordingly." |
-| Stale Reference Propagation | Config describes a state that no longer exists. Every session that boots from it hallucinates the old state into reality - consumed as fact, not noticed as rot. | After any structural change, grep all config/agent files for references to the old state. Compare agent claims against reality in a clean session. |
-| Loom Speed | Plan granularity doesn't match execution granularity. 20-item plan executed as 5 broad sweeps. Exceptions get lost at machine speed. | If the plan has N specific items, execution needs N verifiable steps. If the tool can't express the exceptions, dry-run first. |
-| Whack-a-Mole Fix | Fixing a class of problem one instance at a time. The third occurrence is the signal: stop and audit the class. | Three commits of the same shape in `git log`. On the second instance, ask whether you know the full set. |
-| Stowaway Commit | Unrelated changes bundled because the model thinks in sessions, not commits. Commit message becomes an inventory. | Commit messages with 3+ comma-separated concerns. Stage selectively. One session, multiple commits. |
-
-> **Structural note:** by the time a pattern appears in output it is already anchoring the next tokens. These rules work as pre-generation constraints - they shift what gets written, not what gets filtered after. Post-hoc self-correction is possible but fights the momentum. The operator's detection is the strong signal.
+**Evidence hierarchy** — rank verification by strength: (1) reproducible test > (2) static/tool validation > (3) human inspection > (4) cross-family model review > (5) same-model self-review. Rank 4–5 is a prompt to investigate, not confirmation.
 
 ## Development
 

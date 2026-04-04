@@ -19,6 +19,7 @@ Operational modules that comprise the HAL agent operating layer.
 | reportctl | `reportctl` | halos/reportctl/ | Periodic digests: briefing, weekly, health from memctl/todoctl/nightctl | Active |
 | agentctl | `agentctl` | halos/agentctl/ | LLM session tracking: usage stats, spinning-to-infinity detection | Active |
 | briefings | `hal-briefing` | halos/briefings/ | Cron-driven daily digests: morning briefing (0600) and nightly recap (2100) via Telegram, with Claude synthesis for HAL's voice | Active |
+| journalctl | `journalctl` | halos/journalctl/ | Qualitative journal: timestamped entries, tag filtering, LLM-synthesised sliding window summaries with content-hash caching | Active |
 
 ## Shared Design Principles
 
