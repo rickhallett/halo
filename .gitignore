@@ -72,3 +72,7 @@ gateway/halfleet/
 agents-sdk-docs
 cookies.txt
 .env.halo-dev
+infra/terraform/backend.hcl
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/terraform.tfvars
