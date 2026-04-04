@@ -81,24 +81,21 @@ halo/                          (this repo — product source)
 │   └── base/                  Shared K8s base manifests
 └── ...
 
-halo-deploy-aura/              (client repo — config only)
+halo-deploy/                   (thin client template — github.com/rickhallett/halo-deploy)
 ├── config/
-│   ├── .env                   Bot token, API keys, allowed users
+│   ├── .env.example           Template — copy to .env, never commit .env
 │   ├── config.yaml            Model, session reset, personality config
-│   ├── system-prompt.md       Her ephemeral system prompt
-│   ├── SOUL.md                Her agent personality (persistent)
-│   ├── advisors/              Her roundtable personas (if any)
-│   └── domains/               Her trackctl domains (e.g. practice-hours)
+│   ├── system-prompt.md       Ephemeral system prompt
+│   └── SOUL.md                Agent personality (persistent)
 ├── infra/
 │   ├── terraform/
 │   │   ├── main.tf            Vultr VKE (or shared cluster)
-│   │   └── terraform.tfvars   Her cluster config
+│   │   └── terraform.tfvars.example
 │   └── k8s/
-│       ├── kustomization.yaml References halo/infra/base
+│       ├── kustomization.yaml References halo/infra/k8s/base (remote)
 │       ├── namespace.yaml
-│       ├── configmap.yaml     Mounts config/ as ConfigMap
-│       ├── secrets.yaml       Sealed secrets for .env
-│       └── deployment.yaml    Image tag, resource limits
+│       ├── configmap.yaml     ConfigMaps from config/
+│       └── sealed-secret.yaml Bitnami Sealed Secrets (safe to commit)
 ├── argocd-app.yaml            ArgoCD Application manifest
 └── README.md
 ```
@@ -740,7 +737,7 @@ With client-owned API keys, Kai's hard cost is infrastructure only. The £49/mon
 
 ## 13. Resolved Decisions
 
-1. **Hermes vendoring**: Fork to `rickhallett/hermes-agent` on GitHub, reference as git submodule at `vendor/hermes-agent`. Tracks upstream Nous releases via merge, allows local patches, clear provenance in `git log`.
+1. **Hermes vendoring**: Git submodule at `vendor/hermes-agent` pointing directly at `NousResearch/hermes-agent` (upstream). No fork — we wrap, don't patch. All Halo-specific behaviour lives in the entrypoint and halos layer. Upstream sync via `git submodule update --remote vendor/hermes-agent`.
 
 2. **Halos integration depth**: Full halos ecosystem in the image. All modules available. Per-client config determines which are active (e.g. Aura may not use mailctl initially, but the capability is there for upsell).
 
