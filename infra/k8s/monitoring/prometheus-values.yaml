@@ -1,0 +1,78 @@
+# kube-prometheus-stack values — tuned for single-node Halo cluster
+# Docs: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+
+# Grafana
+grafana:
+  adminPassword: "halo-grafana-2026"  # Change after first login
+  persistence:
+    enabled: false  # Dashboards in ConfigMaps, not on disk
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # Additional datasource for Loki (deployed separately)
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.monitoring.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+
+# Prometheus
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    # No persistent storage — 15d retention in emptyDir is fine for Phase 1.
+    # If the pod restarts, metrics reset. Acceptable at one client.
+    storageSpec: {}
+
+# Alertmanager
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+# Node exporter — useful for monitoring the single worker node
+nodeExporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# kube-state-metrics
+kubeStateMetrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# Disable components we don't need on a single-node cluster
+kubeEtcd:
+  enabled: false  # Managed by Vultr, not accessible
+kubeControllerManager:
+  enabled: false  # Managed by Vultr
+kubeScheduler:
+  enabled: false  # Managed by Vultr
+kubeProxy:
+  enabled: false  # Managed by Vultr
