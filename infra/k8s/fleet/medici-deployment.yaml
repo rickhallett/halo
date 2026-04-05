@@ -38,6 +38,10 @@ spec:
           image: lhr.vultrcr.com/jeany/halo-halos:latest
           imagePullPolicy: Always
           command: ["cp", "-r", "/halos/halos/.", "/target/"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: halos-overlay
               mountPath: /target
@@ -97,6 +101,9 @@ spec:
             - name: halos-overlay
               mountPath: /opt/halos-overlay/halos
               readOnly: true
+            - name: aura-transcript
+              mountPath: /opt/data/data/observations/aura
+              readOnly: true
             - name: data
               mountPath: /opt/data/store
               subPath: store
@@ -134,6 +141,9 @@ spec:
           secret:
             secretName: advisor-medici-secrets
             defaultMode: 0400
+        - name: aura-transcript
+          configMap:
+            name: aura-session-transcript
         - name: halos-overlay
           emptyDir:
             sizeLimit: 10Mi
