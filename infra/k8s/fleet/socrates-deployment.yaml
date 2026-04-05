@@ -36,6 +36,7 @@ spec:
       containers:
         - name: gateway
           image: lhr.vultrcr.com/jeany/halo:fleet-latest
+          imagePullPolicy: Always
           command: ["/bin/bash", "-c"]
           args:
             - |
