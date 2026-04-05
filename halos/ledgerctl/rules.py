@@ -20,13 +20,7 @@ import yaml
 DEFAULT_ACCOUNT = "expenses:uncategorised"
 
 
-def _store_dir() -> Path:
-    """Resolve the store/ directory relative to the repo root."""
-    p = Path(__file__).resolve()
-    for ancestor in p.parents:
-        if (ancestor / "store").is_dir():
-            return ancestor / "store"
-    return Path.cwd() / "store"
+from halos.common.paths import store_dir as _store_dir
 
 
 def rules_path(store_dir: Optional[Path] = None) -> Path:

@@ -11,16 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-
-def _store_dir() -> Path:
-    """Resolve the store/ directory relative to the repo root."""
-    # Walk up from this file to find the repo root (where store/ lives)
-    p = Path(__file__).resolve()
-    for ancestor in p.parents:
-        if (ancestor / "store").is_dir():
-            return ancestor / "store"
-    # Fallback: assume cwd
-    return Path.cwd() / "store"
+from halos.common.paths import store_dir as _store_dir
 
 
 def db_path(domain: str) -> Path:
