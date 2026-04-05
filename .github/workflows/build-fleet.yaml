@@ -1,6 +1,7 @@
 name: Build Fleet Image
 
 on:
+  workflow_dispatch:
   push:
     branches: [feat/containerisation, main]
     paths:
