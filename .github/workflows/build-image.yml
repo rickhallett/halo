@@ -52,13 +52,17 @@ jobs:
           severity: CRITICAL
           trivyignores: .trivyignore
 
+      - name: Generate image tag
+        id: tag
+        run: echo "tag=$(echo '${{ github.ref_name }}' | sed 's/[^a-zA-Z0-9._-]/-/g')" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/rickhallett/halo:${{ github.ref_name }}
-            lhr.vultrcr.com/jeany/halo:${{ github.ref_name }}
+            ghcr.io/rickhallett/halo:${{ steps.tag.outputs.tag }}
+            lhr.vultrcr.com/jeany/halo:${{ steps.tag.outputs.tag }}
             lhr.vultrcr.com/jeany/halo:fleet-latest
           build-args: |
             INSTALL_BROWSER=false
