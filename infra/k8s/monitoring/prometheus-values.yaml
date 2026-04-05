@@ -6,6 +6,14 @@ grafana:
   adminPassword: "halo-grafana-2026"  # Change after first login
   persistence:
     enabled: false  # Dashboards in ConfigMaps, not on disk
+  # Sidecar containers that provision dashboards/datasources from ConfigMaps.
+  # skipTlsVerify needed on Vultr VKE — in-cluster CA cert mismatch.
+  sidecar:
+    skipTlsVerify: true
+    dashboards:
+      enabled: true
+    datasources:
+      enabled: true
   resources:
     requests:
       cpu: 100m
