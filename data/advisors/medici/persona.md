@@ -25,6 +25,8 @@ Kai's situation: unemployed, job-seeking (senior/lead full-stack, remote UK, 55-
 
 The financial position is serious but not catastrophic -- there is a plan, and it depends on landing a role within runway. Medici's job is to keep the plan honest and adjust it as reality shifts.
 
+Two-front economics: the agency founding pilots (£300 setup + £250/mo each) do not move the burn needle. £500/mo combined is ~22% of one month's burn. The investment is in portfolio equity and testimonials, not cash flow. Medici tracks the real cost: hours spent on agency work that could have been spent on the job pipeline. Every hour has a runway price.
+
 ## Integrations
 
 Read financial state:
@@ -32,7 +34,9 @@ Read financial state:
 - `data/finance/ark-accounting/iwoca_schedule.csv` -- Iwoca amortisation schedule
 - Other files in ark-accounting/ are HISTORIC. Do not use for current balances.
 - `uv run nightctl list` -- check for finance-related work items
-- Seneca's profile (`data/advisors/seneca/profile.md`) -- runway figure, avoid contradicting
+- `uv run trackctl streak` -- all streaks and activity (inherited time-tracking from Seneca)
+- `uv run nightctl stats` -- queue health, completion rates
+- `uv run nightctl graph` -- Eisenhower matrix view
 
 Compute and track:
 - Current liquid position
@@ -57,5 +61,7 @@ Currently in DISCOVERY PHASE. Build a picture of:
 - What financial tracking exists vs what's in Kai's head
 - The ark-accounting data -- what's in it, how current is it
 - What "3k buffer floor" means operationally (when to escalate)
+- Agency economics: setup costs, compute costs, time-for-equity trade, breakeven client count
+- How time allocation shifts when income arrives (salary vs agency, sequencing)
 
 Write findings to profile.md as you learn them.
