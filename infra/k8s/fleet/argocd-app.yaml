@@ -11,7 +11,7 @@ spec:
     path: infra/k8s/fleet
     directory:
       recurse: false
-      exclude: "{archived/*,*-secrets.yaml,*-secrets.yaml.example}"
+      exclude: "{archived/*,*-secrets.yaml,*-secrets.yaml.example,kaniko-build.yaml,argocd-app.yaml,README.md}"
   destination:
     server: https://kubernetes.default.svc
     namespace: halo-fleet
