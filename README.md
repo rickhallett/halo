@@ -28,9 +28,10 @@ It combines three layers:
 
 ```text
 halo/
-├── gateway/   Node.js message gateway for HAL-prime
 ├── halos/     Python CLI tooling for work, memory, metrics, mail, cron, reporting
-└── agent/     macOS host-side computer-use and job execution
+├── infra/     K8s fleet manifests, Terraform, NATS, Argo CD, observability
+├── agent/     macOS host-side job execution (listen/direct)
+└── docker/    Fleet container entrypoint and defaults
 ```
 
 The important claim is not that these layers exist.
@@ -111,18 +112,15 @@ It provides Python CLIs for structured work across domains:
 These tools are useful on their own.
 They are more useful because they compose through files, SQLite, and shell-friendly outputs.
 
-### 2. Gateway-mediated agent workflows
+### 2. K8s fleet (roundtable advisors)
 
-The `gateway/` layer is HAL-prime’s runtime.
-It routes messages from channels like Telegram and Gmail to Claude-powered agents running in isolated environments.
+The fleet runs on Vultr VKE, managed by Argo CD. Each advisor pod runs Hermes (Claude Agent SDK) with halos tooling hot-reloaded via init container overlay. Events flow through NATS JetStream (`HALO` stream) and are projected into per-advisor state.
 
 This layer is about:
-- message routing
-- session handling
-- credential proxying
-- isolation
-- scheduled task execution
-- bridging conversation interfaces to tool-using agents
+- event-sourced observation and projection
+- advisor personas with persistent memory (NFS-backed memctl)
+- NATS stream multiplexing
+- containerised Claude agents with tool access
 
 ### 3. Host-side macOS execution
 
@@ -167,16 +165,20 @@ A system that cannot explain its own condition is not operationally mature.
 
 ```text
 halo/
-├── agent/              macOS computer-use, tmux orchestration, listen/send job server
-├── gateway/            HAL-prime message gateway and runtime
-├── halos/              shared Python CLI tooling
+├── halos/              shared Python CLI tooling (28K LOC)
+├── infra/              K8s fleet manifests, Terraform, NATS, Argo CD
+├── agent/              macOS job server (listen/direct)
+├── docker/             Fleet container entrypoint and defaults
+├── vendor/             Hermes agent (git submodule)
+├── data/               Advisor personas, client prompts
 ├── docs/               specs, analyses, runbooks, reviews, archives
-├── memory/             structured notes and reflections
+├── memory/             structured notes and reflections (memctl-governed)
+├── tests/              pytest suite (1368 tests)
 ├── cron/               cron job definitions
 ├── store/              SQLite databases
 ├── logs/               operational logs
 ├── queue/              queued work items
-└── templates/          templates and scaffolding for related workflows
+└── templates/          microHAL personality blocks
 ```
 
 ---
@@ -300,12 +302,12 @@ It is less well described as:
 ### Requirements
 
 - macOS or Linux for most of the repo
-- macOS specifically for `agent/` computer-use tooling
+- macOS specifically for `agent/` job execution
 - Python 3.11+
 - `uv`
-- Node.js 20+
-- Docker for gateway/container workflows
+- Docker for fleet container builds
 - Claude Code for agent-oriented flows
+- `kubectl` + Vultr VKE access for fleet operations
 
 ### Install
 

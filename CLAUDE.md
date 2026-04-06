@@ -53,33 +53,18 @@ Persistent across all sessions. Apply without restatement.
 
 ## System Topology
 
-Three agent surfaces share this repo:
+Two agent surfaces share this repo:
 
 | System | What it is | Runtime | Status |
 |---|---|---|---|
 | **Hermes** | Primary interactive agent. This is the Telegram interface for day-to-day work. External harness (outside this repo) with its own cron, tools, and memory. | Always on | Active |
-| **HAL-prime** | Halo's own Telegram bot. Node.js gateway (`src/`, `gateway/`) running Claude Agent SDK in Docker containers with IPC message passing. | `launchctl` / `npm run dev` | Available, not running |
 | **Agent (listen/direct)** | Local agent spawner. HTTP server accepts jobs, spawns Claude Code instances in tmux sessions. | `just listen` from `agent/` | On-demand |
 
-**Halos CLI** (`halos/` Python package) is the shared tooling layer — memctl, nightctl, briefings, trackctl, cronctl, etc. Runs independently via cron. Used by all three surfaces.
+The **K8s fleet** (roundtable advisors) runs containerised from `Dockerfile` + `docker/` + `vendor/hermes-agent`. Managed by Argo CD from `infra/k8s/fleet/`.
 
-### Halo Gateway (reference — load when working on gateway code)
+**Halos CLI** (`halos/` Python package) is the shared tooling layer — memctl, nightctl, briefings, trackctl, cronctl, etc. Runs independently via cron. Used by all surfaces and hot-reloaded into fleet pods via init container overlay.
 
-> **Verified 2026-04-06:** Gateway source lives in `gateway/src/` (pre-monorepo location from the nanoclaw era). HAL-prime is available but not running. The file map below describes the gateway codebase.
-
-Gateway source lives in `src/` (~10,600 LOC Node.js). Key files when deployed:
-
-| File | Purpose |
-|---|---|
-| `src/index.ts` | Orchestrator: state, message loop, agent invocation |
-| `src/container-runner.ts` | Spawns agent containers with mounts |
-| `src/channels/telegram.ts` | Telegram channel: polling, onboarding |
-| `src/channels/registry.ts` | Channel registry (self-registration at startup) |
-| `src/db.ts` | SQLite: messages, sessions, onboarding, assessments |
-| `src/ipc.ts` | IPC watcher and task processing |
-| `src/config.ts` | Trigger pattern, paths, intervals |
-
-Google Calendar/Drive available via `workspace-mcp` in agent containers when gateway is running.
+> **Note (2026-04-06):** The nanoclaw-era Node.js gateway (`gateway/`), OCR browser automation (`agent/steer/`), and tmux orchestrator (`agent/drive/`) were removed in the heritage deletion sweep. The fleet now runs on Hermes + halos Python tooling exclusively.
 
 ### File Lookup by Task
 
@@ -92,8 +77,8 @@ Google Calendar/Drive available via `workspace-mcp` in agent containers when gat
 | Metrics | `halos/trackctl/` (add domain: `halos/trackctl/domains/`) |
 | Email ops | `halos/mailctl/` (engine→himalaya, triage rules, filter audit) |
 | Agent spawning | `agent/listen/`, `agent/direct/` |
-| Gateway source | `src/` (not in this checkout — see gateway reference above for deployed map) |
-| DB schema | `src/db.ts` (not in this checkout) |
+| Fleet manifests | `infra/k8s/fleet/` (Argo CD synced) |
+| Fleet image | `Dockerfile`, `docker/`, `vendor/hermes-agent` |
 
 ### Key Docs by Topic
 
@@ -307,7 +292,7 @@ created: YYYY-MM-DD
 
 | File | Purpose |
 |---|---|
-| `gateway/docs-audit.py` | Structure and size audit (no frontmatter parsing). Use `docctl audit` for frontmatter validation and category checks. |
+| `docctl audit` | Frontmatter validation and category checks. |
 
 ## Skills
 
