@@ -40,12 +40,20 @@ History rewriting tool: **BFG Repo-Cleaner only**. `git-filter-repo` is banned.
 | `Makefile` | Removed `gateway-*` targets and `test-todoctl` |
 | `update-tokens.yml` | Retargeted from `src/**/*.ts` to `halos/**/*.py` + `infra/**` |
 
+### Beta executed (skills + BFG assessment)
+
+| Action | Result |
+|--------|--------|
+| 20 gateway-dependent skills deleted | 30 files removed. Surviving: get-qodo-rules, qodo-pr-resolver, update-skills |
+| `groups/telegram_main/CLAUDE.md` | **Non-issue** — gitignored, local-only. Fleet pods use ConfigMap prompts, not group CLAUDE.md files. |
+| `groups/global/CLAUDE.md` | **Non-issue** — same reason. |
+| BFG scrub assessment | **No secrets found** in gateway git history. No `.env` files ever committed. "Token" hits were badge SVGs and documentation examples. BFG optional for size, not security. |
+
 ### Still outstanding (wave 2 candidates)
 
-- 22 `.claude/skills/` files reference `src/` paths — upstream Halo skills, now dormant
-- `groups/telegram_main/CLAUDE.md` references container mounts rooted in gateway architecture
-- `groups/global/CLAUDE.md` references gateway mount paths
-- BFG scrub assessment: check `gateway/` git history for any committed secrets before the gitignore era
+- Option B cherry-picks: `config/` consolidation, `docker/` merge into `infra/docker/`
+- BFG size reduction (optional): `bfg --delete-folders gateway` to shrink git history
+- Re-enable Argo auto-sync after push + fleet verification
 
 ---
 
