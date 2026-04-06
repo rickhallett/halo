@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: memctl-reader-config
+  namespace: halo-fleet
+data:
+  memctl.yaml: |
+    memory_dir: /memory
+    index:
+      max_summary_chars: 120
+      auto_rebuild: false

@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memctl-authority
+  namespace: halo-fleet
+  labels:
+    app.kubernetes.io/name: memctl-authority
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: halo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: memctl-authority
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: memctl-authority
+    spec:
+      imagePullSecrets:
+        - name: vultr-cr
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: halos-sync
+          image: lhr.vultrcr.com/jeany/halo-halos:latest
+          imagePullPolicy: Always
+          command: ["cp", "-r", "/halos/halos/.", "/target/"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: halos-overlay
+              mountPath: /target
+      containers:
+        - name: authority
+          image: lhr.vultrcr.com/jeany/halo:fleet-latest
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo 'export PATH="/opt/venv/bin:$PATH"' >> ~/.bashrc
+              echo "memctl-authority ready" >&2
+              exec sleep infinity
+          env:
+            - name: TZ
+              value: "Europe/London"
+            - name: PYTHONPATH
+              value: "/opt/halos-overlay"
+            - name: PATH
+              value: "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            - name: HALO_STORE_DIR
+              value: "/opt/data/store"
+            - name: MEMCTL_NOTES_DIR
+              value: "/memory/notes"
+            - name: MEMCTL_INDEX_PATH
+              value: "/memory/INDEX.md"
+            - name: MEMCTL_CONFIG
+              value: "/opt/config/memctl.yaml"
+            - name: NATS_URL
+              value: "nats://nats.halo-fleet.svc.cluster.local:4222"
+            - name: NATS_USER
+              value: "advisor"
+            - name: NATS_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: nats-auth
+                  key: ADVISOR_PASS
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: memory-nfs
+              mountPath: /memory
+            - name: memctl-config
+              mountPath: /opt/config/memctl.yaml
+              subPath: memctl.yaml
+            - name: halos-overlay
+              mountPath: /opt/halos-overlay/halos
+              readOnly: true
+            - name: data
+              mountPath: /opt/data/store
+              subPath: store
+          livenessProbe:
+            exec:
+              command: ["python3", "-c", "import os; exit(0 if os.path.exists('/memory/INDEX.md') else 1)"]
+            periodSeconds: 60
+            failureThreshold: 3
+      volumes:
+        - name: memory-nfs
+          nfs:
+            server: nfs-server.halo-fleet.svc.cluster.local
+            path: /
+        - name: memctl-config
+          configMap:
+            name: memctl-authority-config
+        - name: halos-overlay
+          emptyDir:
+            sizeLimit: 10Mi
+        - name: data
+          emptyDir:
+            sizeLimit: 100Mi
