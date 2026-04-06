@@ -2,6 +2,7 @@
 
 import click
 
+from jobctl.commands.cv import cv_cmd
 from jobctl.commands.seed import seed_cmd
 from jobctl.commands.list_cmd import list_cmd
 from jobctl.commands.show import show_cmd
@@ -29,3 +30,4 @@ main.add_command(review_cmd, name="review")
 main.add_command(apply_cmd, name="apply")
 main.add_command(status_cmd, name="status")
 main.add_command(metrics_cmd, name="metrics")
+main.add_command(cv_cmd, name="cv")

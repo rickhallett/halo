@@ -51,8 +51,12 @@ if _allowed:
 
 SYSTEM_PROMPT_PATH = Path(os.environ.get("GEMINI_SYSTEM_PROMPT", "./GEMINI.md"))
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-WORK_DIR = Path(os.environ.get("GEMINI_WORK_DIR", ".")).resolve()
+# cwd for gemini — defaults to this script's directory (where GEMINI.md lives)
+WORK_DIR = Path(os.environ.get("GEMINI_WORK_DIR", str(Path(__file__).parent))).resolve()
+# repo root — for finding the halos venv
+REPO_ROOT = Path(os.environ.get("HALO_REPO_ROOT", str(Path(__file__).parent.parent.parent))).resolve()
 GEMINI_BIN = shutil.which("gemini")
+YOLO = os.environ.get("GEMINI_YOLO", "1").lower() in {"1", "true", "yes"}
 
 # Telegram message length limit
 TG_MAX_LEN = 4096
@@ -78,13 +82,23 @@ def _is_allowed(user_id: int) -> bool:
 async def _run_gemini(prompt: str) -> str:
     """Run gemini CLI in headless mode and return output."""
     cmd = [GEMINI_BIN, "-p", prompt, "-m", MODEL, "-o", "text"]
+    if YOLO:
+        cmd.insert(1, "--yolo")
 
-    # If system prompt exists, gemini reads GEMINI.md from cwd automatically
-    # so we set cwd to the directory containing it
+    # Gemini reads GEMINI.md from cwd. We point cwd at the bridge dir for
+    # the persona, but set PATH so halos tools are available.
 
     env = os.environ.copy()
     # Ensure sandbox mode is off for local testing
     env.pop("GEMINI_SANDBOX", None)
+
+    # Add halos venv to PATH so gemini shell tools can call trackctl, nightctl, etc.
+    halos_venv_bin = REPO_ROOT / ".venv" / "bin"
+    if halos_venv_bin.exists():
+        env["PATH"] = f"{halos_venv_bin}:{env.get('PATH', '')}"
+    # Ensure HALO_STORE_DIR is set for halos tools
+    if "HALO_STORE_DIR" not in env:
+        env["HALO_STORE_DIR"] = str(REPO_ROOT / "store")
 
     try:
         proc = await asyncio.create_subprocess_exec(

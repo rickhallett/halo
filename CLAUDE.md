@@ -65,7 +65,7 @@ Three agent surfaces share this repo:
 
 ### Halo Gateway (reference — load when working on gateway code)
 
-> **Verified 2026-03-26:** `src/` is not present in this checkout. HAL-prime is available but not running. The map below describes the deployed system; do not use it for file navigation in this workspace.
+> **Verified 2026-04-06:** Gateway source lives in `gateway/src/` (pre-monorepo location from the nanoclaw era). HAL-prime is available but not running. The file map below describes the gateway codebase.
 
 Gateway source lives in `src/` (~10,600 LOC Node.js). Key files when deployed:
 

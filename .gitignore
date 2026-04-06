@@ -62,6 +62,14 @@ agentctl.yaml
 # ── Fleet (contains bot tokens, user data) ──────────
 gateway/halfleet/
 
+# ── Build artifacts (nested) ───────────────────────
+**/.build/
+
+# ── Binaries and one-off exports ───────────────────
+*.pdf
+repomix-output.xml
+pi-session-*.html
+
 # ── Temp / OS / IDE ────────────────────────────────
 .tmp-*
 .DS_Store
