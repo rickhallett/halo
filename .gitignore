@@ -83,3 +83,4 @@ infra/k8s/fleet/gibson-secrets.yaml
 infra/k8s/fleet/karpathy-secrets.yaml
 infra/k8s/fleet/machiavelli-secrets.yaml
 infra/k8s/fleet/medici-secrets.yaml
+infra/k8s/fleet/bankei-secrets.yaml
