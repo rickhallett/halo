@@ -413,10 +413,10 @@ class TestAmnesiaRecovery:
         # 1. Record current projection state
         before_count = kubectl_exec_python(
             pod,
-            "python3 -c \"import sqlite3; "
-            "db=sqlite3.connect('/opt/data/store/projection.db'); "
-            "print(db.execute('SELECT COUNT(*) FROM _processed_events').fetchone()[0]); "
-            "db.close()\"",
+            "import sqlite3\n"
+            "db = sqlite3.connect('/opt/data/store/projection.db')\n"
+            "print(db.execute('SELECT COUNT(*) FROM _processed_events').fetchone()[0])\n"
+            "db.close()",
         )
         before_count = int(before_count.strip())
         assert before_count > 0, "Projection has no events to rebuild from"
@@ -427,7 +427,7 @@ class TestAmnesiaRecovery:
         # 3. Verify it's gone
         check = kubectl_exec_python(
             pod,
-            "python3 -c \"import os; print(os.path.exists('/opt/data/store/projection.db'))\"",
+            "import os; print(os.path.exists('/opt/data/store/projection.db'))",
         )
         assert check.strip() == "False", "projection.db not deleted"
 
@@ -461,10 +461,10 @@ class TestAmnesiaRecovery:
 
         after_count = kubectl_exec_python(
             new_pod,
-            "python3 -c \"import sqlite3; "
-            "db=sqlite3.connect('/opt/data/store/projection.db'); "
-            "print(db.execute('SELECT COUNT(*) FROM _processed_events').fetchone()[0]); "
-            "db.close()\"",
+            "import sqlite3\n"
+            "db = sqlite3.connect('/opt/data/store/projection.db')\n"
+            "print(db.execute('SELECT COUNT(*) FROM _processed_events').fetchone()[0])\n"
+            "db.close()",
         )
         after_count = int(after_count.strip())
 
