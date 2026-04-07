@@ -56,6 +56,153 @@ sys.stdout.buffer.write(open(p, 'rb').read())
     export HERMES_EPHEMERAL_SYSTEM_PROMPT
 fi
 
+# --- Gateway NATS hooks bootstrap (optional) ---
+# Installs a local hook that mirrors inbound/outbound advisor messages to
+# Halostream with a standardized event envelope.
+if [ "${ENABLE_NATS_GATEWAY_HOOK:-1}" = "1" ]; then
+    HOOK_DIR="$HERMES_HOME/hooks/nats-events"
+    mkdir -p "$HOOK_DIR"
+    cat > "$HOOK_DIR/HOOK.yaml" <<'YAML'
+name: nats-events
+description: Publish advisor inbound/outbound messages to NATS
+events:
+  - agent:start
+  - agent:end
+YAML
+    cat > "$HOOK_DIR/handler.py" <<'PY'
+import json
+import os
+import uuid
+from datetime import datetime, timezone
+
+import nats
+
+
+async def _publish(subject: str, event: dict) -> None:
+    nats_pass = os.environ.get("NATS_PASS", "")
+    if not nats_pass:
+        return
+    nats_url = os.environ.get("NATS_URL", "nats://nats.halo-fleet.svc.cluster.local:4222")
+    nats_user = os.environ.get("NATS_USER", "advisor")
+    nc = await nats.connect(nats_url, user=nats_user, password=nats_pass)
+    try:
+        js = nc.jetstream()
+        await js.publish(
+            subject,
+            json.dumps(event).encode(),
+            headers={"Nats-Msg-Id": event["id"]},
+        )
+    finally:
+        await nc.close()
+
+
+def _event(event_type: str, context: dict) -> tuple[str, dict]:
+    advisor = os.environ.get("ADVISOR_NAME", "unknown")
+    now = datetime.now(timezone.utc).isoformat()
+    session_id = str(context.get("session_id", "") or "")
+
+    if event_type == "agent:start":
+        evt_type = "advisor.inbound.received"
+        text = str(context.get("message", "") or "")
+        direction = "inbound"
+        subject = "halo.advisor.inbound.received"
+    else:
+        evt_type = "advisor.outbound.sent"
+        text = str(context.get("response", "") or "")
+        direction = "outbound"
+        subject = "halo.advisor.outbound.sent"
+
+    payload = {
+        "schema_version": "1.0",
+        "advisor": advisor,
+        "direction": direction,
+        "platform": str(context.get("platform", "") or ""),
+        "session_id": session_id,
+        "user_id": str(context.get("user_id", "") or ""),
+        "message_text": text,
+        "message_len": len(text),
+        "event_name": event_type,
+    }
+
+    event = {
+        "id": f"evt_{uuid.uuid4().hex}",
+        "type": evt_type,
+        "version": 1,
+        "source": advisor,
+        "timestamp": now,
+        "correlation_id": session_id or f"cor_{uuid.uuid4().hex}",
+        "payload": payload,
+    }
+    return subject, event
+
+
+async def handle(event_type: str, context: dict):
+    if event_type not in ("agent:start", "agent:end"):
+        return
+    try:
+        subject, event = _event(event_type, context or {})
+        await _publish(subject, event)
+    except Exception:
+        # Hooks must never block gateway processing.
+        return
+PY
+fi
+
+# --- Advisor touchbase cron bootstrap (optional, idempotent) ---
+if [ -n "${ADVISOR_NAME:-}" ] && [ -n "${ADVISOR_TOUCHBASE_SCHEDULE:-}" ]; then
+    python3 - <<'PY'
+import os
+from cron.jobs import create_job, list_jobs, parse_schedule, update_job
+
+advisor = os.environ.get("ADVISOR_NAME", "").strip()
+schedule = os.environ.get("ADVISOR_TOUCHBASE_SCHEDULE", "").strip()
+chat_id = os.environ.get("ADVISOR_TOUCHBASE_CHAT_ID", "").strip()
+platform = os.environ.get("ADVISOR_TOUCHBASE_PLATFORM", "telegram").strip() or "telegram"
+name = f"touchbase-{advisor}"
+
+if advisor and schedule:
+    prompt = (
+        "Morning touch-base. Give a concise synthesis covering: "
+        "(1) current focus goals status, "
+        "(2) what we are focused on today, "
+        "(3) blockers or blind spots, "
+        "(4) direct questions for Kai. "
+        "Use your available halos tools to ground claims. "
+        "Keep it brief, specific, and operator-grade."
+    )
+
+    origin = {"platform": platform, "chat_id": chat_id} if chat_id else None
+    deliver = "origin" if origin else platform
+
+    existing = None
+    for job in list_jobs(include_disabled=True):
+        if job.get("name") == name:
+            existing = job
+            break
+
+    if existing is None:
+        create_job(
+            prompt=prompt,
+            schedule=schedule,
+            name=name,
+            deliver=deliver,
+            origin=origin,
+        )
+    else:
+        updates = {"enabled": True}
+        desired_display = schedule
+        if existing.get("schedule_display") != desired_display:
+            updates["schedule"] = parse_schedule(schedule)
+            updates["schedule_display"] = desired_display
+        if existing.get("deliver") != deliver:
+            updates["deliver"] = deliver
+        if origin and existing.get("origin") != origin:
+            updates["origin"] = origin
+        if updates:
+            update_job(existing["id"], updates)
+PY
+fi
+
 # --- WAL mode enforcement ---
 # Ensure all SQLite databases use WAL journal mode for crash resilience on
 # block storage. Runs once at startup — idempotent.

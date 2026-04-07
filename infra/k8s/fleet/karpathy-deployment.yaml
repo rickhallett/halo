@@ -45,6 +45,16 @@ spec:
           volumeMounts:
             - name: halos-overlay
               mountPath: /target
+        - name: state-init
+          image: alpine:3.20
+          command: ["sh", "-c", "mkdir -p /state/advisors/karpathy"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: advisor-state
+              mountPath: /state
       containers:
         - name: gateway
           image: lhr.vultrcr.com/jeany/halo:fleet-latest
@@ -59,6 +69,12 @@ spec:
           env:
             - name: ADVISOR_NAME
               value: "karpathy"
+            - name: ADVISOR_TOUCHBASE_SCHEDULE
+              value: "5 7 * * *"
+            - name: ADVISOR_TOUCHBASE_CHAT_ID
+              value: "5967394003"
+            - name: ADVISOR_TOUCHBASE_PLATFORM
+              value: "telegram"
             - name: TZ
               value: "Europe/London"
             - name: PATH
@@ -98,6 +114,9 @@ spec:
               mountPath: /opt/data/.env
               subPath: .env
               readOnly: true
+            - name: advisor-state
+              mountPath: /opt/data
+              subPath: advisors/karpathy
             - name: halos-overlay
               mountPath: /opt/halos-overlay/halos
               readOnly: true
@@ -144,6 +163,10 @@ spec:
         - name: data
           emptyDir:
             sizeLimit: 500Mi
+        - name: advisor-state
+          nfs:
+            server: 10.100.54.223
+            path: /
         - name: memory-nfs
           nfs:
             server: 10.100.54.223
