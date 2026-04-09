@@ -100,6 +100,7 @@ The **K8s fleet** (roundtable advisors) runs containerised from `Dockerfile` + `
 | Review | `docs/d2/review-taxonomy.md` | Review finding categories |
 | Review | `docs/d2/review-guide-2026-03-21.md` | Review process guide |
 | Devlog | `docs/d1/development-logbook.md` | Decisions, lessons (canonical — no other logs) |
+| Deploy | `docs/d2/k8s-fleet-lessons-learned.md` | Fleet deploy landmines (VKE + Ryzen bare metal runbook) |
 | Topology | `docs/d1/system-topology.md` | System topology detail |
 | Ecosystem | `docs/d2/halos-ecosystem-digest.md` | Ecosystem overview |
 | Capability | `docs/d2/halos-capability-map.md` | Capability mapping |
