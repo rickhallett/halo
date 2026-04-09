@@ -59,8 +59,29 @@ reportctl.yaml
 todoctl.yaml
 agentctl.yaml
 
-# ── Fleet (contains bot tokens, user data) ──────────
-gateway/halfleet/
+# ── Ephemeral / runtime ─────────────────────────────
+agent/logs/
+infra/gemini-bridge/bridge.log
+
+# ── Personal / PII (keep local, never commit) ───────
+jobctl/cv/
+docs/d2/briefings/
+docs/d2/notes/
+docs/d2/roundtable/
+
+# ── Multi-agent config (local per-platform) ─────────
+.pi/
+
+# ── jobctl (to migrate away from repo later) ────────
+jobctl/
+
+# ── Build artifacts (nested) ───────────────────────
+**/.build/
+
+# ── Binaries and one-off exports ───────────────────
+*.pdf
+repomix-output.xml
+pi-session-*.html
 
 # ── Temp / OS / IDE ────────────────────────────────
 .tmp-*
@@ -70,3 +91,19 @@ gateway/halfleet/
 .nanoclaw/
 .mcp.json
 agents-sdk-docs
+cookies.txt
+.env.halo-dev
+infra/terraform/backend.hcl
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/terraform.tfvars
+infra/k8s/fleet/nats-secrets.yaml
+infra/k8s/fleet/musashi-secrets.yaml
+infra/k8s/fleet/draper-secrets.yaml
+infra/k8s/fleet/gibson-secrets.yaml
+infra/k8s/fleet/karpathy-secrets.yaml
+infra/k8s/fleet/machiavelli-secrets.yaml
+infra/k8s/fleet/medici-secrets.yaml
+infra/k8s/fleet/bankei-secrets.yaml
+infra/k8s/fleet/hightower-secrets.yaml
+infra/gemini-bridge/.env

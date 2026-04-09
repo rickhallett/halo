@@ -20,33 +20,44 @@ from .gather import BriefingData
 
 
 MORNING_SYSTEM = """\
-You are HAL — a personal AI assistant delivering a morning briefing via Telegram.
-Your tone is dry, understated, and precise. Think quietly amused colleague, not chatbot.
+You are composing a morning briefing for Kai, delivered via Telegram.
+The briefing is structured as a roundtable — each agent reports from its domain.
 
-Rules:
-- Sardonic over saccharine. No "Good morning!" enthusiasm.
-- Brevity is the soul. This is a Telegram message, not an essay.
-- Lead with what matters. Prioritise by urgency and importance.
-- If there are errors or failures, mention them first — they're the reason someone checks these.
-- Open todos should be framed as suggestions, not demands.
-- End with the red circle signoff: 🔴
+You will receive reports from these agents. Compose them into a single cohesive briefing:
+
+*HAL* — Ops, infrastructure, system health. Dry, understated, precise. Reports errors first, then status. Quietly amused, never enthusiastic.
+*NIGHTCTL* — Backlog and trajectory. Matter-of-fact. What's queued, what shifted, what's stale.
+*RUBBER DUCK* — Study and CPD. Honest about whether reps are happening. Doesn't nag, just states facts.
+*GAINZ ROSHI* — Movement and practice. Gruff, minimal. Reports what's been logged, not what's planned (ROSHI coaches separately via his own daily message).
+
+Formatting rules:
+- Each agent gets a short section (2-4 lines max). Use their name as a bold header.
+- If an agent has nothing to report, skip them entirely. Don't pad.
+- After the roundtable, add a 1-2 sentence *trajectory* line — the overall direction things are moving. Be honest.
+- End with 🔴
 - Use Telegram Markdown: *bold*, _italic_, `code`
-- Keep the whole message under 2000 characters.
+- Total message under 2000 characters. Tight, not cramped.
+- No greetings. No sign-offs before the red circle. No "here's your briefing" meta-commentary.
 """
 
 NIGHTLY_SYSTEM = """\
-You are HAL — a personal AI assistant delivering an evening recap via Telegram.
-Your tone is dry, understated, and precise. Think quietly amused colleague, not chatbot.
+You are composing an evening recap for Kai, delivered via Telegram.
+Same roundtable structure as the morning briefing.
 
-Rules:
-- Sardonic over saccharine. Skip the "Hope you had a great day!" energy.
-- Brevity is the soul. This is a Telegram message, not a report.
-- Summarise what actually happened — notes created, todos moved, jobs run, errors hit.
-- If nothing notable happened, say so honestly. "Quiet day" is a valid briefing.
-- Frame tomorrow's outlook only if there are pending items worth mentioning.
-- End with the red circle signoff: 🔴
-- Use Telegram Markdown: *bold*, _italic_, `code`
-- Keep the whole message under 2000 characters.
+You will receive reports from these agents:
+
+*HAL* — What happened today. Errors, jobs, notable activity. Dry.
+*NIGHTCTL* — What moved on the backlog. What got done, what's still sitting.
+*RUBBER DUCK* — Did study happen today. What, how long.
+*GAINZ ROSHI* — Did the body move today. Streaks.
+
+Formatting rules:
+- Each agent gets 2-4 lines max under a bold header.
+- Skip agents with nothing to say.
+- End with a 1-2 sentence trajectory — was today productive, stagnant, recovery? Be honest.
+- End with 🔴
+- Telegram Markdown. Under 2000 characters.
+- No greetings or meta-commentary.
 """
 
 
@@ -59,10 +70,16 @@ def synthesise(data: BriefingData, cfg: Config) -> str:
     3. Fall back to raw data dump
     """
     system = MORNING_SYSTEM if data.kind == "morning" else NIGHTLY_SYSTEM
-    context = data.to_context()
+
+    # Build roundtable prompt from per-agent data
+    agents = data.to_roundtable()
+    roundtable_sections = []
+    for agent_name, agent_data in agents.items():
+        roundtable_sections.append(f"--- {agent_name} ---\n{agent_data}")
+    roundtable = "\n\n".join(roundtable_sections)
+
     prompt = (
-        f"Here is the raw data from the halos ecosystem. "
-        f"Synthesise it into a concise Telegram briefing.\n\n{context}"
+        f"Compose the roundtable briefing from these agent reports.\n\n{roundtable}"
     )
 
     # Strategy 1: claude CLI (fast path when OAuth token is fresh)
@@ -92,8 +109,12 @@ def _synthesise_via_cli(system: str, prompt: str, cfg: Config) -> str | None:
     """Use `claude` CLI in non-interactive mode for synthesis."""
     try:
         full_prompt = f"{system}\n\n{prompt}"
+        # Resolve claude binary: prefer ~/.local/bin, fall back to PATH
+        claude_bin = str(Path.home() / ".local" / "bin" / "claude")
+        if not Path(claude_bin).exists():
+            claude_bin = "claude"
         cmd = [
-            "claude",
+            claude_bin,
             "-p", full_prompt,
             "--model", "sonnet",
             "--max-turns", "1",
@@ -103,9 +124,12 @@ def _synthesise_via_cli(system: str, prompt: str, cfg: Config) -> str | None:
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
-        print(f"WARNING: claude CLI exit={result.returncode}", flush=True)
-        if result.stderr:
-            print(f"  stderr: {result.stderr.strip()[:200]}", flush=True)
+        # Log but don't spam — this is expected when OAuth expires
+        stderr_snippet = (result.stderr or "").strip()[:200]
+        if "expired" not in stderr_snippet.lower():
+            print(f"WARNING: claude CLI exit={result.returncode}", flush=True)
+            if stderr_snippet:
+                print(f"  stderr: {stderr_snippet}", flush=True)
     except subprocess.TimeoutExpired:
         print("WARNING: claude CLI timed out (120s)", flush=True)
     except FileNotFoundError:
@@ -262,10 +286,20 @@ def _read_env_key(cfg: Config) -> str:
 
 
 def _fallback(data: BriefingData) -> str:
-    """Plain-text fallback when all synthesis methods fail."""
+    """Structured fallback when all synthesis methods fail.
+
+    Uses roundtable format instead of raw telemetry dump.
+    """
     lines = []
     kind = "Morning Briefing" if data.kind == "morning" else "Evening Recap"
     lines.append(f"*{kind}* (raw — synthesis unavailable)\n")
-    lines.append(data.to_context())
-    lines.append("\n🔴")
+
+    agents = data.to_roundtable()
+    for agent_name, agent_data in agents.items():
+        display_name = agent_name.replace("_", " ")
+        lines.append(f"*{display_name}*")
+        lines.append(agent_data)
+        lines.append("")
+
+    lines.append("🔴")
     return "\n".join(lines)

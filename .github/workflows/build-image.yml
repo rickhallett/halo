@@ -1,0 +1,61 @@
+name: Build Halo Image
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Validate vendor directory
+        run: |
+          test -f vendor/hermes-agent/pyproject.toml \
+            || { echo "::error::vendor/hermes-agent is empty — submodule not checked out"; exit 1; }
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: lhr.vultrcr.com
+          username: ${{ secrets.VULTR_CR_USER }}
+          password: ${{ secrets.VULTR_CR_PASS }}
+
+      # Trivy scans the built image (not source tree) to avoid false positives
+      # from vendored submodule lockfiles. Runs after build, before push.
+      - uses: docker/build-push-action@v5
+        id: build
+        with:
+          context: .
+          push: false
+          load: true
+          tags: halo:scan
+          build-args: |
+            INSTALL_BROWSER=false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: halo:scan
+          exit-code: 1
+          severity: CRITICAL
+          trivyignores: .trivyignore
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            lhr.vultrcr.com/jeany/halo:fleet-latest
+          build-args: |
+            INSTALL_BROWSER=false
+          cache-from: type=gha

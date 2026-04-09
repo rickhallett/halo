@@ -1,0 +1,155 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: advisor-hightower
+  namespace: halo-fleet
+  labels:
+    app.kubernetes.io/name: advisor-hightower
+    app.kubernetes.io/component: advisor
+    app.kubernetes.io/part-of: halo
+    halo/advisor: hightower
+    halo/domain: operations
+spec:
+  schedule: "45 20 * * *"
+  timeZone: "Europe/London"
+  suspend: true
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 600
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: advisor-hightower
+            app.kubernetes.io/component: advisor
+            halo/advisor: hightower
+        spec:
+          imagePullSecrets:
+            - name: vultr-cr
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 30
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: halos-sync
+              image: lhr.vultrcr.com/jeany/halo-halos:latest
+              imagePullPolicy: Always
+              command: ["cp", "-r", "/halos/halos/.", "/target/"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: halos-overlay
+                  mountPath: /target
+          containers:
+            - name: advisor
+              image: lhr.vultrcr.com/jeany/halo:fleet-latest
+              imagePullPolicy: Always
+              command: ["/bin/bash", "-lc"]
+              args:
+                - |
+                  [ ! -f "$HERMES_HOME/system-prompt.md" ] &&                     cp /opt/defaults/system-prompt.md "$HERMES_HOME/system-prompt.md" 2>/dev/null || true
+                  echo '[ -f ~/.bashrc ] && . ~/.bashrc' > ~/.bash_profile
+                  echo 'export PATH="/opt/venv/bin:$PATH"' >> ~/.bashrc
+                  exec /opt/entrypoint.sh chat -Q --query                     "You are $ADVISOR_NAME. Run your scheduled advisor cycle now using available halos tools. Produce a concise operator update and deliver it via configured messaging tools if available."
+              env:
+                - name: ADVISOR_NAME
+                  value: "hightower"
+                - name: TZ
+                  value: "Europe/London"
+                - name: PATH
+                  value: "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                - name: PYTHONPATH
+                  value: "/opt/halos-overlay"
+                - name: MEMCTL_CONFIG
+                  value: "/opt/config/memctl.yaml"
+                - name: NATS_URL
+                  value: "nats://nats.halo-fleet.svc.cluster.local:4222"
+                - name: NATS_USER
+                  value: "advisor"
+                - name: NATS_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: nats-auth
+                      key: ADVISOR_PASS
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 192Mi
+                limits:
+                  cpu: 500m
+                  memory: 384Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: advisor-config
+                  mountPath: /opt/defaults/config.yaml
+                  subPath: config.yaml
+                - name: advisor-prompt
+                  mountPath: /opt/defaults/system-prompt.md
+                  subPath: system-prompt.md
+                - name: advisor-secrets
+                  mountPath: /opt/data/.env
+                  subPath: .env
+                  readOnly: true
+                - name: halos-overlay
+                  mountPath: /opt/halos-overlay/halos
+                  readOnly: true
+                - name: aura-transcript
+                  mountPath: /opt/data/data/observations/aura
+                  readOnly: true
+                - name: data
+                  mountPath: /opt/data/store
+                  subPath: store
+                - name: data
+                  mountPath: /opt/data/sessions
+                  subPath: sessions
+                - name: data
+                  mountPath: /opt/data/logs
+                  subPath: logs
+                - name: memory-nfs
+                  mountPath: /memory
+                  readOnly: true
+                - name: memctl-config
+                  mountPath: /opt/config/memctl.yaml
+                  subPath: memctl.yaml
+                  readOnly: true
+          volumes:
+            - name: advisor-config
+              configMap:
+                name: advisor-hightower-config
+            - name: advisor-prompt
+              configMap:
+                name: advisor-hightower-prompt
+            - name: advisor-secrets
+              secret:
+                secretName: advisor-hightower-secrets
+                defaultMode: 0400
+            - name: aura-transcript
+              configMap:
+                name: aura-session-transcript
+            - name: halos-overlay
+              emptyDir:
+                sizeLimit: 10Mi
+            - name: data
+              emptyDir:
+                sizeLimit: 500Mi
+            - name: memory-nfs
+              nfs:
+                server: 10.100.54.223
+                path: /
+            - name: memctl-config
+              configMap:
+                name: memctl-reader-config

@@ -1,0 +1,9 @@
+[project]
+name = "gemini-bridge"
+version = "0.1.0"
+description = "Thin Telegram ↔ Gemini CLI bridge"
+requires-python = ">=3.11"
+dependencies = [
+    "python-telegram-bot>=21.0",
+    "python-dotenv>=1.0",
+]

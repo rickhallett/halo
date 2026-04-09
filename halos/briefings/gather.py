@@ -38,6 +38,7 @@ class BriefingData:
     # Personal metrics (trackctl + dashctl)
     tracker_summary: str = ""
     eisenhower_summary: str = ""
+    git_pulse: str = ""
 
     def to_context(self) -> str:
         """Format gathered data as a context block for the synthesis prompt."""
@@ -110,6 +111,100 @@ class BriefingData:
 
         return "\n".join(lines)
 
+    def to_roundtable(self) -> dict[str, str]:
+        """Format gathered data as per-agent narrative briefs for roundtable synthesis.
+
+        Returns a dict mapping agent name to its data context.
+        Each agent gets only the data relevant to its domain.
+        """
+        agents = {}
+
+        # --- HAL (ops, infrastructure, errors, system health) ---
+        hal_lines = []
+        if self.recent_errors:
+            hal_lines.append(f"{len(self.recent_errors)} errors in the last 24h:")
+            for err in self.recent_errors[:5]:
+                hal_lines.append(f"  - {err}")
+        else:
+            hal_lines.append("No errors in the last 24h.")
+
+        if self.activity:
+            moved = []
+            for k in ("notes_created", "notes_modified", "todos_created",
+                       "todos_completed", "jobs_created", "jobs_completed"):
+                v = self.activity.get(k, 0)
+                if v:
+                    moved.append(f"{k.replace('_', ' ')}: {v}")
+            if moved:
+                hal_lines.append("Activity: " + ", ".join(moved))
+            else:
+                hal_lines.append("No notable activity in the last 24h.")
+            if self.activity.get("jobs_failed"):
+                hal_lines.append(f"Jobs failed: {self.activity['jobs_failed']}")
+
+        if self.session_stats:
+            hal_lines.append(f"Agent sessions: {self.session_stats}")
+
+        if self.memctl.get("available"):
+            issues = []
+            if self.memctl.get("drift"):
+                issues.append(f"index drift: {self.memctl['drift']} notes")
+            if self.memctl.get("orphans"):
+                issues.append(f"{self.memctl['orphans']} orphaned notes")
+            if issues:
+                hal_lines.append("Memory corpus issues: " + ", ".join(issues))
+
+        if self.git_pulse:
+            hal_lines.append(f"Git: {self.git_pulse}")
+
+        agents["HAL"] = "\n".join(hal_lines)
+
+        # --- NIGHTCTL (backlog, task board, trajectory) ---
+        night_lines = []
+        if self.nightctl.get("available"):
+            night_lines.append(f"Total jobs: {self.nightctl['total_jobs']}, pending: {self.nightctl['pending']}")
+            if self.nightctl.get("recent_failures"):
+                night_lines.append(f"Recent failures: {self.nightctl['recent_failures']}")
+
+        if self.open_todos:
+            by_q = {}
+            for t in self.open_todos:
+                q = t.get("quadrant", "q3")
+                by_q.setdefault(q, []).append(t.get("title", "untitled"))
+            for q in ("q1", "q2", "q3", "q4"):
+                if q in by_q:
+                    night_lines.append(f"{q.upper()} ({len(by_q[q])}):")
+                    for title in by_q[q][:5]:
+                        night_lines.append(f"  - {title[:80]}")
+                    if len(by_q[q]) > 5:
+                        night_lines.append(f"  ... +{len(by_q[q]) - 5} more")
+        else:
+            night_lines.append("Backlog is empty.")
+
+        agents["NIGHTCTL"] = "\n".join(night_lines)
+
+        # --- RUBBER DUCK (study tracks, learning trajectory) ---
+        duck_lines = []
+        if self.tracker_summary:
+            for line in self.tracker_summary.splitlines():
+                if "study-" in line or "tasks:" in line:
+                    duck_lines.append(line.strip())
+        if not duck_lines:
+            duck_lines.append("No study tracking data available.")
+        agents["RUBBER_DUCK"] = "\n".join(duck_lines)
+
+        # --- GAINZ ROSHI (movement, zazen, body) ---
+        roshi_lines = []
+        if self.tracker_summary:
+            for line in self.tracker_summary.splitlines():
+                if "movement" in line or "zazen" in line:
+                    roshi_lines.append(line.strip())
+        if not roshi_lines:
+            roshi_lines.append("No movement or zazen data available.")
+        agents["GAINZ_ROSHI"] = "\n".join(roshi_lines)
+
+        return agents
+
 
 def gather_morning(cfg: Config) -> BriefingData:
     """Gather data for the 0600 morning briefing."""
@@ -130,6 +225,7 @@ def gather_morning(cfg: Config) -> BriefingData:
         session_stats=_get_session_stats(cfg),
         tracker_summary=_get_tracker_summary(),
         eisenhower_summary=_get_eisenhower_summary(),
+        git_pulse=_get_git_pulse(days=1),
     )
     return data
 
@@ -153,6 +249,7 @@ def gather_nightly(cfg: Config) -> BriefingData:
         session_stats=_get_session_stats(cfg),
         tracker_summary=_get_tracker_summary(),
         eisenhower_summary=_get_eisenhower_summary(),
+        git_pulse=_get_git_pulse(days=1),
     )
     return data
 
@@ -257,6 +354,23 @@ def _get_eisenhower_summary() -> str:
         return "\n".join(lines)
     except Exception:
         return ""
+
+
+def _get_git_pulse(days: int = 1) -> str:
+    """Run git-pulse.sh to get commit summary across repos."""
+    script = Path(__file__).resolve().parent.parent.parent / "scripts" / "git-pulse.sh"
+    if not script.exists():
+        return ""
+    try:
+        result = subprocess.run(
+            [str(script), str(days), "--compact"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return ""
 
 
 def _get_recent_errors(cfg: Config) -> list[str]:

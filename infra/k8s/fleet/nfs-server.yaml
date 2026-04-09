@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-server
+  namespace: halo-infra
+  labels:
+    app.kubernetes.io/name: nfs-server
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: halo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Only one can mount the RWO PVC
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nfs-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nfs-server
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: nfs
+          image: itsthenetwork/nfs-server-alpine:12
+          env:
+            - name: SHARED_DIRECTORY
+              value: /exports
+          ports:
+            - containerPort: 2049
+              name: nfs
+          securityContext:
+            privileged: true  # Required for NFS kernel server
+          volumeMounts:
+            - name: memory-data
+              mountPath: /exports
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: memory-data
+          persistentVolumeClaim:
+            claimName: halo-memory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-server
+  namespace: halo-infra
+spec:
+  selector:
+    app.kubernetes.io/name: nfs-server
+  ports:
+    - port: 2049
+      targetPort: 2049
+      name: nfs
+  # ClusterIP (not headless) — kubelet mounts NFS from host network, needs stable IP

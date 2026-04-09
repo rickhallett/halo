@@ -1,178 +1,176 @@
-# Halo
+<p align="center">
+  <h1 align="center">Halo</h1>
+  <p align="center">
+    Autonomous event-sourced AI fleet
+    <br />
+    <em>27 modules. 735 tests. Choreographed advisory council on Kubernetes.</em>
+  </p>
+</p>
 
-A personal operating system layer, built for agents.
+<p align="center">
+  <a href="https://github.com/rickhallett/halo/actions"><img src="https://github.com/rickhallett/halo/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/rickhallett/halo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rickhallett/halo" alt="License" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/k3s-local%20cluster-326CE5?logo=kubernetes&logoColor=white" alt="k3s" />
+  <img src="https://img.shields.io/badge/NATS-JetStream-27aae1?logo=nats.io&logoColor=white" alt="NATS" />
+  <img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/ArgoCD-GitOps-ef7b4d?logo=argo&logoColor=white" alt="ArgoCD" />
+</p>
 
 ---
 
-## What This Is
+## What is Halo?
 
-Halo is a monorepo containing three systems that compose into a single personal infrastructure:
+Halo is a personal AI agent system. 27 Python modules cover structured memory, work tracking, email triage, YouTube monitoring, daily briefing synthesis, spaced repetition, finance, journaling, and fleet management. Each module has its own CLI, its own SQLite store, and its own test suite.
+
+The modules run locally on macOS for daily use. When deployed to Kubernetes (k3s), they gain distribution and a choreographed advisory council — multiple advisor instances communicating through a NATS JetStream event stream.
+
+`hal` is the unified CLI entry point. `hal night add`, `hal track add zazen`, `hal mail inbox`, `hal secrets vaults`. One command, every module.
+
+## Architecture
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │                       LOCAL (macOS)                         │
+  │                                                             │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐                 │
+  │   │ nightctl │  │ trackctl │  │ briefings│   ...27 modules  │
+  │   └────┬─────┘  └────┬─────┘  └────┬─────┘                 │
+  │        └──────────────┼──────────────┘                      │
+  │                       │                                     │
+  │              ┌────────┴────────┐                            │
+  │              │    hal CLI      │                            │
+  │              └────────┬────────┘                            │
+  │                       │                                     │
+  │              ┌────────┴────────┐                            │
+  │              │  pytest (735)   │                            │
+  │              └────────┬────────┘                            │
+  │                       │                                     │
+  │              ┌────────┴────────┐                            │
+  │              │  SQLite stores  │                            │
+  │              └─────────────────┘                            │
+  └─────────────────────────────────────────────────────────────┘
+                          │
+                     git push
+                          │
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    K3S CLUSTER                              │
+  │                                                             │
+  │   ┌──────────────────────────────────────────────────────┐  │
+  │   │              NATS JetStream                          │  │
+  │   │         (event stream / nervous system)              │  │
+  │   └──────┬────────┬────────┬────────┬────────────────────┘  │
+  │          │        │        │        │                       │
+  │   ┌──────┴──┐ ┌───┴───┐ ┌──┴────┐ ┌─┴────────┐            │
+  │   │Musashi  │ │Draper │ │Gibson │ │Karpathy  │   ...x8+    │
+  │   │(Hermes) │ │(Hermes│ │(Hermes│ │(Hermes)  │            │
+  │   └─────────┘ └───────┘ └───────┘ └──────────┘            │
+  │                                                             │
+  │   ┌─────────────────────────────────────────────────────┐  │
+  │   │           Grafana / Prometheus                      │  │
+  │   └─────────────────────────────────────────────────────┘  │
+  │                                                             │
+  │   ┌───────────────┐  ┌───────────────┐                     │
+  │   │  Terraform    │  │  ArgoCD       │                     │
+  │   └───────────────┘  └───────────────┘                     │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+Every module works locally without a network connection, without Docker, without Kubernetes. The cluster adds distribution and the advisory council. The code does not change. The topology changes.
+
+## The Halostream (Event Sourcing)
+
+All advisors communicate through a NATS JetStream event stream. The stream is the single source of truth. Every pod's SQLite database is a disposable projection rebuilt from the event log on restart.
+
+```
+  WRITE: Telegram → Advisor pod → process → publish event to stream
+  READ:  Consumer pod → subscribe → update local projection → query locally
+```
+
+There is no central coordinator. The evening council emerges from sequential reactions: each advisor watches for the previous advisor's submission event, contributes its perspective, and publishes its own. Plutarch (the dramaturg) synthesises the council's output.
+
+Kill any pod. It restarts, replays from its last checkpoint on the stream, rebuilds its projection, and resumes. No data loss. No manual intervention.
+
+## The Roundtable
+
+| Seat | Name | Domain |
+|------|------|--------|
+| I | Musashi | Physical state and discipline |
+| II | Draper | Copywriting, positioning, and pitch |
+| III | Karpathy | Engineering craft and logic |
+| IV | Gibson | Market terrain and futures |
+| V | Machiavelli | Power dynamics and strategy |
+| VI | Medici | Financial runway and economics |
+| VII | Bankei | Rest, rhythm, and burnout detection |
+| VIII | Hightower | Heavy Iron / K8s Operations |
+| — | Plutarch | Dramaturg / council synthesis |
+
+Additional advisors (Seneca, Socrates, Sun Tzu, Guido) are available in `data/advisors/`.
+
+## Modules
+
+The `halos/` package is the centre of gravity. Python CLIs for structured work across domains.
+
+| Module | Command | Purpose |
+|--------|---------|---------|
+| memctl | `memctl` | Structured memory governance |
+| nightctl | `nightctl` | Work tracker with Eisenhower matrix |
+| cronctl | `cronctl` | Cron job definitions and crontab generation |
+| logctl | `logctl` | Structured log reading and search |
+| reportctl | `reportctl` | Periodic digests |
+| agentctl | `agentctl` | LLM session tracking and spin detection |
+| briefings | `hal-briefing` | Morning / nightly digests via Telegram |
+| trackctl | `trackctl` | Personal metrics (zazen, movement, study) |
+| dashctl | `dashctl` | TUI dashboard |
+| halctl | `halctl` | Fleet management and health checks |
+| mailctl | `mailctl` | Gmail operations via himalaya |
+| watchctl | `watchctl` | YouTube channel monitor with LLM-as-judge triage |
+| journalctl | `journalctl` | Qualitative journal with sliding-window synthesis |
+| secretctl | `secretctl` | 1Password secret access |
+| ledgerctl | `ledgerctl` | Finance ledger |
+| drillctl | `drillctl` | Spaced repetition drill cards |
+| eventsource | — | NATS JetStream event sourcing core |
+| telemetry | — | Observability |
+
+## Repository Structure
 
 ```
 halo/
-├── gateway/     Message gateway — routes Telegram, Gmail to Claude agents in containers
-├── halos/       Life-management CLIs — 17 tools for work, finance, health, memory
-├── agent/       macOS computer-use — GUI automation, terminal control, job server
+├── halos/              27 Python CLI modules
+├── infra/              K8s manifests, Terraform, NATS, ArgoCD
+├── agent/              macOS agent server (listen/direct/drive/steer)
+├── docker/             Fleet container entrypoint
+├── data/               Advisor personas, client prompts
+├── docs/               Specs, analyses, runbooks
+├── memory/             Structured notes and reflections
+├── tests/              pytest suite (735 tests)
+├── store/              SQLite databases
+├── cron/               Cron job definitions
+├── jobctl/             Job search automation (CV, applications, tracking)
+└── templates/          MicroHAL personality blocks
 ```
 
-A single Node.js process connects messaging channels to Claude agents running in isolated Docker containers. Each agent has its own filesystem, memory, and conversation history. The **halos** Python toolchain provides structured CLI modules that compose through text, files, and SQLite. The **agent** toolkit gives those agents eyes and hands on macOS.
+## Storage Model
 
-The architectural thesis: if 75% of software is GUI chrome over simple data operations, then a personal system built entirely from composable CLI tools should be more powerful, more automatable, and more coherent than any collection of GUI apps.
+- SQLite for queryable domain state
+- YAML for human-readable config and work items
+- Markdown for prose, specs, and context
+- JSONL for append-only operational events
 
-## The Stack
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Human Interface                          │
-│   Telegram · Gmail · Slack · Discord · Hermes CLI               │
-├─────────────────────────────────────────────────────────────────┤
-│                     gateway/ (TypeScript)                        │
-│   Channel routing · Container orchestration · Credential proxy  │
-│   Group isolation · Session management · Fleet provisioning     │
-│   Containers get: halos CLIs, Claude agent, sandboxed filesystem│
-├─────────────────────────────────────────────────────────────────┤
-│                     agent/ (Swift + Python) ⚠ macOS host only   │
-│   steer: GUI automation (screenshot, OCR, click, type, hotkey)  │
-│   drive: terminal control (tmux sessions, parallel execution)   │
-│   listen: job server (HTTP → agent on host) · direct: CLI client│
-├─────────────────────────────────────────────────────────────────┤
-│                     halos/ (Python) — available everywhere       │
-│   nightctl · calctl · trackctl · ledgerctl · mailctl · memctl   │
-│   cronctl · halctl · dashctl · statusctl · logctl · reportctl   │
-│   briefings · agentctl · backupctl · blogctl · carnivorectl     │
-├─────────────────────────────────────────────────────────────────┤
-│                     Foundation                                   │
-│   SQLite (per-domain) · YAML (config + work items) · Markdown   │
-│   hlog telemetry · filesystem-as-IPC                            │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Quick Start
+## Getting Started
 
 ```bash
-# Clone
-gh repo fork rickhallett/halo --clone
+git clone https://github.com/rickhallett/halo.git
 cd halo
-
-# Gateway (TypeScript — message routing + containers)
-cd gateway && npm install && npm run build && cd ..
-
-# Halos (Python — CLI tools)
 uv sync
+uv tool install -e .
 
-# Configure
-cp .env.example .env   # add TELEGRAM_BOT_TOKEN, ANTHROPIC_API_KEY, etc.
-
-# Run
-cd gateway && npm run dev        # start gateway
-uv run dashctl                   # halos dashboard
-uv run nightctl add --title "Ship it" --quadrant q1
+# Use any module
+hal night items
+hal track summary
+hal mail inbox
 ```
-
-## Module Overview
-
-### gateway/ — Message Gateway
-
-TypeScript · ~10,700 LOC · [README →](gateway/README.md)
-
-Routes messages from Telegram, Gmail (and Slack, Discord, WhatsApp via plugins) to Claude agents running in Docker containers. Handles credential proxying, group isolation, session management, and fleet provisioning.
-
-### halos/ — Life-Management CLIs
-
-Python · 17 CLI tools · [README →](halos/README.md)
-
-| Category | Modules | Purpose |
-|----------|---------|---------|
-| Work & Planning | nightctl, cronctl, calctl | Task tracking, scheduling, unified calendar |
-| Personal Metrics | trackctl, dashctl, ledgerctl | Habits, dashboard, finances |
-| Memory & Knowledge | memctl | Structured notes, entity linking, graph analysis |
-| Communication | mailctl | Gmail triage, filters, send |
-| Observability | logctl, agentctl, statusctl | Logs, sessions, fleet health |
-| Operations | halctl, backupctl | Fleet provisioning, backups |
-| Synthesis | hal-briefing, reportctl | Daily briefings, periodic digests |
-
-### agent/ — macOS Computer-Use
-
-Swift + Python · [README →](agent/README.md)
-
-Gives AI agents full control of macOS — clicking buttons, reading screens via OCR, typing into apps, and orchestrating terminals via tmux. **Requires direct macOS host access** — these tools run on the Mac Mini via the Listen job server, not inside gateway containers.
-
-| Tool | Language | Purpose |
-|------|----------|---------|
-| steer | Swift | 14 GUI commands (see, click, type, hotkey, OCR, scroll, drag, find...) |
-| drive | Python | 6 tmux commands (session, run, send, logs, poll, fanout) |
-| listen | Python | FastAPI job server — accepts prompts, spawns Claude agents on the host |
-| direct | Python | CLI client for listen |
-
-## How Modules Compose
-
-**Morning briefing pipeline:**
-```
-cronctl (6:00 trigger)
-  → hal-briefing morning
-    → memctl stats        → "147 notes, 3 orphans"
-    → nightctl items      → "4 tasks: 1 q1, 2 q2, 1 q3"
-    → calctl today        → "3 events, 2 tasks due"
-    → trackctl summary    → "zazen: 12-day streak"
-    → mailctl summary     → "8 unread (2 from ben)"
-    → statusctl report    → "HEALTHY | CPU 12%"
-    → synthesise (LLM)    → narrative briefing
-    → deliver (Telegram)  → message to Operator
-```
-
-**Telegram → containerised agent:**
-```
-Telegram message → gateway routes → container spawns Claude agent
-  → agent reads CLAUDE.md (knows about halos tools)
-  → agent runs: nightctl add --title "Found bug in header"
-  → agent runs: memctl search --tags arch
-  → agent responds via Telegram
-```
-
-**Mac Mini computer-use (via Listen server, not containers):**
-```
-POST /job "Open Safari and screenshot HN"
-  → Listen spawns Claude agent on the Mac Mini
-  → agent runs: steer see --app Safari (screenshot — requires macOS)
-  → agent runs: steer ocr --app Safari (read text — requires macOS)
-  → agent runs: drive run --session dev "npm test" (tmux — requires host)
-  → job result returned via GET /job/{id}
-```
-
-Note: steer and drive require direct macOS access (Accessibility, Screen
-Recording, tmux). They are not available inside gateway containers — only
-on the Mac Mini host via the Listen job server.
-
-## Data Architecture
-
-```
-store/              SQLite databases (per-domain)
-memory/             Markdown notes (memctl), reflections
-queue/items/        YAML work items (nightctl)
-cron/jobs/          YAML cron definitions
-logs/               Structured event stream (hlog → JSONL)
-templates/          Personality templates for fleet instances
-```
-
-Storage principle: SQLite for queryable data. YAML for human-readable config. Markdown for prose. JSONL for append-only events.
-
-## Key Decisions
-
-- **Isolation over convenience.** Agents run in containers. Fleet instances can't see each other.
-- **The filesystem is the API.** Gateway (TS) and halos (Python) share no imports — YAML files and directory conventions are the interface.
-- **Memory is structured.** One claim per note. Backlinks form a graph. Time-decay pruning prevents bloat.
-- **No LLM on untrusted input.** Triage rules are deterministic pattern matching.
-- **Assessment before deployment.** Fleet users get Likert pre-assessment. Eval harness tests at machine speed.
-
-## Requirements
-
-- Linux or macOS (agent/ requires macOS)
-- Node.js 20+ (gateway)
-- Docker (container runtime)
-- Python 3.11+ with [uv](https://docs.astral.sh/uv/) (halos)
-- [Claude Code](https://claude.ai/download) (agent SDK)
 
 ## License
 
-MIT
-
+[MIT](LICENSE)

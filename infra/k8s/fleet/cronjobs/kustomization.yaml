@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: halo-fleet
+resources:
+  - advisor-musashi-cronjob.yaml
+  - advisor-karpathy-cronjob.yaml
+  - advisor-draper-cronjob.yaml
+  - advisor-medici-cronjob.yaml
+  - advisor-machiavelli-cronjob.yaml
+  - advisor-gibson-cronjob.yaml
+  - advisor-hightower-cronjob.yaml
+  - advisor-bankei-cronjob.yaml
