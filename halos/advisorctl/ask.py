@@ -1,18 +1,21 @@
-"""Live query to an advisor via the Hermes HTTP API.
+"""Live query to an advisor via the Hermes HTTP API or direct LLM call.
 
-Sends an OpenAI-compatible chat completion request to the advisor's
-gateway API server and streams the response to stdout.
+Two modes:
+  - Remote (default): POST to the advisor's gateway /v1/chat/completions
+  - Local (--local):  Call Anthropic directly with persona as system prompt
 """
 
 from __future__ import annotations
 
 import json
+import os
 import sys
+from pathlib import Path
 from typing import Iterator
 
 import httpx
 
-from .config import resolve_url
+from .config import persona_path, resolve_url
 
 
 def ask(
@@ -24,12 +27,19 @@ def ask(
     system: str | None = None,
     stream: bool = True,
     timeout: float = 120.0,
+    local: bool = False,
 ) -> str:
     """Send a prompt to the advisor and return the full response text.
+
+    When local=True, calls Anthropic directly with the advisor's persona
+    as system prompt — no gateway or cluster required.
 
     When stream=True (default), tokens are printed to stdout as they arrive.
     Returns the accumulated response either way.
     """
+    if local:
+        return _local_ask(advisor, prompt, system=system, stream=stream)
+
     base_url = resolve_url(advisor, url_override)
     endpoint = f"{base_url}/v1/chat/completions"
 
@@ -51,6 +61,77 @@ def ask(
         return _stream_response(endpoint, body, headers, timeout)
     else:
         return _blocking_response(endpoint, body, headers, timeout)
+
+
+# ---------------------------------------------------------------------------
+# Local mode — direct Anthropic SDK call with persona injection
+# ---------------------------------------------------------------------------
+
+def _resolve_api_key() -> str | None:
+    """Resolve Anthropic API key from env or .env file."""
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if key:
+        return key
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            if line.startswith("ANTHROPIC_API_KEY="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return None
+
+
+def _local_ask(
+    advisor: str,
+    prompt: str,
+    *,
+    system: str | None = None,
+    stream: bool = True,
+) -> str:
+    """Call Anthropic directly with the advisor's persona as system prompt."""
+    import anthropic
+
+    api_key = _resolve_api_key()
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY not available for local mode")
+
+    # Load persona as system prompt
+    pp = persona_path(advisor)
+    if pp.exists():
+        persona = pp.read_text()
+    else:
+        persona = f"You are {advisor}, an advisor in the Halo fleet."
+
+    system_prompt = persona
+    if system:
+        system_prompt = f"{persona}\n\n---\n\n{system}"
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    if stream:
+        chunks: list[str] = []
+        with client.messages.stream(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": prompt}],
+        ) as resp:
+            for text in resp.text_stream:
+                chunks.append(text)
+                sys.stdout.write(text)
+                sys.stdout.flush()
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        return "".join(chunks)
+    else:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = response.content[0].text
+        print(text)
+        return text
 
 
 def _stream_response(
