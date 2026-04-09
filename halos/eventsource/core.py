@@ -42,7 +42,17 @@ class Event:
     @classmethod
     def from_json(cls, data: str | bytes, stream_seq: int = 0) -> Event:
         d = json.loads(data)
-        return cls(stream_seq=stream_seq, **d)
+        now = datetime.now(timezone.utc).isoformat()
+        return cls(
+            id=d.get("id", f"evt_{ULID()}"),
+            type=d.get("type", "unknown"),
+            version=d.get("version", 1),
+            source=d.get("source", "unknown"),
+            timestamp=d.get("timestamp", now),
+            correlation_id=d.get("correlation_id", f"cor_{ULID()}"),
+            payload=d.get("payload", {}),
+            stream_seq=stream_seq,
+        )
 
     def with_seq(self, stream_seq: int) -> Event:
         """Return a copy with a different stream_seq."""
