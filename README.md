@@ -1,27 +1,97 @@
-# Halo: Autonomous Event-Sourced AI Fleet
+<p align="center">
+  <h1 align="center">Halo</h1>
+  <p align="center">
+    Autonomous event-sourced AI fleet
+    <br />
+    <em>27 modules. 735 tests. Choreographed advisory council on Kubernetes.</em>
+  </p>
+</p>
 
-> **"Translating the Dao into YAML files."**
-
-Halo is a bespoke, heavy-iron AI ecosystem designed to automate high-ticket spiritual, wellness, and creator businesses without degrading their authentic human voice.
-
-Built by a psychotherapist turned Kubernetes engineer, Halo rejects the "stateless chatbot" paradigm. Instead, it operates as a **persistent, event-driven hive-mind** deployed on bare-metal cloud infrastructure. It holds context, observes behavior, and executes complex operational pipelines completely invisibly to the end-user.
+<p align="center">
+  <a href="https://github.com/rickhallett/halo/actions"><img src="https://github.com/rickhallett/halo/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/rickhallett/halo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rickhallett/halo" alt="License" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/k3s-local%20cluster-326CE5?logo=kubernetes&logoColor=white" alt="k3s" />
+  <img src="https://img.shields.io/badge/NATS-JetStream-27aae1?logo=nats.io&logoColor=white" alt="NATS" />
+  <img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/ArgoCD-GitOps-ef7b4d?logo=argo&logoColor=white" alt="ArgoCD" />
+</p>
 
 ---
 
-## The Architecture (The Heavy Iron)
+## What is Halo?
 
-Halo is deployed as a fat-code/thin-client architecture on the Vultr Kubernetes Engine (VKE), orchestrated entirely via ArgoCD (GitOps).
+Halo is a personal AI agent system. 27 Python modules cover structured memory, work tracking, email triage, YouTube monitoring, daily briefing synthesis, spaced repetition, finance, journaling, and fleet management. Each module has its own CLI, its own SQLite store, and its own test suite.
 
-- **The Halostream (NATS JetStream):** The nervous system of the fleet. A highly resilient event bus. All agents communicate via pub/sub events. If a pod dies, it simply restarts, replays the JetStream from its last checkpoint, and reconstructs its local reality. Zero message loss.
-- **Single-Writer Memory (NFS):** To prevent concurrency locks, state is managed via a single-writer `memctl-authority` pod writing to an NFS Persistent Volume. All advisor pods mount this volume read-only, ensuring total data integrity across the fleet.
-- **CQRS Pattern:** Each advisor runs a sidecar event consumer that projects the NATS event stream into a local SQLite database, decoupling read/write workloads and making each pod functionally immortal.
-- **Agentic Orchestration:** Written in Python (`uv` managed), wrapping Anthropic and Groq models with strict psychological boundaries to prevent "AI slop" and hallucination.
+The modules run locally on macOS for daily use. When deployed to Kubernetes (k3s), they gain distribution and a choreographed advisory council — multiple advisor instances communicating through a NATS JetStream event stream.
 
----
+`hal` is the unified CLI entry point. `hal night add`, `hal track add zazen`, `hal mail inbox`, `hal secrets vaults`. One command, every module.
+
+## Architecture
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │                       LOCAL (macOS)                         │
+  │                                                             │
+  │   ┌──────────┐  ┌──────────┐  ┌──────────┐                 │
+  │   │ nightctl │  │ trackctl │  │ briefings│   ...27 modules  │
+  │   └────┬─────┘  └────┬─────┘  └────┬─────┘                 │
+  │        └──────────────┼──────────────┘                      │
+  │                       │                                     │
+  │              ┌────────┴────────┐                            │
+  │              │    hal CLI      │                            │
+  │              └────────┬────────┘                            │
+  │                       │                                     │
+  │              ┌────────┴────────┐                            │
+  │              │  pytest (735)   │                            │
+  │              └────────┬────────┘                            │
+  │                       │                                     │
+  │              ┌────────┴────────┐                            │
+  │              │  SQLite stores  │                            │
+  │              └─────────────────┘                            │
+  └─────────────────────────────────────────────────────────────┘
+                          │
+                     git push
+                          │
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    K3S CLUSTER                              │
+  │                                                             │
+  │   ┌──────────────────────────────────────────────────────┐  │
+  │   │              NATS JetStream                          │  │
+  │   │         (event stream / nervous system)              │  │
+  │   └──────┬────────┬────────┬────────┬────────────────────┘  │
+  │          │        │        │        │                       │
+  │   ┌──────┴──┐ ┌───┴───┐ ┌──┴────┐ ┌─┴────────┐            │
+  │   │Musashi  │ │Draper │ │Gibson │ │Karpathy  │   ...x8+    │
+  │   │(Hermes) │ │(Hermes│ │(Hermes│ │(Hermes)  │            │
+  │   └─────────┘ └───────┘ └───────┘ └──────────┘            │
+  │                                                             │
+  │   ┌─────────────────────────────────────────────────────┐  │
+  │   │           Grafana / Prometheus                      │  │
+  │   └─────────────────────────────────────────────────────┘  │
+  │                                                             │
+  │   ┌───────────────┐  ┌───────────────┐                     │
+  │   │  Terraform    │  │  ArgoCD       │                     │
+  │   └───────────────┘  └───────────────┘                     │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+Every module works locally without a network connection, without Docker, without Kubernetes. The cluster adds distribution and the advisory council. The code does not change. The topology changes.
+
+## The Halostream (Event Sourcing)
+
+All advisors communicate through a NATS JetStream event stream. The stream is the single source of truth. Every pod's SQLite database is a disposable projection rebuilt from the event log on restart.
+
+```
+  WRITE: Telegram → Advisor pod → process → publish event to stream
+  READ:  Consumer pod → subscribe → update local projection → query locally
+```
+
+There is no central coordinator. The evening council emerges from sequential reactions: each advisor watches for the previous advisor's submission event, contributes its perspective, and publishes its own. Plutarch (the dramaturg) synthesises the council's output.
+
+Kill any pod. It restarts, replays from its last checkpoint on the stream, rebuilds its projection, and resumes. No data loss. No manual intervention.
 
 ## The Roundtable
-
-The cluster runs 8 distinct, containerised "Advisors." Each is a discrete Kubernetes Deployment with a highly specific system prompt and operational domain:
 
 | Seat | Name | Domain |
 |------|------|--------|
@@ -32,166 +102,75 @@ The cluster runs 8 distinct, containerised "Advisors." Each is a discrete Kubern
 | V | Machiavelli | Power dynamics and strategy |
 | VI | Medici | Financial runway and economics |
 | VII | Bankei | Rest, rhythm, and burnout detection |
-| VIII | Hightower | Heavy Iron / K8s Operations (Diagnostic) |
+| VIII | Hightower | Heavy Iron / K8s Operations |
+| — | Plutarch | Dramaturg / council synthesis |
 
-For client deployments, this roster is hot-swapped for bespoke archetypes in isolated namespaces.
+Additional advisors (Seneca, Socrates, Sun Tzu, Guido) are available in `data/advisors/`.
 
----
+## Modules
 
-## Chaos Engineering and the Immune System
-
-This system bends bullets. The integration suite executes rigorous Chaos Engineering against the live cluster.
-
-The **66/66 passing integration suite** proves the cluster survives:
-
-- **NATS Pod Murder:** Killing the event broker mid-stream. Consumers reconnect, zero message loss.
-- **Advisor Amnesia:** Wiping a pod's local SQLite database. Pod perfectly reconstructs state from JetStream replay.
-- **NFS Server Assassination:** Killing the persistent volume host. Full recovery chain verified without stale file handle exceptions.
-- **Poison Pill Payloads:** Firing malformed JSON at consumers. Dead-lettered cleanly without crashing the pod.
-
----
-
-## Why This Exists
-
-There are many AI demos and many AI wrappers. There are far fewer systems that visibly answer the operational questions:
-
-- How is agent intent specified?
-- How is output evaluated?
-- What happens when agents fail?
-- What is the trust boundary?
-- What context is loaded and why?
-- What does this cost and is it worth it?
-
-Halo exists to answer those questions in a concrete production setting. The winning AI systems are not the ones that merely generate plausible language. They are the ones that can be clearly specified, evaluated consistently, decomposed into controllable parts, debugged when they fail, governed at the trust boundary, and justified economically.
-
----
-
-## Core Thesis
-
-- Legibility over magic
-- Auditability over novelty
-- Evaluation over vibes
-- Constrained autonomy over theatrical autonomy
-- Composable tools over monoliths
-- Explicit context over accidental context
-- Narrow tools over sprawling abstractions
-- Real traces over retrospective storytelling
-
----
-
-## Repository Structure
-
-```text
-halo/
-├── halos/              Shared Python CLI tooling
-├── infra/              K8s fleet manifests, Terraform, NATS, Argo CD
-│   └── k8s/fleet/      ArgoCD GitOps source of truth
-├── agent/              macOS job server (listen/direct)
-├── docker/             Fleet container entrypoint and defaults
-├── vendor/             Hermes agent (git submodule)
-├── data/               Advisor personas, client prompts
-├── docs/               Specs, analyses, runbooks, reviews, archives
-├── memory/             Structured notes and reflections (memctl-governed)
-├── tests/              pytest suite
-├── cron/               Cron job definitions
-├── store/              SQLite databases
-├── logs/               Operational logs
-├── queue/              Queued work items
-└── templates/          microHAL personality blocks
-```
-
----
-
-## halos Modules
-
-The `halos/` package is the centre of gravity. Python CLIs for structured work across domains, installed via `uv sync`.
+The `halos/` package is the centre of gravity. Python CLIs for structured work across domains.
 
 | Module | Command | Purpose |
-|---|---|---|
+|--------|---------|---------|
 | memctl | `memctl` | Structured memory governance |
-| nightctl | `nightctl` | Work tracker with Eisenhower matrix and state machine |
+| nightctl | `nightctl` | Work tracker with Eisenhower matrix |
 | cronctl | `cronctl` | Cron job definitions and crontab generation |
 | logctl | `logctl` | Structured log reading and search |
-| reportctl | `reportctl` | Periodic digests from the ecosystem |
+| reportctl | `reportctl` | Periodic digests |
 | agentctl | `agentctl` | LLM session tracking and spin detection |
 | briefings | `hal-briefing` | Morning / nightly digests via Telegram |
-| trackctl | `trackctl` | Personal metrics tracker (zazen, movement, study) |
-| dashctl | `dashctl` | TUI dashboard / RPG character sheet |
-| halctl | `halctl` | Session lifecycle and health checks |
+| trackctl | `trackctl` | Personal metrics (zazen, movement, study) |
+| dashctl | `dashctl` | TUI dashboard |
+| halctl | `halctl` | Fleet management and health checks |
 | mailctl | `mailctl` | Gmail operations via himalaya |
 | watchctl | `watchctl` | YouTube channel monitor with LLM-as-judge triage |
 | journalctl | `journalctl` | Qualitative journal with sliding-window synthesis |
+| secretctl | `secretctl` | 1Password secret access |
+| ledgerctl | `ledgerctl` | Finance ledger |
+| drillctl | `drillctl` | Spaced repetition drill cards |
+| eventsource | — | NATS JetStream event sourcing core |
+| telemetry | — | Observability |
 
-The point is less the count than the pattern: narrow tools with explicit surfaces, designed to compose.
+## Repository Structure
 
----
-
-## Example Compositions
-
-### Morning Briefing
-
-```text
-cronctl
-  -> hal-briefing morning
-    -> memctl stats
-    -> nightctl items
-    -> trackctl summary
-    -> mailctl summary
-    -> log/status data
-    -> synthesis
-    -> Telegram delivery
 ```
-
-### Message-Driven Assistant Workflow
-
-```text
-Telegram message
-  -> Hermes receives context + tools
-  -> runs halos commands
-  -> returns result via messaging channel
+halo/
+├── halos/              27 Python CLI modules
+├── infra/              K8s manifests, Terraform, NATS, ArgoCD
+├── agent/              macOS agent server (listen/direct/drive/steer)
+├── docker/             Fleet container entrypoint
+├── data/               Advisor personas, client prompts
+├── docs/               Specs, analyses, runbooks
+├── memory/             Structured notes and reflections
+├── tests/              pytest suite (735 tests)
+├── store/              SQLite databases
+├── cron/               Cron job definitions
+├── jobctl/             Job search automation (CV, applications, tracking)
+└── templates/          MicroHAL personality blocks
 ```
-
----
 
 ## Storage Model
 
-Halo uses a mixed storage model on purpose.
-
-```text
-store/         SQLite databases (queryable state)
-memory/        Markdown notes and reflections
-cron/jobs/     YAML cron definitions
-queue/         YAML work items / queues
-logs/          JSONL / structured event logs
-docs/          Specs, analyses, runbooks, reviews
-```
-
-Storage principle:
 - SQLite for queryable domain state
 - YAML for human-readable config and work items
 - Markdown for prose, specs, and context
-- JSONL / structured logs for append-only operational events
+- JSONL for append-only operational events
 
----
+## Getting Started
 
-## Documentation
+```bash
+git clone https://github.com/rickhallett/halo.git
+cd halo
+uv sync
+uv tool install -e .
 
-Deeper documentation lives in `docs/`.
-
-| Directory | Purpose |
-|-----------|---------|
-| `docs/d1/` | Working reference -- runbooks, guides, journals |
-| `docs/d2/` | Specs, analyses, design records, reviews |
-| `docs/d3/` | Archive |
-
-Design intent starts in `docs/d2/`. Operating procedures start in `docs/d1/`.
-
----
-
----
-
-*Built by The Ripperdoc. Magic on the front end. Heavy iron on the back.*
+# Use any module
+hal night items
+hal track summary
+hal mail inbox
+```
 
 ## License
 
-MIT
+[MIT](LICENSE)
