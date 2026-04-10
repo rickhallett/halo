@@ -22,6 +22,7 @@ FLEET_ADVISORS = [
     "machiavelli",
     "medici",
     "musashi",
+    "turing",
 ]
 
 DEFAULT_PORT = 8642

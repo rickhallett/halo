@@ -89,6 +89,12 @@ build-push-halos:
     just build-halos
     ssh {{ryzen}} "docker push {{registry}}/halo-halos:latest"
 
+# ── Fleet Recon ───────────────────────────────────────
+
+# Remote advisorctl — runs on-cluster via karpathy's projection
+advisorctl +args:
+    ssh {{ryzen}} "sudo kubectl exec -n {{namespace}} deploy/advisor-karpathy -- advisorctl {{args}}"
+
 # ── Diagnostics ───────────────────────────────────────
 
 # SSH into the Ryzen

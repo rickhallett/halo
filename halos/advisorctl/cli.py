@@ -167,6 +167,7 @@ def _cmd_list() -> int:
         "machiavelli": "power",
         "medici": "money",
         "musashi": "body",
+        "turing": "imitation-game",
     }
     for adv in FLEET_ADVISORS:
         print(f"{adv:<16} {domains.get(adv, '?')}")
