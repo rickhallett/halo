@@ -171,6 +171,7 @@ def cmd_add(args) -> int:
             "entry_id": entry["id"],
             "duration_mins": args.duration_mins,
             "notes": args.notes,
+            "timestamp": entry["timestamp"],
         },
     )
 

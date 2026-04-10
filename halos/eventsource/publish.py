@@ -26,13 +26,28 @@ def fire_event(
 
     Requires NATS_PASS in the environment. If missing, returns False
     immediately (local dev without NATS access).
+
+    Safe to call from both sync and async contexts (e.g. Hermes tools).
     """
     nats_pass = os.environ.get("NATS_PASS")
     if not nats_pass:
         return False
 
     try:
-        return asyncio.run(_async_publish(event_type, payload, source))
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    try:
+        if loop is None:
+            return asyncio.run(_async_publish(event_type, payload, source))
+        else:
+            # Inside an existing event loop (e.g. Hermes gateway) —
+            # run in a thread to avoid asyncio.run() nesting error.
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(asyncio.run, _async_publish(event_type, payload, source))
+                return future.result(timeout=10)
     except Exception:
         return False
 

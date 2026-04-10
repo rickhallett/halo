@@ -47,6 +47,7 @@ class TrackProjectionHandler(ProjectionHandler):
         p = event.payload
 
         if self._is_logged_event(event.type):
+            entry_ts = p.get("timestamp", event.timestamp)
             db.execute(
                 """
                 INSERT OR IGNORE INTO track_entries
@@ -56,7 +57,7 @@ class TrackProjectionHandler(ProjectionHandler):
                 (
                     p["entry_id"],
                     p["domain"],
-                    event.timestamp,
+                    entry_ts,
                     p["duration_mins"],
                     p.get("notes", ""),
                     event.id,
@@ -112,11 +113,12 @@ class TrackProjectionHandler(ProjectionHandler):
     @classmethod
     def _write_domain_db(cls, domain: str, event: Event, p: dict) -> None:
         try:
+            entry_ts = p.get("timestamp", event.timestamp)
             conn = cls._domain_db(domain)
             conn.execute(
                 "INSERT OR IGNORE INTO entries (id, timestamp, duration_mins, notes) "
                 "VALUES (?, ?, ?, ?)",
-                (p["entry_id"], event.timestamp, p["duration_mins"], p.get("notes", "")),
+                (p["entry_id"], entry_ts, p["duration_mins"], p.get("notes", "")),
             )
             conn.commit()
             conn.close()

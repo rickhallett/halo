@@ -57,6 +57,10 @@ deploy:
     ssh {{ryzen}} "cd {{remote_dir}} && sudo kubectl apply -f infra/k8s/fleet/"
     ssh {{ryzen}} "sudo kubectl rollout restart deploy -n {{namespace}}"
 
+# Restart Aura (halo-aura) — separate from fleet to avoid client UX interruption
+restart-aura:
+    ssh {{ryzen}} "sudo kubectl rollout restart deploy -n halo-aura"
+
 # Rollout restart only (image already built)
 restart:
     ssh {{ryzen}} "sudo kubectl rollout restart deploy -n {{namespace}}"
