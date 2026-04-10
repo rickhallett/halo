@@ -35,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     ask_p.add_argument("--session", help="Session ID for conversation continuity")
     ask_p.add_argument("--system", help="Ephemeral system prompt overlay")
     ask_p.add_argument("--no-stream", action="store_true", help="Disable streaming")
+    ask_p.add_argument("--local", action="store_true", help="Direct LLM call with persona (no gateway)")
     ask_p.add_argument("--url", help="Override advisor API URL")
     ask_p.add_argument("--timeout", type=float, default=120.0, help="Request timeout (seconds)")
 
@@ -109,6 +110,7 @@ def _cmd_ask(args) -> int:
             system=args.system,
             stream=not args.no_stream,
             timeout=args.timeout,
+            local=args.local,
         )
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)

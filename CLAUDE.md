@@ -60,7 +60,7 @@ Two agent surfaces share this repo:
 | **Hermes** | Primary interactive agent. This is the Telegram interface for day-to-day work. External harness (outside this repo) with its own cron, tools, and memory. | Always on | Active |
 | **Agent (listen/direct)** | Local agent spawner. HTTP server accepts jobs, spawns Claude Code instances in tmux sessions. | `just listen` from `agent/` | On-demand |
 
-The **K8s fleet** (roundtable advisors) runs containerised from `Dockerfile` + `docker/` + `vendor/hermes-agent`. Managed by Argo CD from `infra/k8s/fleet/`.
+The **K8s fleet** (roundtable advisors) runs containerised from `Dockerfile` + `docker/` + `vendor/hermes-agent`. Manifests in `infra/k8s/fleet/`, deployed via Mutagen file sync + `just deploy` (see root `justfile`).
 
 **Halos CLI** (`halos/` Python package) is the shared tooling layer — memctl, nightctl, briefings, trackctl, cronctl, etc. Runs independently via cron. Used by all surfaces and hot-reloaded into fleet pods via init container overlay.
 
@@ -77,7 +77,7 @@ The **K8s fleet** (roundtable advisors) runs containerised from `Dockerfile` + `
 | Metrics | `halos/trackctl/` (add domain: `halos/trackctl/domains/`) |
 | Email ops | `halos/mailctl/` (engine→himalaya, triage rules, filter audit) |
 | Agent spawning | `agent/listen/`, `agent/direct/` |
-| Fleet manifests | `infra/k8s/fleet/` (Argo CD synced) |
+| Fleet manifests | `infra/k8s/fleet/` (manual kubectl apply via SSH to ryzen32) |
 | Fleet image | `Dockerfile`, `docker/`, `vendor/hermes-agent` |
 
 ### Key Docs by Topic
@@ -244,6 +244,7 @@ Historical-figure advisors with persistent personas under `data/advisors/`. Summ
 | VI | Medici | Money (debt, burn, runway, time economics) | 19:45 daily |
 | VII | Bankei | Rest (rhythm, the cost of never stopping) | unscheduled |
 | VIII | Hightower | Heavy Iron (K8s ops, cluster debugging, CKA) | on demand |
+| X | Turing | The Imitation Game (agentic engineering, systems design, interview drilling) | on demand |
 
 ### Data & Memory
 
@@ -392,9 +393,9 @@ A bespoke Halo deployment for Aura Enache — Daoist practitioner, UHT UK certif
 - pytest-cov >=5.0 - Coverage (optional dev dep)
 - Test tiers: smoke, fleet, tier1-tier5, chaos, telegram markers (`pyproject.toml [tool.pytest.ini_options]`)
 - Docker - Container builds (`Dockerfile`)
-- just - Task runner (`agent/justfile`)
-- Argo CD - GitOps deployment (`infra/k8s/fleet/argocd-app.yaml`)
-- Kaniko - In-cluster container builds (`infra/k8s/fleet/kaniko-build.yaml`)
+- just - Task runner (`justfile` at root for deploy, `agent/justfile` for agent spawner)
+- Mutagen 0.18.1 - One-way file sync (Mac → Ryzen) for deploy pipeline
+- Deploy pipeline: Mutagen sync → `just deploy` (build on Ryzen local disk → push localhost:5000 → kubectl rollout restart)
 ## Key Dependencies
 - `anthropic>=0.84.0` - LLM API client for briefings, evaluations, journal windows
 - `httpx>=0.27.0` - HTTP client for Telegram Bot API, Anthropic API, Groq API
@@ -455,12 +456,10 @@ A bespoke Halo deployment for Aura Enache — Daoist practitioner, UHT UK certif
 - just for agent task running
 - himalaya CLI for email operations (external binary, configured at `~/.config/himalaya/config.toml`)
 - 1Password SDK for secret management (requires biometric auth via desktop app)
-- Vultr Kubernetes Engine (VKE)
-- Vultr Container Registry (`lhr.vultrcr.com/jeany/`)
-- Two container images: `halo:fleet-latest` (full Hermes + halos), `halo-halos:latest` (halos overlay only)
-- Vultr Block Storage HDD (PVCs for NATS data: 40Gi)
+- k3s on Ryzen homelab (ryzen32 via Tailscale) — all kubectl needs `sudo`
+- Local container registry: `localhost:5000` (dev builds)
+- Two container images: `halo:dev` (full Hermes + halos), `halo-halos:latest` (halos overlay only)
 - NFS server pod for shared advisor state (`infra/k8s/fleet/nfs-server.yaml`)
-- Argo CD for GitOps sync from `infra/k8s/fleet/`
 - Namespace: `halo-fleet`
 ## uv Workspace
 - `data/finance/ark-accounting` - Finance/accounting subproject
@@ -540,11 +539,11 @@ A bespoke Halo deployment for Aura Enache — Daoist practitioner, UHT UK certif
 - Contains: Event envelope (`core.py`), NATS consumer lifecycle (`consumer.py`), SQLite projection engine (`projection.py`), domain handlers (`handlers/`)
 - Depends on: NATS JetStream (cluster-internal), SQLite
 - Used by: Fleet advisors (each runs a consumer sidecar process via `entrypoint.sh`)
-- Purpose: K8s manifests for the advisor fleet, managed by Argo CD
+- Purpose: K8s manifests for the advisor fleet, deployed manually via SSH pipeline
 - Location: `infra/k8s/fleet/` (deployments, configs, secrets, NATS, PVCs), `infra/k8s/fleet/cronjobs/` (scheduled advisor jobs)
-- Contains: Per-advisor Deployment + ConfigMap + Secret + prompt YAML, NATS StatefulSet, NFS server for shared memory, Argo CD app definition
-- Depends on: Vultr Container Registry (`lhr.vultrcr.com/jeany/halo`), Argo CD
-- Used by: K8s cluster (Argo CD sync)
+- Contains: Per-advisor Deployment + ConfigMap + Secret + prompt YAML, NATS StatefulSet, NFS server for shared memory
+- Depends on: Local container registry (`localhost:5000`), k3s on ryzen32
+- Used by: k3s cluster (manual kubectl apply / rollout restart)
 - Purpose: Persistent structured memory, work items, personal metrics, journals
 - Location: `memory/` (memctl-managed notes + INDEX.md), `store/` (SQLite databases), `backlog/items/` (YAML work items)
 - Contains: Markdown notes with YAML frontmatter (memory), domain-specific SQLite DBs (tracking, jobs, journal, mail, blog), YAML backlog items

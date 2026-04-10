@@ -14,6 +14,7 @@ Seven advisors and a dramaturg. Each has a persona (how they think and speak) an
 | VI | Medici | Money: debt, burn, runway, income, allocation, time economics | "summon medici" |
 | VII | Bankei | The Unborn: rest, rhythm, the cost of never stopping | "summon bankei" |
 | IX | Guido | Python: stdlib mastery, idiomatic patterns, the glue that holds infra together | "summon guido" |
+| X | Turing | The Imitation Game: agentic engineering + systems design under interview conditions | "summon turing" |
 | -- | Plutarch | The dramaturg: routes, synthesises, holds the whole play | "summon plutarch" |
 
 ## Lineage
@@ -51,6 +52,7 @@ data/advisors/
   bankei/       persona.md + profile.md
   hightower/    persona.md + profile.md
   guido/        persona.md + profile.md
+  turing/       persona.md + profile.md
   plutarch/     persona.md (no profile -- reads all others)
   seneca/       [archived — replaced by Draper, data migrated]
   socrates/     [archived — replaced by Karpathy, data migrated]

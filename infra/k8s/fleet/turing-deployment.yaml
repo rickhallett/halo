@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: advisor-gibson
+  name: advisor-turing
   namespace: halo-fleet
   labels:
-    app.kubernetes.io/name: advisor-gibson
+    app.kubernetes.io/name: advisor-turing
     app.kubernetes.io/component: advisor
     app.kubernetes.io/part-of: halo
-    halo/advisor: gibson
-    halo/domain: futures
+    halo/advisor: turing
+    halo/domain: imitation-game
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: advisor-gibson
+      app.kubernetes.io/name: advisor-turing
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: advisor-gibson
+        app.kubernetes.io/name: advisor-turing
         app.kubernetes.io/component: advisor
-        halo/advisor: gibson
+        halo/advisor: turing
     spec:
       imagePullSecrets:
         - name: vultr-cr
@@ -47,7 +47,7 @@ spec:
               mountPath: /target
         - name: state-init
           image: alpine:3.20
-          command: ["sh", "-c", "mkdir -p /state/advisors/gibson"]
+          command: ["sh", "-c", "mkdir -p /state/advisors/turing"]
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -69,9 +69,9 @@ spec:
               exec /opt/entrypoint.sh gateway
           env:
             - name: ADVISOR_NAME
-              value: "gibson"
+              value: "turing"
             - name: ADVISOR_TOUCHBASE_SCHEDULE
-              value: "25 7 * * *"
+              value: "0 10 * * *"
             - name: ADVISOR_TOUCHBASE_CHAT_ID
               value: "5967394003"
             - name: ADVISOR_TOUCHBASE_PLATFORM
@@ -123,7 +123,7 @@ spec:
               readOnly: true
             - name: advisor-state
               mountPath: /opt/data
-              subPath: advisors/gibson
+              subPath: advisors/turing
             - name: halos-overlay
               mountPath: /opt/halos-overlay/halos
               readOnly: true
@@ -156,13 +156,13 @@ spec:
       volumes:
         - name: advisor-config
           configMap:
-            name: advisor-gibson-config
+            name: advisor-turing-config
         - name: advisor-prompt
           configMap:
-            name: advisor-gibson-prompt
+            name: advisor-turing-prompt
         - name: advisor-secrets
           secret:
-            secretName: advisor-gibson-secrets
+            secretName: advisor-turing-secrets
             defaultMode: 0400
         - name: halos-overlay
           emptyDir:

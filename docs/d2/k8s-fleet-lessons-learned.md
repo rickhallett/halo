@@ -165,7 +165,28 @@ NATS runs as a ClusterIP service (`10.43.86.239:4222`) inside k3s. Not exposed o
 
 `/etc/rancher/k3s/k3s.yaml` has `0600 root:root` permissions. All kubectl commands from the `mrkai` user need `sudo`. Fix: `sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown mrkai:mrkai ~/.kube/config` on the Ryzen, or add `--write-kubeconfig-mode 0644` to k3s server args.
 
-### 24. Full deploy runbook (Mac → Ryzen)
+### 25. ConfigMaps are not in the image — apply manifests separately
+
+**Problem:** `docker build` + `rollout restart` only updates the container code. System prompts, configs, and secrets are in ConfigMaps/Secrets, which are separate K8s resources. A `rollout restart` re-mounts the *existing* ConfigMap — if you didn't `kubectl apply` the updated YAML first, pods restart with the old prompts.
+
+**Fix:** Always `kubectl apply -f infra/k8s/fleet/` before `rollout restart`. The apply updates ConfigMaps in etcd; the restart makes pods re-mount them.
+
+**Symptom:** You deploy new code, advisor behavior doesn't change. System prompt references old tools. The image is correct but the ConfigMap is stale.
+
+### 27. state.db lives on NFS — pod restarts don't clear session history
+
+**Problem:** Hermes stores conversation history and session search index in `state.db`. This file lives at `/opt/data/state.db`, which is on the NFS-backed `advisor-state` volume — NOT on the emptyDir. Pod restarts, `rollout restart`, even `kubectl delete pod` do not wipe it. Poisoned session context (hallucinations, wrong answers) persists across every restart.
+
+**Fix:** To truly clear an advisor's session history:
+```bash
+kubectl exec -n halo-fleet deploy/advisor-<name> -- \
+  sh -c 'rm -f /opt/data/state.db /opt/data/state.db-wal /opt/data/state.db-shm /opt/data/gateway_state.json'
+kubectl delete pod -n halo-fleet -l halo/advisor=<name>
+```
+
+**What `/new` does vs doesn't do:** `/new` in Telegram resets the conversation turns but the `session_search` tool still indexes old sessions from `state.db`. The old context bleeds into new conversations via recall queries.
+
+### 28. Full deploy runbook (Mac → Ryzen)
 
 ```bash
 # 1. Push code
@@ -182,10 +203,13 @@ ssh mrkai@ryzen32 "cd ~/code/halo && rm -rf vendor/hermes-agent && tar xzf /tmp/
 # 4. If track DBs changed: ship them
 scp store/track_*.db mrkai@ryzen32:~/code/halo/store/
 
-# 5. Build and push
+# 5. Build and push image
 ssh mrkai@ryzen32 "cd ~/code/halo && docker build -t localhost:5000/halo:dev . && docker push localhost:5000/halo:dev"
 
-# 6. Restart fleet
+# 6. Apply manifests (ConfigMaps, Deployments, Secrets — image alone is not enough)
+ssh mrkai@ryzen32 "cd ~/code/halo && sudo kubectl apply -f infra/k8s/fleet/"
+
+# 7. Restart fleet (picks up new image + new ConfigMaps)
 ssh mrkai@ryzen32 "sudo kubectl rollout restart deploy -n halo-fleet"
 
 # 7. Verify
