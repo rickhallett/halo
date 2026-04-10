@@ -136,6 +136,7 @@ All agent tooling lives in the `halos/` Python package with console_scripts entr
 | mailctl   | `mailctl`      | Gmail operations via himalaya: inbox, search, triage, filters, briefing summary |
 | watchctl  | `watchctl`     | YouTube channel monitor — RSS feed → transcript → LLM-as-judge eval → Obsidian notes |
 | journalctl| `journalctl`   | Qualitative journal — timestamped entries, LLM-synthesised sliding window with content-hash cache |
+| changoctl | `changoctl`    | Survival inventory (espresso, lagavulin, stimpacks, NOS), atmospheric actions, quotes archive, Beachhead graph |
 
 ### Module Quick Reference
 
@@ -186,6 +187,16 @@ memctl.index.read(path) -> Index
 memctl.index.rebuild_from_notes(notes_dir, max_summary) -> (list[Entry], int)
 memctl.note.parse(data) -> Note
 memctl.note.marshal(note) -> str
+
+# changoctl
+changoctl.store.get_inventory(db_path=None) -> list[dict]
+changoctl.store.restock(item, quantity=1, db_path=None) -> dict
+changoctl.store.consume(item, mood=None, session_context=None, db_path=None) -> dict
+changoctl.store.add_quote(text, category, source_session=None, source_module=None, db_path=None) -> dict
+changoctl.store.random_quote(category=None, db_path=None) -> Optional[dict]
+changoctl.store.list_consumption_history(item=None, days=None, db_path=None) -> list[dict]
+changoctl.engine.sustain(mood, session_context=None, db_path=None) -> dict
+changoctl.engine.text_summary(db_path=None) -> str
 
 # briefings
 briefings.gather.gather_morning(cfg) -> BriefingData
