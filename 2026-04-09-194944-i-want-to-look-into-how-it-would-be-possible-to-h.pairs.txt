@@ -1,0 +1,319 @@
+## Pair 1
+User: I want to look into how it would be possible to have a shared mount of this
+
+Assistant:
+Sips synthetic espresso and pulls up a terminal
+
+  Good question, Boss. You're essentially asking: "Why am I doing
+  git-push-SSH-pull dance when both machines could just see the same
+  filesystem?" Let me research the actual options before we commit to anything.
+
+Alright Choomba, here's the landscape. The research is thorough and the answer
+   is cleaner than you might expect.
+
+  ---
+  The SQLite Problem Kills Most Options
+
+  Your store/ directory has 15+ SQLite databases in WAL mode. This single fact
+  eliminates every network filesystem approach:
+
+  ┌────────────────┬─────────┬──────────────────────────────────────────────┐
+
+  Docker builds reading thousands of small files over any network mount would
+  also be 3-10x slower. So even without the SQLite issue, mounts are the wrong
+  tool.
+
+  ---
+  Two Approaches That Actually Work
+
+  Option A: Claude Code SSH to Ryzen (Cleanest)
+
+  Claude Code natively supports SSH sessions. You SSH into ryzen32 via
+  Tailscale, Claude Code edits files that are already local to the Ryzen. Docker
+   builds are local. kubectl is local. Zero sync. Zero latency. Zero corruption 
+  risk.
+
+  What you'd need: Node.js 18+ and Claude Code installed on ryzen32. Your
+  .claude/ config already travels with the repo.
+
+  What you'd lose: You'd be editing on the Ryzen's filesystem, not your Mac's.
+  For deploy workflows, this is actually what you want.
+
+  Option B: Mutagen One-Way Sync (Mac as Source of Truth)
+
+  mutagen sync create \
+    --name=halo \
+    --sync-mode=one-way-safe \
+    --ignore="store/" \
+    --ignore=".git/" \
+    --ignore="*.db" --ignore="*.db-shm" --ignore="*.db-wal" \
+    ~/code/halo mrkai@ryzen32:~/code/halo
+
+  Mutagen was literally built for this workflow. Docker acquired it. Sub-second
+  propagation via FSEvents (Mac) and inotify (Linux). Files are local on both
+  sides. SQLite databases excluded -- each machine keeps its own store/.
+
+  Handles network drops gracefully. Queues changes, reconciles on reconnect.
+
+  Bonus: Docker Buildx Remote Builder
+
+  Skip file sync entirely for builds:
+
+  docker context create ryzen --docker "host=ssh://mrkai@ryzen32"
+  docker buildx build --builder ryzen-builder -t localhost:5000/halo:dev .
+
+  Streams build context over SSH. No mounted filesystem. Practical for
+  occasional builds but streams the entire repo every time.
+
+  ---
+  Recommendation
+
+  Primary: Claude Code SSH for deploy workflows. The Tailscale mesh gives you
+  1-5ms latency -- imperceptible for terminal interaction. This is the "one
+  filesystem, no sync" solution you're describing, just achieved by moving the
+  editor to where the files are rather than moving the files to where the editor
+   is.
+
+  Secondary: Mutagen for cases where you want to edit on Mac with near-instant 
+  propagation. This gives you the best of both worlds at the cost of running a
+  background daemon.
+
+  ---
+  Open Questions Before We Move
+
+  1. Is Node.js 18+ on ryzen32 already? (Required for Claude Code)
+  2. Does the Ryzen have headroom to run Claude Code alongside k3s + Docker?
+  Claude Code is not lightweight.
+  3. Do the store/*.db files need to exist on the Ryzen for Docker builds? Your
+  Dockerfile COPYs some of them into the image -- that needs resolving if we
+  exclude them from sync.
+  4. Is Mac-to-Ryzen one-way sufficient, or do you need Ryzen artifacts flowing
+  back?
+
+  The git-push-pull dance is dead either way. The question is which coffin.
+
+---
+
+## Pair 2
+User: 1: yes, 2: its 32gb; 3: dont know, 4: mac is HQ for me, ryzen is home to
+
+Assistant:
+Pulls up the blueprints and a fresh espresso
+
+  Good. 32GB is plenty of headroom. Let me check what store/ files the Docker
+  build actually needs -- that's the remaining question before we can design the
+   Mutagen config properly.
+
+
+Clear picture. The .dockerignore excludes all of store/ except track_*.db
+  files, which get baked into /opt/defaults/store/ as seed data. Everything else
+   is runtime state.
+
+  Here's the play, Boss:
+
+  ---
+  The Setup: Two Tools, Zero Git Sync
+
+  1. Mutagen: Mac → Ryzen (one-way, code only)
+
+  # Install
+  brew install mutagen-io/mutagen/mutagen
+
+  # Create the sync session
+  mutagen sync create \
+    --name=halo \
+    --sync-mode=one-way-safe \
+    --ignore=".git/" \
+    --ignore="store/" \
+    --ignore="memory/" \
+    --ignore="data/" \
+    --ignore=".venv/" \
+    --ignore="__pycache__/" \
+    --ignore="node_modules/" \
+    --ignore=".claude/" \
+    ~/code/halo mrkai@ryzen32:~/code/halo
+
+  Mac is HQ. You edit here. Mutagen propagates changes to Ryzen in sub-second
+  via Tailscale. The track_*.db files need special handling -- they're in store/
+   which we're ignoring. Two options:
+
+  - Option A: Manually scp the track DBs when they change (rare -- these are
+  personal metrics)
+  - Option B: Add a second, narrower Mutagen session just for those files:
+  mutagen sync create \
+    --name=halo-trackdbs \
+    --sync-mode=one-way-safe \
+    --ignore="!track_*.db" \
+    ~/code/halo/store mrkai@ryzen32:~/code/halo/store
+
+  2. Docker Buildx: Remote Builds from Mac
+
+  Since Mutagen puts the files on the Ryzen, you can just SSH and build. But if
+  you ever want to trigger a build from Mac without SSHing:
+
+  # One-time setup
+  docker context create ryzen --docker "host=ssh://mrkai@ryzen32"
+  docker buildx create --name ryzen-builder --driver docker-container \
+    --platform linux/amd64 ryzen
+  docker buildx use ryzen-builder
+
+  # Build + push to Ryzen's local registry
+  docker buildx build --platform linux/amd64 \
+    -t localhost:5000/halo:dev \
+    --output type=image,push=true \
+    ~/code/halo
+
+  But honestly -- with Mutagen running, the simpler path is:
+
+  ssh ryzen32 "cd ~/code/halo && docker build -t localhost:5000/halo:dev . && 
+  docker push localhost:5000/halo:dev && sudo kubectl -n halo-fleet rollout 
+  restart deployment"
+
+  One SSH command. Files are already there. No streaming context.
+
+  3. The New Deploy Flow
+
+  Before:  git add → git commit → git push → ssh ryzen32 → git pull → docker
+  build → kubectl restart
+  After:   [save file] → (mutagen syncs in <1s) → ssh ryzen32 "docker build &&
+  kubectl restart"
+
+  Or wrap it in a just target:
+
+  # justfile (local Mac)
+  deploy:
+      mutagen sync flush halo
+      ssh ryzen32 "cd ~/code/halo && docker build -t localhost:5000/halo:dev . 
+  && docker push localhost:5000/halo:dev && sudo kubectl -n halo-fleet rollout 
+  restart deployment"
+
+  mutagen sync flush blocks until all pending changes are synced, then the build
+   runs against the freshest state.
+
+  ---
+  What This Doesn't Replace
+
+  Git is still your version control, history, and collaboration tool. You still
+  commit and push -- just not as a deployment mechanism. The deploy pipeline
+  becomes filesystem sync, not SCM operations.
+
+  ---
+  Want me to set this up? I'd start with getting Mutagen installed and the sync
+  session configured, then we can test the build path.
+
+---
+
+## Pair 3
+User: justfiles are elegant and effective. the plan sounds tight to me
+
+Assistant:
+Cracks knuckles over the keyboard
+
+  Alright, let me get Mutagen installed and wired up. First, let me check what's
+   already on the ground.
+
+Good recon. Docker is on the Ryzen, no Node.js (not needed yet -- that's only
+  if you want Claude Code on Ryzen later), and no ~/code/halo directory yet. Let
+   me check the existing justfile situation.
+
+
+No root-level justfile. I'll create one for the deploy pipeline. Let me also
+  check the existing build script.
+
+
+Perfect. The canonical deploy command from infra/README.md is exactly what I
+  expected. Now let me install Mutagen and wire everything up.
+
+Good. Mutagen 0.18.1 installed, target dir created. Now let me start the
+  Mutagen daemon and create the sync session.
+
+Permission issue on the Ryzen -- the Mutagen agent binary can't execute.
+  Likely a noexec mount or a restricted home directory. Let me diagnose.
+
+The agent was copied but doesn't have execute permission. The file was created
+   rw-r--r-- instead of executable. Let me check if there's a umask issue or if
+  Mutagen has a config for this.
+
+Umask is fine (0022). The agent was just dropped without +x. Let me clean that
+   up and retry -- Mutagen should handle this on its own. This might be an SSH
+  subsystem issue where scp doesn't preserve permissions.
+
+Same issue. The agent binary lands without execute permission. Let me work
+  around this by pre-installing the Mutagen agent on the Ryzen.
+
+
+Agent is pre-installed with execute permissions. Now retry the sync.
+
+Session created. Let me verify it's syncing.
+
+Syncing and watching. 519 directories, 2306 files, 125 MB -- all propagated.
+  There are 17 conflicts though -- let me check those since the Ryzen had that
+  pre-existing ~/code/halo directory from the git clone.
+
+The Ryzen already had a git clone with its own versions of files. Since Mac is
+   the source of truth, I'll resolve these conflicts by forcing alpha (Mac) to
+  win.
+
+17 conflicts from the pre-existing git clone. Mac is HQ -- alpha wins.
+
+Zero conflicts. 2306 files, 125 MB, fully synced, watching for changes. Now
+  let me verify the files are actually there and the track DBs are handled.
+
+store/ correctly excluded. But Docker needs store/track_*.db at build time.
+  Let me create a dedicated sync for just those files and then build the root
+  justfile.
+
+Now let me verify Docker can build on the Ryzen with these synced files.
+
+Good -- submodule content synced as regular files (Mutagen ignores .git/ but
+  copies the working tree). Now let me create the root justfile with the deploy
+  pipeline.
+
+
+Let me do a quick smoke test -- verify sync propagation works in real time.
+
+Now let me also make sure the Mutagen daemon starts on login so you don't have
+   to remember to launch it.
+
+Not registered yet. That's fine -- we can do that later without interrupting
+  the active sync. The daemon and session both survive terminal closure; they
+  persist until reboot.
+
+  Let me now update the docs so the deploy pipeline is documented.
+
+
+Good, the edit went through (I had already read the relevant section). Let me
+  also update the deploy pipeline reference in the Technology Stack section.
+
+
+Good, edit applied. Now let me verify the full picture is clean.
+
+Sub-second propagation confirmed. Here's what's live, Boss:
+
+  ---
+  What's Done
+
+  Mutagen installed and running. One-way-safe sync, Mac → Ryzen, 2306 files /
+  125 MB. Changes propagate in under a second via Tailscale. Daemon
+  auto-restarts (survives terminal close, but will need mutagen daemon register
+  after a reboot -- I didn't run it because it requires stopping the daemon
+  momentarily).
+
+  Root justfile created with the full deploy pipeline:
+
+  ┌───────────────────┬─────────────────────────────────────────────────────┐
+
+  Excluded from sync (correctly): .git/, store/, memory/, data/, .venv/,
+  .claude/, .planning/, __pycache__/. Track DBs copied manually to Ryzen's
+  store/ for Docker builds.
+
+  CLAUDE.md updated to reflect the new pipeline.
+
+  Remaining Housekeeping
+
+  1. mutagen daemon register -- run once when you're ready for a brief daemon
+  restart. After that, Mutagen auto-starts on login.
+  2. Test just deploy -- the pipeline is wired but I haven't triggered a full
+  build since that's a heavier operation. Worth a smoke test when you're ready.
+  3. Track DB sync is manual (just sync-trackdbs). These change infrequently
+  enough that this is fine, but flag it if you want it automated.

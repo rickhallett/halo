@@ -59,6 +59,7 @@ turingctl = "halos.turingctl.cli:main"
 journalctl = "halos.journalctl.cli:main"
 advisorctl = "halos.advisorctl.cli:main"
 changoctl = "halos.changoctl.cli:main"
+halo-emit = "halos.eventsource.emit_cli:main"
 hal = "halos.hal:main"
 
 [tool.pytest.ini_options]

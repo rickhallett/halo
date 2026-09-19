@@ -1,5 +1,5 @@
 # Halo root justfile — deploy pipeline via Mutagen + Ryzen
-# Mac is HQ. Ryzen is the worker. Mutagen keeps them in sync.
+# Mac is HQ. Ryzen is the worker. Mutagen keeps code/ in two-way-safe sync.
 
 set dotenv-load := true
 
@@ -17,19 +17,19 @@ default:
 
 # Show Mutagen sync status
 sync-status:
-    mutagen sync list
+    mutagen sync list code
 
 # Flush pending changes (block until Ryzen is up-to-date)
 sync-flush:
-    mutagen sync flush halo
+    mutagen sync flush code
 
 # Pause sync
 sync-pause:
-    mutagen sync pause halo
+    mutagen sync pause code
 
 # Resume sync
 sync-resume:
-    mutagen sync resume halo
+    mutagen sync resume code
 
 # ── Track DB sync (rare — only when metrics change) ───
 

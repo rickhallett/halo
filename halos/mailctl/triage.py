@@ -41,19 +41,19 @@ class TriageResult:
 # ─── Helpers ──────────────────────────────────────────────────────
 
 def _sender(msg: dict) -> str:
-    return msg.get("from", {}).get("addr", "").lower()
+    return (msg.get("from", {}).get("addr") or "").lower()
 
 
 def _sender_name(msg: dict) -> str:
-    return msg.get("from", {}).get("name", "").lower()
+    return (msg.get("from", {}).get("name") or "").lower()
 
 
 def _subject(msg: dict) -> str:
-    return msg.get("subject", "").lower()
+    return (msg.get("subject") or "").lower()
 
 
 def _to_addr(msg: dict) -> str:
-    return msg.get("to", {}).get("addr", "").lower()
+    return (msg.get("to", {}).get("addr") or "").lower()
 
 
 def _account_for(msg: dict) -> str:
@@ -87,6 +87,7 @@ VIP_ADDRS = {
     "benhallett",
     "andrew.younger",
     "aureliana",
+    "zenways",
 }
 
 
@@ -114,6 +115,8 @@ PHISH_PATTERNS = [
     "nigerian",
     "lottery",
     "inheritanc",
+    "clickcannabis",   # Spoofs Trezor display name
+    "anhanguera",      # Spoofs CoinTracker display name
 ]
 
 
@@ -121,8 +124,9 @@ def _rule_phishing(msg: dict) -> Optional[TriageResult]:
     """Junk obvious phishing."""
     subj = _subject(msg)
     name = _sender_name(msg)
+    addr = _sender(msg)
     for pattern in PHISH_PATTERNS:
-        if pattern in subj or pattern in name:
+        if pattern in subj or pattern in name or pattern in addr:
             return TriageResult(Action.ARCHIVE, f"Phish: {pattern}", label="Junk")
     return None
 
@@ -181,6 +185,11 @@ BOT_RULES: list[tuple[str, str]] = [
     ("greenhouse-mail", "jobs"),
     ("ashbyhq.com", "jobs"),
     ("upwork.com", "jobs"),
+    ("studysmarter", "jobs"),
+    ("flexjobs", "jobs"),
+    # Banking
+    ("monzo.com", "banking"),
+    ("stepchange", "banking"),
 ]
 
 
@@ -232,6 +241,9 @@ NEWSLETTER_PATTERNS = [
     ("medicine festival", "newsletters"),
     ("buddhafield", "newsletters"),
     ("throssel", "newsletters"),
+    ("ghost.io", "newsletters"),
+    ("cerebras", "newsletters"),
+    ("roadmap.sh", "newsletters"),
 ]
 
 

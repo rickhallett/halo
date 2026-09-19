@@ -104,3 +104,6 @@ infra/k8s/fleet/bankei-secrets.yaml
 infra/k8s/fleet/hightower-secrets.yaml
 infra/k8s/fleet/turing-secrets.yaml
 infra/gemini-bridge/.env
+
+# transcript dumps containing credentials — never commit
+2026-04-09-194020-about-the-job*.txt

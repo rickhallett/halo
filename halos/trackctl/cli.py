@@ -7,6 +7,7 @@ Usage:
     trackctl list zazen --days 7               # recent entries
     trackctl streak zazen                      # streak stats
     trackctl summary                           # all domains
+    trackctl summary zazen                     # one domain
     trackctl summary --domain zazen --json     # one domain, JSON
 """
 
@@ -71,7 +72,8 @@ def main() -> None:
 
     # --- summary ---
     p_summary = sub.add_parser("summary", help="Summary stats (all domains or one)")
-    p_summary.add_argument("--domain", default=None, help="Limit to one domain")
+    p_summary.add_argument("domain", nargs="?", default=None, help="Domain name (optional, all if omitted)")
+    p_summary.add_argument("--domain", default=None, dest="domain_flag", help="Limit to one domain (alias for positional)")
     p_summary.add_argument("--json", action="store_true", dest="json_out")
 
     # --- export ---
@@ -284,9 +286,11 @@ def cmd_streak(args) -> int:
 
 def cmd_summary(args) -> int:
     """Summary stats for all domains or one."""
-    if args.domain:
-        info = _require_domain(args.domain)
-        summaries = [engine.compute_summary(args.domain, target=info.target)]
+    # Merge positional and --domain flag (positional takes precedence)
+    domain = args.domain or getattr(args, "domain_flag", None)
+    if domain:
+        info = _require_domain(domain)
+        summaries = [engine.compute_summary(domain, target=info.target)]
     else:
         summaries = []
         for d in registry.all_domains():

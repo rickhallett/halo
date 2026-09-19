@@ -11,7 +11,7 @@ BEACHHEAD_PASS = os.environ.get("BEACHHEAD_PASS", "neo4j")
 
 VALID_ITEMS = ("espresso", "lagavulin", "stimpacks", "nos")
 VALID_MOODS = ("grind", "locked-in", "burnt-out", "fire")
-VALID_CATEGORIES = ("sardonic", "strategic", "lethal", "philosophical")
+VALID_CATEGORIES = ("sardonic", "strategic", "lethal", "philosophical", "atmospheric")
 
 MOOD_ITEM_MAP = {
     "grind": "espresso",

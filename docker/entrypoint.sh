@@ -183,13 +183,12 @@ name = f"touchbase-{advisor}"
 
 if advisor and schedule:
     prompt = (
-        "Morning touch-base. Give a concise synthesis covering: "
-        "(1) current focus goals status, "
-        "(2) what we are focused on today, "
-        "(3) blockers or blind spots, "
-        "(4) direct questions for Kai. "
-        "Use your available halos tools to ground claims. "
-        "Keep it brief, specific, and operator-grade."
+        "Morning briefing. Run ONLY the commands listed in your Integrations section — "
+        "do not call trackctl summary without a domain argument or any tool that returns "
+        "data outside your lane. "
+        "Follow your Output Discipline: if nothing has meaningfully changed, send nothing. "
+        "If there is something worth saying, say it in one or two sentences. "
+        "Do not report on domains outside your lane."
     )
 
     origin = {"platform": platform, "chat_id": chat_id} if chat_id else None

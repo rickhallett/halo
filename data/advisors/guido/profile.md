@@ -41,8 +41,8 @@ Each 30-min block: 10 min reading docs/examples, 15 min REPL experimentation in 
 
 ## Curriculum materials produced
 
-### Weeks 1-2: subprocess + collections (10 interactive scripts)
-`data/advisors/guido/curriculum/scripts/day01-10*.py`
+### Weeks 1-2: subprocess + collections (10 notebooks)
+`data/advisors/guido/curriculum/notebooks-weeks-01-02/day01-10*.ipynb`
 - Days 1-2: defaultdict (basics, patterns)
 - Day 3: Counter
 - Day 4: deque
@@ -50,24 +50,25 @@ Each 30-min block: 10 min reading docs/examples, 15 min REPL experimentation in 
 - Days 6-9: subprocess (basics, errors, patterns, deep)
 - Day 10: capstone — full sysreport
 
-### Weeks 3-4: logging + try/except/else/finally + itertools (10 interactive scripts)
-`data/advisors/guido/curriculum/scripts-weeks-03-04/day01-10*.py`
+### Weeks 3-4: logging + try/except/else/finally + itertools (10 notebooks)
+`data/advisors/guido/curriculum/notebooks-weeks-03-04/day01-10*.ipynb`
 - Days 1-3: logging (levels, handlers/formatters, SRE patterns)
 - Days 4-5: try/except/else/finally (full flow, custom exceptions, context managers)
 - Days 6-8: itertools (chain/islice/count/cycle, groupby/takewhile/dropwhile, product/combinations/starmap)
 - Day 9: generators (yield, expressions, pipelines)
 - Day 10: capstone — production log analyser
 
-All scripts use IPython.embed() checkpoints for interactive REPL practice.
-
-### Weeks 5-6: pathlib + closures + datetime + regex + f-strings (10 interactive scripts)
-`data/advisors/guido/curriculum/scripts-weeks-05-06/day01-10*.py`
+### Weeks 5-6: pathlib + closures + datetime + regex + f-strings (10 notebooks)
+`data/advisors/guido/curriculum/notebooks-weeks-05-06/day01-10*.ipynb`
 - Days 1-2: pathlib (suffix/stem/parent dot convention, glob, read/write, resolve)
 - Days 3-4: closures (LEGB, late binding trap Q30, nonlocal, decorators, @wraps)
 - Days 5-6: datetime (types, arithmetic, strftime/strptime, naive vs aware, UTC-everywhere)
 - Days 7-8: regex (match/search/findall, groups Q10-11, lookahead, sub, SRE recipes)
 - Day 9: f-strings (alignment Q12, numbers, debug =, tables)
 - Day 10: capstone — config parser + log timestamp analyser
+
+All curriculum is Jupyter notebooks. Open in VS Code with the `guido-curriculum` kernel.
+Original .py scripts preserved in `scripts-weeks-*/` directories (archived).
 
 ### drillctl — spaced repetition engine
 `halos/drillctl/` — CLI tool with SM-2 scheduling.

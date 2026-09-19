@@ -23,11 +23,13 @@ from pathlib import Path
 from halos.eventsource.consumer import AdvisorEventLoop
 from halos.eventsource.handlers.advisor import AdvisorTelephonyHandler
 from halos.eventsource.handlers.dev import DevCommitProjectionHandler
+from halos.eventsource.handlers.draper import DraperProjectionHandler
 from halos.eventsource.handlers.journal import JournalProjectionHandler
 from halos.eventsource.handlers.mail import MailTriageHandler
 from halos.eventsource.handlers.night import NightProjectionHandler
 from halos.eventsource.handlers.observation import ObservationProjectionHandler
 from halos.eventsource.handlers.system import SystemEventHandler
+from halos.eventsource.handlers.briefing import BriefingProjectionHandler
 from halos.eventsource.handlers.track import TrackProjectionHandler
 
 
@@ -65,7 +67,9 @@ def main():
         projection_path=store_dir / "projection.db",
         handlers=[
             AdvisorTelephonyHandler(),
+            BriefingProjectionHandler(),
             DevCommitProjectionHandler(),
+            DraperProjectionHandler(),
             JournalProjectionHandler(),
             MailTriageHandler(),
             NightProjectionHandler(),
